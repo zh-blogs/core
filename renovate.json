@@ -1,0 +1,66 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    ":timezone(Asia/Shanghai)",
+    ":label(dependencies)"
+  ],
+  "dependencyDashboard": true,
+  "prConcurrentLimit": 8,
+  "prHourlyLimit": 2,
+  "rangeStrategy": "bump",
+  "schedule": [
+    "* 0-5 * * 1"
+  ],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": [
+      "* 0-5 * * 1"
+    ]
+  },
+  "enabledManagers": [
+    "npm",
+    "gomod",
+    "dockerfile",
+    "docker-compose",
+    "github-actions"
+  ],
+  "packageRules": [
+    {
+      "description": "Group all non-major Node ecosystem updates",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "digest"
+      ],
+      "groupName": "node non-major dependencies"
+    },
+    {
+      "description": "Group all non-major Go module updates",
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "digest"
+      ],
+      "groupName": "go non-major dependencies"
+    },
+    {
+      "description": "Separate major updates for manual review",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "automerge": false
+    }
+  ],
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/dist/**"
+  ]
+}

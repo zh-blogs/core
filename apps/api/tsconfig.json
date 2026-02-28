@@ -1,0 +1,23 @@
+{
+  "extends": "@zhblogs/configs/tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "lib": [
+      "ESNext"
+    ],
+    "outDir": "dist",
+    "sourceMap": true,
+    "inlineSources": true
+  },
+  "include": [
+    "src",
+    "tests",
+    "vitest.config.ts",
+    "tsdown.config.ts",
+    "index.ts"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules"
+  ]
+}
