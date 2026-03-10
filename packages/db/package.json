@@ -1,0 +1,30 @@
+{
+  "name": "@zhblogs/db",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "drizzle-kit studio",
+    "build": "node --import tsx/esm -e \"import('./src/index.ts')\"",
+    "preview": "drizzle-kit studio",
+    "test": "node --import tsx/esm -e \"import('./src/index.ts')\"",
+    "drizzle": "drizzle-kit"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts",
+    "./schema": "./src/schema/index.ts",
+    "./constants": "./src/constants/index.ts"
+  },
+  "dependencies": {
+    "@zhblogs/configs": "workspace:*",
+    "drizzle-orm": "^0.44.5",
+    "drizzle-zod": "^0.8.3",
+    "pg": "^8.16.3",
+    "uuid": "^13.0.0",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.18.0",
+    "drizzle-kit": "^0.31.9"
+  }
+}

@@ -3,10 +3,33 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "pnpm -r --parallel --filter @zhblogs/api --filter @zhblogs/web run dev",
-    "build": "pnpm -r --filter @zhblogs/api --filter @zhblogs/web run build",
-    "preview": "pnpm -r --filter @zhblogs/api --filter @zhblogs/web run preview",
-    "test": "pnpm -r run test"
+    "dev": "cross-env NODE_ENV=development dotenv -e .env -- pnpm run dev:app",
+    "dev:app": "cross-env NODE_ENV=development dotenv -e .env -- pnpm --parallel -F @zhblogs/api -F @zhblogs/web run dev",
+    "dev:api": "cross-env NODE_ENV=development dotenv -e .env -- pnpm -F @zhblogs/api run dev",
+    "dev:web": "cross-env NODE_ENV=development dotenv -e .env -- pnpm -F @zhblogs/web run dev",
+    "dev:status": "cross-env NODE_ENV=development dotenv -e .env -- pnpm -F @zhblogs/status run dev",
+    "dev:cloudflare": "cross-env NODE_ENV=development dotenv -e .env -- pnpm -F @zhblogs/cloudflare run dev",
+    "build": "cross-env NODE_ENV=production dotenv -e .env -- pnpm -F @zhblogs/api -F @zhblogs/web run build",
+    "build:api": "cross-env NODE_ENV=production dotenv -e .env -- pnpm -F @zhblogs/api run build",
+    "build:web": "cross-env NODE_ENV=production dotenv -e .env -- pnpm -F @zhblogs/web run build",
+    "build:status": "cross-env NODE_ENV=production dotenv -e .env -- pnpm -F @zhblogs/status run build",
+    "build:cloudflare": "cross-env NODE_ENV=production dotenv -e .env -- pnpm -F @zhblogs/cloudflare run build",
+    "preview": "cross-env NODE_ENV=production dotenv -e .env -- pnpm --parallel -F @zhblogs/api -F @zhblogs/web run preview",
+    "preview:app": "cross-env NODE_ENV=production dotenv -e .env -- pnpm --parallel -F @zhblogs/api -F @zhblogs/web run preview",
+    "preview:api": "cross-env NODE_ENV=production dotenv -e .env -- pnpm -F @zhblogs/api run preview",
+    "preview:web": "cross-env NODE_ENV=production dotenv -e .env -- pnpm -F @zhblogs/web run preview",
+    "preview:status": "cross-env NODE_ENV=production dotenv -e .env -- pnpm -F @zhblogs/status run preview",
+    "preview:cloudflare": "cross-env NODE_ENV=production dotenv -e .env -- pnpm -F @zhblogs/cloudflare run preview",
+    "test": "cross-env NODE_ENV=test dotenv -e .env -- pnpm run test:all",
+    "test:all": "cross-env NODE_ENV=test dotenv -e .env -- pnpm -r --if-present run test",
+    "test:api": "cross-env NODE_ENV=test dotenv -e .env -- pnpm -F @zhblogs/api run test",
+    "test:web": "cross-env NODE_ENV=test dotenv -e .env -- pnpm -F @zhblogs/web run test",
+    "test:status": "cross-env NODE_ENV=test dotenv -e .env -- pnpm -F @zhblogs/status run test",
+    "test:cloudflare": "cross-env NODE_ENV=test dotenv -e .env -- pnpm -F @zhblogs/cloudflare run test",
+    "db:generate": "dotenv -e .env -- pnpm -F @zhblogs/db drizzle generate",
+    "db:migrate": "dotenv -e .env -- pnpm -F @zhblogs/db drizzle migrate",
+    "db:studio": "dotenv -e .env -- pnpm -F @zhblogs/db drizzle studio",
+    "util:psl:update-rules": "pnpm -F @zhblogs/utils run psl:update-rules"
   },
   "license": "AGPL-3.0-only",
   "engines": {
@@ -17,7 +40,12 @@
   "devDependencies": {
     "@types/node": "^25.2.0",
     "cross-env": "^10.1.0",
+    "dotenv-cli": "^11.0.0",
+    "tsdown": "^0.20.3",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "dotenv": "^17.3.1"
   }
 }

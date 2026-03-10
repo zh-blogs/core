@@ -1,0 +1,127 @@
+import { pgEnum } from 'drizzle-orm/pg-core'
+import { ARTICLE_FEEDBACK_ACTION_KEYS, ARTICLE_FEEDBACK_REASON_KEYS, ARTICLE_VISIBILITY_KEYS } from '../constants/article'
+import { AUDIT_STATUS_KEYS, SITE_AUDIT_ACTION_KEYS } from '../constants/audit'
+import { DEPLOYMENT_MODULE_KEYS, DEPLOYMENT_STATUS_KEYS } from '../constants/deployment'
+import {
+  SITE_CHECK_REGION_KEYS,
+  SITE_CHECK_RESULT_KEYS,
+  SITE_STATUS_TAG_KEYS,
+  SITE_STATUS_TYPE_KEYS,
+  SITE_WARNING_TAG_SOURCE_KEYS,
+} from '../constants/monitoring'
+import {
+  FEED_TYPE_KEYS,
+  FROM_SOURCE_KEYS,
+  SITE_ACCESS_SCOPE_KEYS,
+  SITE_CLAIM_TYPE_KEYS,
+} from '../constants/site'
+import {
+  EXECUTION_STATUS_KEYS,
+  JOB_STATUS_KEYS,
+  JOB_TRIGGER_SOURCE_KEYS,
+  SCHEDULE_MODE_KEYS,
+  TASK_TYPE_KEYS,
+} from '../constants/task'
+import { TAG_TYPE_KEYS, TECHNOLOGY_TYPE_KEYS } from '../constants/taxonomy'
+import { USER_OAUTH_PROVIDER_KEYS, USER_ROLE_KEYS } from '../constants/user'
+
+export const fromSources = pgEnum(
+  'from_enum',
+  FROM_SOURCE_KEYS as [string, ...string[]],
+)
+export const siteAccessScopeEnum = pgEnum(
+  'site_access_scope_enum',
+  SITE_ACCESS_SCOPE_KEYS as [string, ...string[]],
+)
+export const siteClaimTypeEnum = pgEnum(
+  'site_claim_type_enum',
+  SITE_CLAIM_TYPE_KEYS as [string, ...string[]],
+)
+export const articleVisibilityEnum = pgEnum(
+  'article_visibility_enum',
+  ARTICLE_VISIBILITY_KEYS as [string, ...string[]],
+)
+export const feedTypeEnum = pgEnum(
+  'feed_type_enum',
+  FEED_TYPE_KEYS as [string, ...string[]],
+)
+export const siteAuditActionEnum = pgEnum(
+  'site_audit_action_enum',
+  SITE_AUDIT_ACTION_KEYS as [string, ...string[]],
+)
+export const auditStatusEnum = pgEnum(
+  'audit_status_enum',
+  AUDIT_STATUS_KEYS as [string, ...string[]],
+)
+export const articleFeedbackActionEnum = pgEnum(
+  'article_feedback_action_enum',
+  ARTICLE_FEEDBACK_ACTION_KEYS as [string, ...string[]],
+)
+export const articleFeedbackReasonEnum = pgEnum(
+  'article_feedback_reason_enum',
+  ARTICLE_FEEDBACK_REASON_KEYS as [string, ...string[]],
+)
+export const taskTypeEnum = pgEnum(
+  'task_type_enum',
+  TASK_TYPE_KEYS as [string, ...string[]],
+)
+export const scheduleModeEnum = pgEnum(
+  'schedule_mode_enum',
+  SCHEDULE_MODE_KEYS as [string, ...string[]],
+)
+export const jobTriggerSourceEnum = pgEnum(
+  'job_trigger_source_enum',
+  JOB_TRIGGER_SOURCE_KEYS as [string, ...string[]],
+)
+export const jobStatusEnum = pgEnum(
+  'job_status_enum',
+  JOB_STATUS_KEYS as [string, ...string[]],
+)
+export const executionStatusEnum = pgEnum(
+  'execution_status_enum',
+  EXECUTION_STATUS_KEYS as [string, ...string[]],
+)
+export const tagTypeEnum = pgEnum(
+  'tag_type_enum',
+  TAG_TYPE_KEYS as [string, ...string[]],
+)
+export const technologyTypeEnum = pgEnum(
+  'technology_type_enum',
+  TECHNOLOGY_TYPE_KEYS as [string, ...string[]],
+)
+export const userRoleEnum = pgEnum(
+  'user_role_enum',
+  USER_ROLE_KEYS as [string, ...string[]],
+)
+export const userOauthProviderEnum = pgEnum(
+  'user_oauth_provider_enum',
+  USER_OAUTH_PROVIDER_KEYS as [string, ...string[]],
+)
+export const siteCheckRegionEnum = pgEnum(
+  'site_check_region_enum',
+  SITE_CHECK_REGION_KEYS as [string, ...string[]],
+)
+export const siteCheckResultEnum = pgEnum(
+  'site_check_result_enum',
+  SITE_CHECK_RESULT_KEYS as [string, ...string[]],
+)
+export const siteStatusTypeEnum = pgEnum(
+  'site_status_type_enum',
+  SITE_STATUS_TYPE_KEYS as [string, ...string[]],
+)
+export const siteStatusTagEnum = pgEnum(
+  'site_status_tag_enum',
+  SITE_STATUS_TAG_KEYS as [string, ...string[]],
+)
+export const siteWarningTagSourceEnum = pgEnum(
+  'site_warning_tag_source_enum',
+  SITE_WARNING_TAG_SOURCE_KEYS as [string, ...string[]],
+)
+export const deploymentStatusEnum = pgEnum(
+  'deployment_status_enum',
+  DEPLOYMENT_STATUS_KEYS as [string, ...string[]],
+)
+export const deploymentModuleEnum = pgEnum(
+  'deployment_module_enum',
+  DEPLOYMENT_MODULE_KEYS as [string, ...string[]],
+)
