@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "prepare": "node ./scripts/install-git-hooks.mjs",
     "dev": "cross-env NODE_ENV=development dotenv -e .env.dev -- pnpm run dev:app",
     "dev:app": "cross-env NODE_ENV=development dotenv -e .env.dev -- pnpm --parallel -F @zhblogs/api -F @zhblogs/web run dev",
     "dev:api": "cross-env NODE_ENV=development dotenv -e .env.dev -- pnpm -F @zhblogs/api run dev",
@@ -26,6 +27,8 @@
     "test:web": "cross-env NODE_ENV=test dotenv -e .env.test -- pnpm -F @zhblogs/web run test",
     "test:status": "cross-env NODE_ENV=test dotenv -e .env.test -- pnpm -F @zhblogs/status run test",
     "test:cf": "cross-env NODE_ENV=test dotenv -e .env.test -- pnpm -F @zhblogs/cloudflare run test",
+    "hooks:install": "node ./scripts/install-git-hooks.mjs",
+    "commit:lint": "commitlint --from HEAD~1 --to HEAD",
     "db:studio": "dotenv -e .env.dev -- pnpm -F @zhblogs/db drizzle studio",
     "db:generate:dev": "dotenv -e .env.dev -- pnpm -F @zhblogs/db drizzle generate",
     "db:migrate:dev": "dotenv -e .env.dev -- pnpm -F @zhblogs/db drizzle migrate",
@@ -40,6 +43,8 @@
   },
   "packageManager": "pnpm@10.28.2+sha512.41872f037ad22f7348e3b1debbaf7e867cfd448f2726d9cf74c08f19507c31d2c8e7a11525b983febc2df640b5438dee6023ebb1f84ed43cc2d654d2bc326264",
   "devDependencies": {
+    "@commitlint/cli": "^20.4.3",
+    "@commitlint/config-conventional": "^20.4.3",
     "@types/node": "^25.2.0",
     "cross-env": "^10.1.0",
     "dotenv-cli": "^11.0.0",
