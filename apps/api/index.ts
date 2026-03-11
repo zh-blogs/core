@@ -1,12 +1,18 @@
-import { app } from './src/app.js'
+import { app } from './src/app'
 
-const port = Number(process.env.PORT ?? 3000)
+const start = async () => {
+  try {
+    await app.ready()
 
-app.log.info({ port, env: process.env.NODE_ENV ?? 'development' }, 'api server starting')
+    const port = app.config.API_PORT ?? 9001
 
-app
-  .listen({ host: '0.0.0.0', port })
-  .catch((error) => {
+    app.log.info({ port, env: app.config.NODE_ENV }, 'api server starting')
+
+    await app.listen({ host: '0.0.0.0', port })
+  } catch (error) {
     app.log.error(error)
     process.exit(1)
-  })
+  }
+}
+
+void start()

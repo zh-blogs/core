@@ -2,9 +2,11 @@ import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import pino from 'pino'
 
+const DEFAULT_LOG_DIR = join(process.cwd(), 'logs')
+
 const resolveLogLevel = (): string => {
-  if (process.env.LOG_LEVEL) {
-    return process.env.LOG_LEVEL
+  if (process.env.API_LOG_LEVEL) {
+    return process.env.API_LOG_LEVEL
   }
 
   const env = process.env.NODE_ENV ?? 'development'
@@ -16,7 +18,7 @@ const resolveLogLevel = (): string => {
 }
 
 const getLogFilePath = (env: string): string => {
-  const logDir = process.env.LOG_DIR ?? join(process.cwd(), 'logs')
+  const logDir = process.env.API_LOG_DIR ?? DEFAULT_LOG_DIR
   mkdirSync(logDir, { recursive: true })
   return join(logDir, `api-${env}.log`)
 }

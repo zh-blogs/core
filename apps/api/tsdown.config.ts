@@ -1,7 +1,7 @@
 import { defineConfig } from 'tsdown'
 
 export default defineConfig({
-  clean: false,
+  clean: true,
   target: 'esnext',
   entry: ['index.ts'],
   dts: false,

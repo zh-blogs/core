@@ -2,6 +2,9 @@
   "extends": "@zhblogs/configs/tsconfig.base.json",
   "compilerOptions": {
     "baseUrl": ".",
+    "types": [
+      "node"
+    ],
     "lib": [
       "ESNext"
     ],
@@ -10,11 +13,9 @@
     "inlineSources": true
   },
   "include": [
-    "src",
-    "tests",
-    "vitest.config.ts",
-    "tsdown.config.ts",
-    "index.ts"
+    "src/**/*",
+    "tests/**/*",
+    "*.ts"
   ],
   "exclude": [
     "dist",
