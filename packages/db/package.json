@@ -4,16 +4,16 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "drizzle-kit studio",
-    "build": "node --import tsx/esm -e \"import('./src/index.ts')\"",
-    "preview": "drizzle-kit studio",
-    "test": "node --import tsx/esm -e \"import('./src/index.ts')\"",
+    "generate": "drizzle-kit generate",
+    "migrate": "drizzle-kit migrate",
     "drizzle": "drizzle-kit"
   },
   "exports": {
     ".": "./src/index.ts",
     "./client": "./src/client.ts",
     "./schema": "./src/schema/index.ts",
-    "./constants": "./src/constants/index.ts"
+    "./constants": "./src/constants/index.ts",
+    "./zod": "./src/zod/index.ts"
   },
   "dependencies": {
     "@zhblogs/configs": "workspace:*",
