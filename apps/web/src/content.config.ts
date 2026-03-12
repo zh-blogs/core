@@ -6,7 +6,7 @@ import { IdentitiesKeys } from "./identities";
 const blogs = defineCollection({
   loader: glob({
     pattern: ["**/*.mdx", "**/*.md"],
-    base: "./src/contents/blogs",
+    base: "./contents/blogs",
   }),
   schema: z.object({
     title: z.string(),
@@ -22,7 +22,7 @@ const blogs = defineCollection({
 const docs = defineCollection({
   loader: glob({
     pattern: ["**/*.mdx", "**/*.md"],
-    base: "./src/contents/docs",
+    base: "./contents/docs",
   }),
   schema: z.object({
     title: z.string(),
@@ -34,7 +34,7 @@ const docs = defineCollection({
 });
 
 const members = defineCollection({
-  loader: file("./src/contents/members.json"),
+  loader: file("./contents/members.json"),
   schema: z.object({
     id: z.string(), // GitHub 用户名，用于获取头像和Github（个人页面中 URL 地址显示的用户名）
     description: z.string(), // 个人简介
@@ -55,7 +55,7 @@ const members = defineCollection({
 });
 
 const group = defineCollection({
-  loader: file("./src/contents/groups.json"),
+  loader: file("./contents/groups.json"),
   schema: z.object({
     id: z.enum(GroupKeys as [string]), // 组唯一标识符
     name: z.string(), // 组名称
