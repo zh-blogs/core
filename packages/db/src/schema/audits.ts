@@ -25,6 +25,7 @@ export interface SiteAuditSnapshot {
   name?: string | null
   url?: string | null
   sign?: string | null
+  icon_base64?: string | null
   feed?: MultiFeed[] | null
   from?: string[] | null
   sitemap?: string | null

@@ -114,6 +114,7 @@ export const siteAuditSnapshotSchema = z.object({
   name: z.string().nullable().optional(),
   url: z.string().nullable().optional(),
   sign: z.string().nullable().optional(),
+  icon_base64: z.string().nullable().optional(),
   feed: z.array(multiFeedSchema).nullable().optional(),
   from: z.array(fromSourceSchema).nullable().optional(),
   sitemap: z.string().nullable().optional(),

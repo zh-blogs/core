@@ -36,6 +36,8 @@ export const Sites = pgTable(
     url: varchar({ length: 256 }).unique().notNull(),
     /** 站点签名或简短描述 */
     sign: text().default(''),
+    /** 站点图标的 base64 编码字符串 */
+    icon_base64: text(),
     /** 站点订阅源列表 */
     feed: jsonb().$type<MultiFeed[]>().default([]),
     /** 站点来源渠道 */

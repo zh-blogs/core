@@ -1,0 +1,1 @@
+ALTER TABLE "sites" ADD COLUMN "icon_base64" text;
