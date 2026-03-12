@@ -17,6 +17,8 @@ export const ARTICLE_VISIBILITY_KEYS = Object.keys(ARTICLE_VISIBILITIES) as Arra
   keyof typeof ARTICLE_VISIBILITIES
 >
 
+export type ArticleVisibilityKey = (typeof ARTICLE_VISIBILITY_KEYS)[number]
+
 export const ARTICLE_FEEDBACK_ACTIONS = {
   HIDE: {
     label: '隐藏文章',
@@ -31,6 +33,8 @@ export const ARTICLE_FEEDBACK_ACTIONS = {
 export const ARTICLE_FEEDBACK_ACTION_KEYS = Object.keys(
   ARTICLE_FEEDBACK_ACTIONS,
 ) as Array<keyof typeof ARTICLE_FEEDBACK_ACTIONS>
+
+export type ArticleFeedbackActionKey = (typeof ARTICLE_FEEDBACK_ACTION_KEYS)[number]
 
 export const ARTICLE_FEEDBACK_REASONS = {
   CONTENT_ERROR: {
@@ -70,3 +74,5 @@ export const ARTICLE_FEEDBACK_REASONS = {
 export const ARTICLE_FEEDBACK_REASON_KEYS = Object.keys(
   ARTICLE_FEEDBACK_REASONS,
 ) as Array<keyof typeof ARTICLE_FEEDBACK_REASONS>
+
+export type ArticleFeedbackReasonKey = (typeof ARTICLE_FEEDBACK_REASON_KEYS)[number]

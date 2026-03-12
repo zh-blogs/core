@@ -11,7 +11,7 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core'
 import { v7 } from 'uuid'
-import { JOB_STATUS_KEYS, TASK_TYPE_KEYS } from '../constants/task'
+import type { JobStatusKey, TaskTypeKey } from '../constants/task'
 import {
   executionStatusEnum,
   jobStatusEnum,
@@ -44,8 +44,8 @@ export interface TaskPayloadTemplate {
 /** 任务依赖或事件触发条件定义 */
 export interface TaskTriggerRule {
   event?: string
-  parent_task_type?: (typeof TASK_TYPE_KEYS)[number]
-  parent_status?: (typeof JOB_STATUS_KEYS)[number]
+  parent_task_type?: TaskTypeKey
+  parent_status?: JobStatusKey
   only_on_success?: boolean
   delay_seconds?: number
 }

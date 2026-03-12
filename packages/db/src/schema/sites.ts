@@ -11,14 +11,14 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core'
 import { v7 } from 'uuid'
-import { FEED_TYPE_KEYS } from '../constants/site'
+import type { FeedTypeKey } from '../constants/site'
 import { fromSources, siteAccessScopeEnum, siteStatusTypeEnum } from './enums'
 import { TagDefinitions, TechnologyCatalogs } from './catalogs'
 
 export interface MultiFeed {
   name: string
   url: string
-  type?: (typeof FEED_TYPE_KEYS)[number]
+  type?: FeedTypeKey
 }
 
 export const Sites = pgTable(
@@ -64,7 +64,6 @@ export const Sites = pgTable(
     recommend: boolean().default(false),
     /** 不显示或异常时的补充原因 */
     reason: text(),
-    // TODO: saveweb_id: varchar({ length: 256 }),
   },
   (table) => [
     index('sites_from_gin_index').using('gin', table.from),

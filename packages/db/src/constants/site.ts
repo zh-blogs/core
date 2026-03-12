@@ -33,6 +33,8 @@ export const MAIN_TAG_KEYS = Object.keys(MAIN_TAGS) as Array<
   keyof typeof MAIN_TAGS
 >
 
+export type MainTagKey = (typeof MAIN_TAG_KEYS)[number]
+
 export const FROM_SOURCES = {
   CIB: {
     label: '中文独立博客列表',
@@ -76,6 +78,8 @@ export const FROM_SOURCE_KEYS = Object.keys(FROM_SOURCES) as Array<
   keyof typeof FROM_SOURCES
 >
 
+export type FromSourceKey = (typeof FROM_SOURCE_KEYS)[number]
+
 export const FEED_TYPES = {
   RSS: {
     label: 'RSS',
@@ -94,6 +98,8 @@ export const FEED_TYPES = {
 export const FEED_TYPE_KEYS = Object.keys(FEED_TYPES) as Array<
   keyof typeof FEED_TYPES
 >
+
+export type FeedTypeKey = (typeof FEED_TYPE_KEYS)[number]
 
 export const SITE_ACCESS_SCOPES = {
   CN_ONLY: {
@@ -114,6 +120,8 @@ export const SITE_ACCESS_SCOPE_KEYS = Object.keys(SITE_ACCESS_SCOPES) as Array<
   keyof typeof SITE_ACCESS_SCOPES
 >
 
+export type SiteAccessScopeKey = (typeof SITE_ACCESS_SCOPE_KEYS)[number]
+
 export const SITE_CLAIM_TYPES = {
   OWNER: {
     label: '所有者认领',
@@ -128,3 +136,5 @@ export const SITE_CLAIM_TYPES = {
 export const SITE_CLAIM_TYPE_KEYS = Object.keys(SITE_CLAIM_TYPES) as Array<
   keyof typeof SITE_CLAIM_TYPES
 >
+
+export type SiteClaimTypeKey = (typeof SITE_CLAIM_TYPE_KEYS)[number]

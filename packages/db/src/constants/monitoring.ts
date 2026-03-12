@@ -17,6 +17,8 @@ export const SITE_CHECK_REGION_KEYS = Object.keys(SITE_CHECK_REGIONS) as Array<
   keyof typeof SITE_CHECK_REGIONS
 >
 
+export type SiteCheckRegionKey = (typeof SITE_CHECK_REGION_KEYS)[number]
+
 export const SITE_CHECK_RESULTS = {
   SUCCESS: {
     label: '访问成功',
@@ -52,6 +54,8 @@ export const SITE_CHECK_RESULT_KEYS = Object.keys(SITE_CHECK_RESULTS) as Array<
   keyof typeof SITE_CHECK_RESULTS
 >
 
+export type SiteCheckResultKey = (typeof SITE_CHECK_RESULT_KEYS)[number]
+
 export const SITE_STATUS_TYPES = {
   OK: {
     label: '状态正常',
@@ -70,6 +74,8 @@ export const SITE_STATUS_TYPES = {
 export const SITE_STATUS_TYPE_KEYS = Object.keys(SITE_STATUS_TYPES) as Array<
   keyof typeof SITE_STATUS_TYPES
 >
+
+export type SiteStatusTypeKey = (typeof SITE_STATUS_TYPE_KEYS)[number]
 
 export const SITE_STATUS_TAGS = {
   EXTERNAL_LIMIT: {
@@ -102,6 +108,8 @@ export const SITE_STATUS_TAG_KEYS = Object.keys(SITE_STATUS_TAGS) as Array<
   keyof typeof SITE_STATUS_TAGS
 >
 
+export type SiteStatusTagKey = (typeof SITE_STATUS_TAG_KEYS)[number]
+
 export const SITE_WARNING_TAG_SOURCES = {
   ARTICLE_FEEDBACK: {
     label: '文章反馈',
@@ -120,3 +128,5 @@ export const SITE_WARNING_TAG_SOURCES = {
 export const SITE_WARNING_TAG_SOURCE_KEYS = Object.keys(
   SITE_WARNING_TAG_SOURCES,
 ) as Array<keyof typeof SITE_WARNING_TAG_SOURCES>
+
+export type SiteWarningTagSourceKey = (typeof SITE_WARNING_TAG_SOURCE_KEYS)[number]

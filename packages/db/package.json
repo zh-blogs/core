@@ -12,7 +12,9 @@
     ".": "./src/index.ts",
     "./client": "./src/client.ts",
     "./schema": "./src/schema/index.ts",
+    "./schema/*": "./src/schema/*.ts",
     "./constants": "./src/constants/index.ts",
+    "./constants/*": "./src/constants/*.ts",
     "./zod": "./src/zod/index.ts"
   },
   "dependencies": {

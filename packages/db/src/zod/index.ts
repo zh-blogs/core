@@ -1,5 +1,6 @@
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod'
 import { z } from 'zod'
+import { ANNOUNCEMENT_STATUS_KEYS } from '../constants/announcement'
 import {
   ARTICLE_FEEDBACK_ACTION_KEYS,
   ARTICLE_FEEDBACK_REASON_KEYS,
@@ -30,6 +31,7 @@ import {
 import { TAG_TYPE_KEYS, TECHNOLOGY_TYPE_KEYS } from '../constants/taxonomy'
 import { USER_OAUTH_PROVIDER_KEYS, USER_ROLE_KEYS } from '../constants/user'
 import {
+  Announcements,
   ArticleFeedbackAudits,
   FeedArticles,
   JobExecutions,
@@ -63,6 +65,7 @@ const toEnumSchema = <T extends string>(values: readonly T[]) =>
 
 const jsonRecordSchema = z.record(z.string(), z.unknown())
 
+export const announcementStatusSchema = toEnumSchema(ANNOUNCEMENT_STATUS_KEYS)
 export const fromSourceSchema = toEnumSchema(FROM_SOURCE_KEYS)
 export const feedTypeSchema = toEnumSchema(FEED_TYPE_KEYS)
 export const siteAccessScopeSchema = toEnumSchema(SITE_ACCESS_SCOPE_KEYS)
@@ -181,6 +184,10 @@ export const siteUpdateSchema = createUpdateSchema(Sites, {
   feed: z.array(multiFeedSchema).optional(),
   from: z.array(fromSourceSchema).optional(),
 })
+
+export const announcementSelectSchema = createSelectSchema(Announcements)
+export const announcementInsertSchema = createInsertSchema(Announcements)
+export const announcementUpdateSchema = createUpdateSchema(Announcements)
 
 export const siteTagSelectSchema = createSelectSchema(SiteTags)
 export const siteTagInsertSchema = createInsertSchema(SiteTags)
@@ -373,6 +380,7 @@ export const siteWarningTagStatsSelectSchema =
   createSelectSchema(SiteWarningTagStats)
 
 export type FromSource = z.infer<typeof fromSourceSchema>
+export type AnnouncementStatus = z.infer<typeof announcementStatusSchema>
 export type FeedType = z.infer<typeof feedTypeSchema>
 export type SiteAccessScope = z.infer<typeof siteAccessScopeSchema>
 export type SiteClaimType = z.infer<typeof siteClaimTypeSchema>

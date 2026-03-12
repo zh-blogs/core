@@ -13,6 +13,8 @@ export const TAG_TYPE_KEYS = Object.keys(TAG_TYPES) as Array<
   keyof typeof TAG_TYPES
 >
 
+export type TagTypeKey = (typeof TAG_TYPE_KEYS)[number]
+
 export const TECHNOLOGY_TYPES = {
   SYSTEM: {
     label: '博客系统',
@@ -31,3 +33,5 @@ export const TECHNOLOGY_TYPES = {
 export const TECHNOLOGY_TYPE_KEYS = Object.keys(TECHNOLOGY_TYPES) as Array<
   keyof typeof TECHNOLOGY_TYPES
 >
+
+export type TechnologyTypeKey = (typeof TECHNOLOGY_TYPE_KEYS)[number]

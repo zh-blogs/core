@@ -1,3 +1,4 @@
+export * from './announcement'
 export * from './article'
 export * from './audit'
 export * from './deployment'

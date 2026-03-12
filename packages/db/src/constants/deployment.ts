@@ -29,6 +29,8 @@ export const DEPLOYMENT_STATUS_KEYS = Object.keys(
   DEPLOYMENT_STATUSES,
 ) as Array<keyof typeof DEPLOYMENT_STATUSES>
 
+export type DeploymentStatusKey = (typeof DEPLOYMENT_STATUS_KEYS)[number]
+
 export const DEPLOYMENT_MODULES = {
   WEB: {
     label: 'Web',
@@ -67,3 +69,5 @@ export const DEPLOYMENT_MODULES = {
 export const DEPLOYMENT_MODULE_KEYS = Object.keys(DEPLOYMENT_MODULES) as Array<
   keyof typeof DEPLOYMENT_MODULES
 >
+
+export type DeploymentModuleKey = (typeof DEPLOYMENT_MODULE_KEYS)[number]

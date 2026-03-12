@@ -21,6 +21,8 @@ export const USER_ROLE_KEYS = Object.keys(USER_ROLES) as Array<
   keyof typeof USER_ROLES
 >
 
+export type UserRoleKey = (typeof USER_ROLE_KEYS)[number]
+
 export const USER_OAUTH_PROVIDERS = {
   GITHUB: {
     label: 'GitHub',
@@ -31,3 +33,5 @@ export const USER_OAUTH_PROVIDERS = {
 export const USER_OAUTH_PROVIDER_KEYS = Object.keys(
   USER_OAUTH_PROVIDERS,
 ) as Array<keyof typeof USER_OAUTH_PROVIDERS>
+
+export type UserOauthProviderKey = (typeof USER_OAUTH_PROVIDER_KEYS)[number]

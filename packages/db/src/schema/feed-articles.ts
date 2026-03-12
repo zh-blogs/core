@@ -9,7 +9,7 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core'
 import { v7 } from 'uuid'
-import { FEED_TYPE_KEYS } from '../constants/site'
+import type { FeedTypeKey } from '../constants/site'
 import { articleVisibilityEnum, feedTypeEnum } from './enums'
 import { Sites } from './sites'
 
@@ -17,7 +17,7 @@ import { Sites } from './sites'
 export interface FeedArticleSourceInfo {
   feed_name?: string
   feed_url?: string
-  feed_type?: (typeof FEED_TYPE_KEYS)[number]
+  feed_type?: FeedTypeKey
 }
 
 /** RSS 抓取后的文章落库表 */

@@ -9,6 +9,13 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core'
 import { v7 } from 'uuid'
+import type {
+  SiteStatusTypeKey,
+} from '../constants/monitoring'
+import type {
+  FromSourceKey,
+  SiteAccessScopeKey,
+} from '../constants/site'
 import { FeedArticles } from './feed-articles'
 import {
   articleFeedbackActionEnum,
@@ -19,6 +26,12 @@ import {
 import type { MultiFeed } from './sites'
 import { Sites } from './sites'
 
+export interface SiteAuditArchitectureSnapshot {
+  system_id?: string | null
+  framework_id?: string | null
+  language_id?: string | null
+}
+
 /** 站点审核快照，用于新增/修改/删除审核时展示前后差异 */
 export interface SiteAuditSnapshot {
   bid?: string | null
@@ -27,20 +40,16 @@ export interface SiteAuditSnapshot {
   sign?: string | null
   icon_base64?: string | null
   feed?: MultiFeed[] | null
-  from?: string[] | null
+  from?: FromSourceKey[] | null
   sitemap?: string | null
   link_page?: string | null
-  access_scope?: 'CN_ONLY' | 'GLOBAL_ONLY' | 'BOTH' | null
-  status?: 'OK' | 'ERROR' | 'SSLERROR' | null
+  access_scope?: SiteAccessScopeKey | null
+  status?: SiteStatusTypeKey | null
   is_show?: boolean | null
   recommend?: boolean | null
   reason?: string | null
   tag_ids?: string[] | null
-  architecture?: {
-    system_id?: string | null
-    framework_id?: string | null
-    language_id?: string | null
-  } | null
+  architecture?: SiteAuditArchitectureSnapshot | null
 }
 
 /** 前端 diff 视图可直接消费的字段差异 */

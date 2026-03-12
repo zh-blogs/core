@@ -1,4 +1,5 @@
 import { pgEnum } from 'drizzle-orm/pg-core'
+import { ANNOUNCEMENT_STATUS_KEYS } from '../constants/announcement'
 import { ARTICLE_FEEDBACK_ACTION_KEYS, ARTICLE_FEEDBACK_REASON_KEYS, ARTICLE_VISIBILITY_KEYS } from '../constants/article'
 import { AUDIT_STATUS_KEYS, SITE_AUDIT_ACTION_KEYS } from '../constants/audit'
 import { DEPLOYMENT_MODULE_KEYS, DEPLOYMENT_STATUS_KEYS } from '../constants/deployment'
@@ -28,6 +29,10 @@ import { USER_OAUTH_PROVIDER_KEYS, USER_ROLE_KEYS } from '../constants/user'
 export const fromSources = pgEnum(
   'from_enum',
   FROM_SOURCE_KEYS as [string, ...string[]],
+)
+export const announcementStatusEnum = pgEnum(
+  'announcement_status_enum',
+  ANNOUNCEMENT_STATUS_KEYS as [string, ...string[]],
 )
 export const siteAccessScopeEnum = pgEnum(
   'site_access_scope_enum',

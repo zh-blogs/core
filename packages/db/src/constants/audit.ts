@@ -17,6 +17,8 @@ export const SITE_AUDIT_ACTION_KEYS = Object.keys(SITE_AUDIT_ACTIONS) as Array<
   keyof typeof SITE_AUDIT_ACTIONS
 >
 
+export type SiteAuditActionKey = (typeof SITE_AUDIT_ACTION_KEYS)[number]
+
 export const AUDIT_STATUSES = {
   PENDING: {
     label: '待审核',
@@ -39,3 +41,5 @@ export const AUDIT_STATUSES = {
 export const AUDIT_STATUS_KEYS = Object.keys(AUDIT_STATUSES) as Array<
   keyof typeof AUDIT_STATUSES
 >
+
+export type AuditStatusKey = (typeof AUDIT_STATUS_KEYS)[number]

@@ -1,4 +1,5 @@
 export * from './sites'
+export * from './announcements'
 export * from './feed-articles'
 export * from './audits'
 export * from './tasks'

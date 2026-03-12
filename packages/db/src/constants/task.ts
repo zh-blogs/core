@@ -33,6 +33,8 @@ export const TASK_TYPE_KEYS = Object.keys(TASK_TYPES) as Array<
   keyof typeof TASK_TYPES
 >
 
+export type TaskTypeKey = (typeof TASK_TYPE_KEYS)[number]
+
 export const SCHEDULE_MODES = {
   CRON: {
     label: 'Cron 定时',
@@ -55,6 +57,8 @@ export const SCHEDULE_MODES = {
 export const SCHEDULE_MODE_KEYS = Object.keys(SCHEDULE_MODES) as Array<
   keyof typeof SCHEDULE_MODES
 >
+
+export type ScheduleModeKey = (typeof SCHEDULE_MODE_KEYS)[number]
 
 export const JOB_TRIGGER_SOURCES = {
   SCHEDULE: {
@@ -87,6 +91,8 @@ export const JOB_TRIGGER_SOURCE_KEYS = Object.keys(
   JOB_TRIGGER_SOURCES,
 ) as Array<keyof typeof JOB_TRIGGER_SOURCES>
 
+export type JobTriggerSourceKey = (typeof JOB_TRIGGER_SOURCE_KEYS)[number]
+
 export const JOB_STATUSES = {
   PENDING: {
     label: '待执行',
@@ -118,6 +124,8 @@ export const JOB_STATUS_KEYS = Object.keys(JOB_STATUSES) as Array<
   keyof typeof JOB_STATUSES
 >
 
+export type JobStatusKey = (typeof JOB_STATUS_KEYS)[number]
+
 export const EXECUTION_STATUSES = {
   RUNNING: {
     label: '执行中',
@@ -144,3 +152,5 @@ export const EXECUTION_STATUSES = {
 export const EXECUTION_STATUS_KEYS = Object.keys(EXECUTION_STATUSES) as Array<
   keyof typeof EXECUTION_STATUSES
 >
+
+export type ExecutionStatusKey = (typeof EXECUTION_STATUS_KEYS)[number]

@@ -15,6 +15,13 @@
       "when": 1773322611275,
       "tag": "0001_redundant_swarm",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773328524641,
+      "tag": "0002_tearful_zarek",
+      "breakpoints": true
     }
   ]
 }
