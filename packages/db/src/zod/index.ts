@@ -1,5 +1,6 @@
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod'
 import { z } from 'zod'
+import { isValidUrl } from '@zhblogs/utils/psl'
 import { ANNOUNCEMENT_STATUS_KEYS } from '../constants/announcement'
 import {
   ARTICLE_FEEDBACK_ACTION_KEYS,
@@ -64,6 +65,40 @@ const toEnumSchema = <T extends string>(values: readonly T[]) =>
   z.enum(values as [T, ...T[]])
 
 const jsonRecordSchema = z.record(z.string(), z.unknown())
+const domainLabelPattern = /^[a-z0-9-]+$/i
+
+const hasValidHostnameLabels = (hostname: string): boolean =>
+  hostname.split('.').every((label) => {
+    if (!label.length || label.length > 63) {
+      return false
+    }
+    if (label.startsWith('-') || label.endsWith('-')) {
+      return false
+    }
+    return domainLabelPattern.test(label)
+  })
+
+const isValidSiteUrl = (value: string): boolean => {
+  if (!isValidUrl(value)) {
+    return false
+  }
+
+  try {
+    return hasValidHostnameLabels(new URL(value).hostname)
+  } catch {
+    return false
+  }
+}
+
+const publicSiteUrlSchema = z
+  .url()
+  .refine(isValidSiteUrl, {
+    message: 'URL hostname must be a valid public domain',
+  })
+const optionalPublicSiteUrlSchema = publicSiteUrlSchema.optional()
+const nullableOptionalPublicSiteUrlSchema = publicSiteUrlSchema
+  .nullable()
+  .optional()
 
 export const announcementStatusSchema = toEnumSchema(ANNOUNCEMENT_STATUS_KEYS)
 export const fromSourceSchema = toEnumSchema(FROM_SOURCE_KEYS)
@@ -100,6 +135,12 @@ export const multiFeedSchema = z.object({
   type: feedTypeSchema.optional(),
 })
 
+const multiFeedInputSchema = z.object({
+  name: z.string(),
+  url: publicSiteUrlSchema,
+  type: feedTypeSchema.optional(),
+})
+
 export const feedArticleSourceInfoSchema = z.object({
   feed_name: z.string().optional(),
   feed_url: z.string().optional(),
@@ -122,6 +163,25 @@ export const siteAuditSnapshotSchema = z.object({
   from: z.array(fromSourceSchema).nullable().optional(),
   sitemap: z.string().nullable().optional(),
   link_page: z.string().nullable().optional(),
+  access_scope: siteAccessScopeSchema.nullable().optional(),
+  status: siteStatusTypeSchema.nullable().optional(),
+  is_show: z.boolean().nullable().optional(),
+  recommend: z.boolean().nullable().optional(),
+  reason: z.string().nullable().optional(),
+  tag_ids: z.array(z.uuid()).nullable().optional(),
+  architecture: siteAuditArchitectureSchema.nullable().optional(),
+})
+
+const siteAuditSnapshotInputSchema = z.object({
+  bid: z.string().nullable().optional(),
+  name: z.string().nullable().optional(),
+  url: nullableOptionalPublicSiteUrlSchema,
+  sign: z.string().nullable().optional(),
+  icon_base64: z.string().nullable().optional(),
+  feed: z.array(multiFeedInputSchema).nullable().optional(),
+  from: z.array(fromSourceSchema).nullable().optional(),
+  sitemap: nullableOptionalPublicSiteUrlSchema,
+  link_page: nullableOptionalPublicSiteUrlSchema,
   access_scope: siteAccessScopeSchema.nullable().optional(),
   status: siteStatusTypeSchema.nullable().optional(),
   is_show: z.boolean().nullable().optional(),
@@ -156,6 +216,16 @@ export const taskPayloadTemplateSchema = z.object({
   options: jsonRecordSchema.optional(),
 })
 
+const taskPayloadTemplateInputSchema = z.object({
+  site_id: z.uuid().optional(),
+  site_ids: z.array(z.uuid()).optional(),
+  feed_url: optionalPublicSiteUrlSchema,
+  target_email: z.string().optional(),
+  message_channel: z.string().optional(),
+  message_template: z.string().optional(),
+  options: jsonRecordSchema.optional(),
+})
+
 export const taskTriggerRuleSchema = z.object({
   event: z.string().optional(),
   parent_task_type: taskTypeSchema.optional(),
@@ -177,12 +247,18 @@ export const siteSelectSchema = createSelectSchema(Sites, {
   from: z.array(fromSourceSchema).nullable(),
 })
 export const siteInsertSchema = createInsertSchema(Sites, {
-  feed: z.array(multiFeedSchema).optional(),
+  url: publicSiteUrlSchema,
+  feed: z.array(multiFeedInputSchema).optional(),
   from: z.array(fromSourceSchema).optional(),
+  sitemap: nullableOptionalPublicSiteUrlSchema,
+  link_page: nullableOptionalPublicSiteUrlSchema,
 })
 export const siteUpdateSchema = createUpdateSchema(Sites, {
-  feed: z.array(multiFeedSchema).optional(),
+  url: publicSiteUrlSchema.optional(),
+  feed: z.array(multiFeedInputSchema).optional(),
   from: z.array(fromSourceSchema).optional(),
+  sitemap: nullableOptionalPublicSiteUrlSchema,
+  link_page: nullableOptionalPublicSiteUrlSchema,
 })
 
 export const announcementSelectSchema = createSelectSchema(Announcements)
@@ -217,13 +293,13 @@ export const siteAuditSelectSchema = createSelectSchema(SiteAudits, {
   diff: z.array(siteAuditDiffItemSchema),
 })
 export const siteAuditInsertSchema = createInsertSchema(SiteAudits, {
-  current_snapshot: siteAuditSnapshotSchema.optional(),
-  proposed_snapshot: siteAuditSnapshotSchema.optional(),
+  current_snapshot: siteAuditSnapshotInputSchema.optional(),
+  proposed_snapshot: siteAuditSnapshotInputSchema.optional(),
   diff: z.array(siteAuditDiffItemSchema).optional(),
 })
 export const siteAuditUpdateSchema = createUpdateSchema(SiteAudits, {
-  current_snapshot: siteAuditSnapshotSchema.optional(),
-  proposed_snapshot: siteAuditSnapshotSchema.optional(),
+  current_snapshot: siteAuditSnapshotInputSchema.optional(),
+  proposed_snapshot: siteAuditSnapshotInputSchema.optional(),
   diff: z.array(siteAuditDiffItemSchema).optional(),
 })
 
@@ -243,13 +319,13 @@ export const taskScheduleSelectSchema = createSelectSchema(TaskSchedules, {
 export const taskScheduleInsertSchema = createInsertSchema(TaskSchedules, {
   schedule_config: taskScheduleConfigSchema.optional(),
   trigger_rule: taskTriggerRuleSchema.optional(),
-  payload_template: taskPayloadTemplateSchema.optional(),
+  payload_template: taskPayloadTemplateInputSchema.optional(),
   policy: jobPolicyConfigSchema.optional(),
 })
 export const taskScheduleUpdateSchema = createUpdateSchema(TaskSchedules, {
   schedule_config: taskScheduleConfigSchema.optional(),
   trigger_rule: taskTriggerRuleSchema.optional(),
-  payload_template: taskPayloadTemplateSchema.optional(),
+  payload_template: taskPayloadTemplateInputSchema.optional(),
   policy: jobPolicyConfigSchema.optional(),
 })
 

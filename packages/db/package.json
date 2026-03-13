@@ -3,22 +3,46 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
+    "build": "pnpm -F @zhblogs/utils run build && tsdown",
     "dev": "drizzle-kit studio",
     "generate": "drizzle-kit generate",
     "migrate": "drizzle-kit migrate",
-    "drizzle": "drizzle-kit"
+    "drizzle": "drizzle-kit",
+    "test": "pnpm --dir ../.. exec vitest run --config packages/db/vitest.config.ts"
   },
   "exports": {
-    ".": "./src/index.ts",
-    "./client": "./src/client.ts",
-    "./schema": "./src/schema/index.ts",
-    "./schema/*": "./src/schema/*.ts",
-    "./constants": "./src/constants/index.ts",
-    "./constants/*": "./src/constants/*.ts",
-    "./zod": "./src/zod/index.ts"
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./client": {
+      "types": "./dist/client.d.mts",
+      "import": "./dist/client.mjs"
+    },
+    "./schema": {
+      "types": "./dist/schema/index.d.mts",
+      "import": "./dist/schema/index.mjs"
+    },
+    "./schema/*": {
+      "types": "./dist/schema/*.d.mts",
+      "import": "./dist/schema/*.mjs"
+    },
+    "./constants": {
+      "types": "./dist/constants/index.d.mts",
+      "import": "./dist/constants/index.mjs"
+    },
+    "./constants/*": {
+      "types": "./dist/constants/*.d.mts",
+      "import": "./dist/constants/*.mjs"
+    },
+    "./zod": {
+      "types": "./dist/zod/index.d.mts",
+      "import": "./dist/zod/index.mjs"
+    }
   },
   "dependencies": {
     "@zhblogs/configs": "workspace:*",
+    "@zhblogs/utils": "workspace:*",
     "drizzle-orm": "^0.44.5",
     "drizzle-zod": "^0.8.3",
     "pg": "^8.16.3",

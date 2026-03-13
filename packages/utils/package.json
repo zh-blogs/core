@@ -4,10 +4,14 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "build": "tsdown",
     "psl:update-rules": "tsx ./src/psl/update-rules.ts"
   },
   "exports": {
-    "./psl": "./src/psl/index.ts"
+    "./psl": {
+      "types": "./dist/psl/index.d.mts",
+      "import": "./dist/psl/index.mjs"
+    }
   },
   "devDependencies": {
     "@zhblogs/configs": "workspace:*"

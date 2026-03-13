@@ -26,7 +26,6 @@
     "pino": "^9.9.5"
   },
   "devDependencies": {
-    "pino-pretty": "^13.1.2",
-    "vitest": "^4.0.18"
+    "pino-pretty": "^13.1.2"
   }
 }
