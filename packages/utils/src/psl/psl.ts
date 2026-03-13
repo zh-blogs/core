@@ -4,7 +4,7 @@
  * Author: lupomontero
  */
 
-import * as punycode from "punycode";
+import punycode from "./punycode";
 import rules from "./rules";
 
 export type ParsedDomain = {

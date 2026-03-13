@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "prepare": "node ./scripts/install-git-hooks.mjs",
+    "prepare": "node ./scripts/install-git-hooks.mjs && pnpm run build:packages",
     "dev": "cross-env NODE_ENV=development dotenv -e .env.dev -- pnpm run dev:app",
     "dev:app": "cross-env NODE_ENV=development dotenv -e .env.dev -- pnpm --parallel -F @zhblogs/api -F @zhblogs/web run dev",
     "dev:api": "cross-env NODE_ENV=development dotenv -e .env.dev -- pnpm -F @zhblogs/api run dev",

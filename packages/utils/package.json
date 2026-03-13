@@ -15,5 +15,9 @@
   },
   "devDependencies": {
     "@zhblogs/configs": "workspace:*"
+  },
+  "dependencies": {
+    "@types/punycode": "^2.1.4",
+    "punycode": "^2.3.1"
   }
 }
