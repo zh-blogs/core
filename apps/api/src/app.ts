@@ -25,5 +25,3 @@ export function createApp(options: AppBootstrapOptions = {}) {
 
   return app
 }
-
-export const app = createApp()

@@ -7,14 +7,11 @@ import sitemap from "@astrojs/sitemap";
 import partytown from "@astrojs/partytown";
 import svelte from "@astrojs/svelte";
 
-const site = process.env.WEB_SITE_URL;
-
 // https://astro.build/config
 export default defineConfig({
   adapter: node({
     mode: "standalone",
   }),
-  site,
   server: {
     port: 9902,
   },
@@ -23,14 +20,8 @@ export default defineConfig({
   },
   vite: {
     plugins: [tailwindcss()],
-    server: {
-      proxy: {
-        "/api": {
-          target: "http://localhost:9901",
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api/, ""),
-        },
-      },
+    ssr: {
+      noExternal: ["@tabler/icons-svelte"],
     },
   },
   redirects: {
@@ -55,7 +46,7 @@ export default defineConfig({
     buildMetadataIntegration(),
     svelte(),
     mdx(),
-    ...(site ? [sitemap()] : []),
+    sitemap(),
     partytown(),
   ],
 });

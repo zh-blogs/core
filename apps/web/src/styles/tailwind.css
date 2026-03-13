@@ -8,6 +8,8 @@
     "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
   --font-display: "Avenir Next", "Helvetica Neue", "Segoe UI", "PingFang SC",
     "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --font-editorial: "Iowan Old Style", "Palatino Linotype", "Songti SC",
+    "STSong", serif;
   --font-mono: "JetBrains Mono", "IBM Plex Mono", "SFMono-Regular",
     "Cascadia Code", "Consolas", "Liberation Mono", monospace;
   --breakpoint-*: initial;
@@ -15,30 +17,4 @@
   --breakpoint-sm: 48rem; /* 768px */
   --breakpoint-md: 64rem; /* 1024px */
   --breakpoint-lg: 80rem; /* 1280px */
-}
-
-@layer base {
-  html {
-    scroll-behavior: smooth;
-  }
-
-  body {
-    @apply min-h-screen bg-slate-50 text-slate-900 antialiased;
-    font-family: var(--font-sans);
-  }
-
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    font-family: var(--font-display);
-  }
-}
-
-@layer components {
-  .surface-panel {
-    @apply rounded-3xl border border-white/70 bg-white/80 shadow-[0_24px_80px_-32px_rgba(15,23,42,0.28)] backdrop-blur;
-  }
 }

@@ -36,7 +36,7 @@ const envSchema = {
     },
     API_PORT: {
       type: 'number',
-      default: 9001,
+      default: 9901,
     },
     DATABASE_URL: {
       type: 'string',
