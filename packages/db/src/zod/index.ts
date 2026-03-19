@@ -17,9 +17,11 @@ import {
   SITE_WARNING_TAG_SOURCE_KEYS,
 } from '../constants/monitoring'
 import {
+  SITE_ACCESS_EVENT_TYPE_KEYS,
   FEED_TYPE_KEYS,
   FROM_SOURCE_KEYS,
   SITE_ACCESS_SCOPE_KEYS,
+  SITE_CLASSIFICATION_STATUS_KEYS,
   SITE_CLAIM_TYPE_KEYS,
 } from '../constants/site'
 import {
@@ -38,7 +40,10 @@ import {
   JobExecutions,
   Jobs,
   LatestSiteChecks,
+  SiteAccessEventTypeStats,
+  SiteAccessEvents,
   SiteAccessCounters,
+  SiteAccessSourceStats,
   SiteArchitectures,
   SiteAudits,
   SiteCheckStats,
@@ -103,7 +108,13 @@ const nullableOptionalPublicSiteUrlSchema = publicSiteUrlSchema
 export const announcementStatusSchema = toEnumSchema(ANNOUNCEMENT_STATUS_KEYS)
 export const fromSourceSchema = toEnumSchema(FROM_SOURCE_KEYS)
 export const feedTypeSchema = toEnumSchema(FEED_TYPE_KEYS)
+export const siteAccessEventTypeSchema = toEnumSchema(
+  SITE_ACCESS_EVENT_TYPE_KEYS,
+)
 export const siteAccessScopeSchema = toEnumSchema(SITE_ACCESS_SCOPE_KEYS)
+export const siteClassificationStatusSchema = toEnumSchema(
+  SITE_CLASSIFICATION_STATUS_KEYS,
+)
 export const siteClaimTypeSchema = toEnumSchema(SITE_CLAIM_TYPE_KEYS)
 export const articleVisibilitySchema = toEnumSchema(ARTICLE_VISIBILITY_KEYS)
 export const siteAuditActionSchema = toEnumSchema(SITE_AUDIT_ACTION_KEYS)
@@ -161,6 +172,7 @@ export const siteAuditSnapshotSchema = z.object({
   icon_base64: z.string().nullable().optional(),
   feed: z.array(multiFeedSchema).nullable().optional(),
   from: z.array(fromSourceSchema).nullable().optional(),
+  classification_status: siteClassificationStatusSchema.nullable().optional(),
   sitemap: z.string().nullable().optional(),
   link_page: z.string().nullable().optional(),
   access_scope: siteAccessScopeSchema.nullable().optional(),
@@ -180,6 +192,7 @@ const siteAuditSnapshotInputSchema = z.object({
   icon_base64: z.string().nullable().optional(),
   feed: z.array(multiFeedInputSchema).nullable().optional(),
   from: z.array(fromSourceSchema).nullable().optional(),
+  classification_status: siteClassificationStatusSchema.nullable().optional(),
   sitemap: nullableOptionalPublicSiteUrlSchema,
   link_page: nullableOptionalPublicSiteUrlSchema,
   access_scope: siteAccessScopeSchema.nullable().optional(),
@@ -273,9 +286,14 @@ export const siteArchitectureSelectSchema = createSelectSchema(SiteArchitectures
 export const siteArchitectureInsertSchema = createInsertSchema(SiteArchitectures)
 export const siteArchitectureUpdateSchema = createUpdateSchema(SiteArchitectures)
 
+export const siteAccessEventSelectSchema = createSelectSchema(SiteAccessEvents)
+export const siteAccessEventInsertSchema = createInsertSchema(SiteAccessEvents)
+export const siteAccessEventUpdateSchema = createUpdateSchema(SiteAccessEvents)
 export const siteAccessCounterSelectSchema = createSelectSchema(SiteAccessCounters)
-export const siteAccessCounterInsertSchema = createInsertSchema(SiteAccessCounters)
-export const siteAccessCounterUpdateSchema = createUpdateSchema(SiteAccessCounters)
+export const siteAccessSourceStatsSelectSchema =
+  createSelectSchema(SiteAccessSourceStats)
+export const siteAccessEventTypeStatsSelectSchema =
+  createSelectSchema(SiteAccessEventTypeStats)
 
 export const feedArticleSelectSchema = createSelectSchema(FeedArticles, {
   source: feedArticleSourceInfoSchema.nullable(),
@@ -458,7 +476,11 @@ export const siteWarningTagStatsSelectSchema =
 export type FromSource = z.infer<typeof fromSourceSchema>
 export type AnnouncementStatus = z.infer<typeof announcementStatusSchema>
 export type FeedType = z.infer<typeof feedTypeSchema>
+export type SiteAccessEventType = z.infer<typeof siteAccessEventTypeSchema>
 export type SiteAccessScope = z.infer<typeof siteAccessScopeSchema>
+export type SiteClassificationStatus = z.infer<
+  typeof siteClassificationStatusSchema
+>
 export type SiteClaimType = z.infer<typeof siteClaimTypeSchema>
 export type ArticleVisibility = z.infer<typeof articleVisibilitySchema>
 export type SiteAuditAction = z.infer<typeof siteAuditActionSchema>

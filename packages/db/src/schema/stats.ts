@@ -147,6 +147,76 @@ export const SiteFeedArticleStats = pgView('site_feed_article_stats', {
   group by fa.site_id
 `)
 
+/** 站点访问计数聚合视图 */
+export const SiteAccessCounters = pgView('site_access_counters', {
+  /** 站点 ID */
+  site_id: uuid('site_id'),
+  /** 访问总次数 */
+  total: integer('total'),
+  /** 最近一次访问时间 */
+  updated_time: timestamp('updated_time', {
+    withTimezone: true,
+    precision: 6,
+  }),
+}).as(sql`
+  select
+    s.id as site_id,
+    count(sae.id)::int as total,
+    max(sae.occurred_time) as updated_time
+  from sites s
+  left join site_access_events sae on sae.site_id = s.id
+  group by s.id
+`)
+
+/** 站点访问来源聚合视图 */
+export const SiteAccessSourceStats = pgView('site_access_source_stats', {
+  /** 站点 ID */
+  site_id: uuid('site_id'),
+  /** 访问事件类型 */
+  event_type: varchar('event_type', { length: 64 }),
+  /** 访问来源 */
+  source: varchar('source', { length: 64 }),
+  /** 该来源访问次数 */
+  total: integer('total'),
+  /** 最近一次访问时间 */
+  latest_access_time: timestamp('latest_access_time', {
+    withTimezone: true,
+    precision: 6,
+  }),
+}).as(sql`
+  select
+    sae.site_id as site_id,
+    sae.event_type as event_type,
+    sae.source as source,
+    count(*)::int as total,
+    max(sae.occurred_time) as latest_access_time
+  from site_access_events sae
+  group by sae.site_id, sae.event_type, sae.source
+`)
+
+/** 站点按访问事件类型聚合统计视图 */
+export const SiteAccessEventTypeStats = pgView('site_access_event_type_stats', {
+  /** 站点 ID */
+  site_id: uuid('site_id'),
+  /** 访问事件类型 */
+  event_type: varchar('event_type', { length: 64 }),
+  /** 该事件类型访问次数 */
+  total: integer('total'),
+  /** 最近一次访问时间 */
+  latest_access_time: timestamp('latest_access_time', {
+    withTimezone: true,
+    precision: 6,
+  }),
+}).as(sql`
+  select
+    sae.site_id as site_id,
+    sae.event_type as event_type,
+    count(*)::int as total,
+    max(sae.occurred_time) as latest_access_time
+  from site_access_events sae
+  group by sae.site_id, sae.event_type
+`)
+
 /** 站点警示标签统计视图 */
 export const SiteWarningTagStats = pgView('site_warning_tag_stats', {
   /** 警示标签类型 */

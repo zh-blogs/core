@@ -1,3 +1,4 @@
+CREATE TYPE "public"."announcement_status_enum" AS ENUM('DRAFT', 'SCHEDULED', 'PUBLISHED', 'EXPIRED');--> statement-breakpoint
 CREATE TYPE "public"."article_feedback_action_enum" AS ENUM('HIDE', 'DELETE');--> statement-breakpoint
 CREATE TYPE "public"."article_feedback_reason_enum" AS ENUM('CONTENT_ERROR', 'BROKEN_LINK', 'POLITICAL_SENSITIVE', 'PORNOGRAPHY_VIOLENCE', 'COPYRIGHT', 'SPAM', 'DUPLICATE', 'OTHER');--> statement-breakpoint
 CREATE TYPE "public"."article_visibility_enum" AS ENUM('VISIBLE', 'HIDDEN', 'DELETED');--> statement-breakpoint
@@ -6,15 +7,17 @@ CREATE TYPE "public"."deployment_module_enum" AS ENUM('WEB', 'API', 'WORKER', 'D
 CREATE TYPE "public"."deployment_status_enum" AS ENUM('PENDING', 'RUNNING', 'SUCCESS', 'FAILED', 'ROLLED_BACK', 'SKIPPED');--> statement-breakpoint
 CREATE TYPE "public"."execution_status_enum" AS ENUM('RUNNING', 'SUCCEEDED', 'FAILED', 'TIMEOUT', 'CANCELED');--> statement-breakpoint
 CREATE TYPE "public"."feed_type_enum" AS ENUM('RSS', 'ATOM', 'JSON');--> statement-breakpoint
-CREATE TYPE "public"."from_enum" AS ENUM('CIB', 'BO_YOU_QUAN', 'BLOG_FINDER', 'BKZ', 'TRAVELLINGS', 'WEB_SUBMIT', 'ADMIN_ADD', 'LINK_PAGE_SEARCH', 'OLD_DATA');--> statement-breakpoint
+CREATE TYPE "public"."from_enum" AS ENUM('CIB', 'BO_YOU_QUAN', 'BLOG_FINDER', 'BKZ', 'TRAVELLINGS', 'WEB_SUBMIT', 'LINK_PAGE_SEARCH', 'OLD_DATA');--> statement-breakpoint
 CREATE TYPE "public"."job_status_enum" AS ENUM('PENDING', 'RUNNING', 'SUCCEEDED', 'FAILED', 'CANCELED', 'DEAD_LETTER');--> statement-breakpoint
 CREATE TYPE "public"."job_trigger_source_enum" AS ENUM('SCHEDULE', 'MANUAL', 'EVENT', 'CHAIN', 'RETRY', 'SYSTEM');--> statement-breakpoint
 CREATE TYPE "public"."schedule_mode_enum" AS ENUM('CRON', 'INTERVAL', 'MANUAL', 'EVENT');--> statement-breakpoint
+CREATE TYPE "public"."site_access_event_type_enum" AS ENUM('OUTBOUND_CLICK', 'EMBED_PAGEVIEW');--> statement-breakpoint
 CREATE TYPE "public"."site_access_scope_enum" AS ENUM('CN_ONLY', 'GLOBAL_ONLY', 'BOTH');--> statement-breakpoint
 CREATE TYPE "public"."site_audit_action_enum" AS ENUM('CREATE', 'UPDATE', 'DELETE');--> statement-breakpoint
 CREATE TYPE "public"."site_check_region_enum" AS ENUM('CN', 'GLOBAL', 'UNKNOWN');--> statement-breakpoint
 CREATE TYPE "public"."site_check_result_enum" AS ENUM('SUCCESS', 'FAILURE', 'TIMEOUT', 'DNS_ERROR', 'SSL_ERROR', 'HTTP_ERROR', 'BLOCKED');--> statement-breakpoint
 CREATE TYPE "public"."site_claim_type_enum" AS ENUM('OWNER', 'ADMIN');--> statement-breakpoint
+CREATE TYPE "public"."site_classification_status_enum" AS ENUM('COMPLETE', 'NEEDS_REVIEW');--> statement-breakpoint
 CREATE TYPE "public"."site_status_tag_enum" AS ENUM('EXTERNAL_LIMIT', 'INTERNAL_LIMIT', 'FEW_ARTICLES', 'NO_CONTENT', 'NON_ORIGINAL', 'SENSITIVE_CONTENT');--> statement-breakpoint
 CREATE TYPE "public"."site_status_type_enum" AS ENUM('OK', 'ERROR', 'SSLERROR');--> statement-breakpoint
 CREATE TYPE "public"."site_warning_tag_source_enum" AS ENUM('ARTICLE_FEEDBACK', 'SITE_FEEDBACK', 'MANUAL');--> statement-breakpoint
@@ -23,10 +26,15 @@ CREATE TYPE "public"."task_type_enum" AS ENUM('RSS_FETCH', 'SITE_CHECK', 'DB_MAI
 CREATE TYPE "public"."technology_type_enum" AS ENUM('SYSTEM', 'FRAMEWORK', 'LANGUAGE');--> statement-breakpoint
 CREATE TYPE "public"."user_oauth_provider_enum" AS ENUM('GITHUB');--> statement-breakpoint
 CREATE TYPE "public"."user_role_enum" AS ENUM('SYS_ADMIN', 'ADMIN', 'CONTRIBUTOR', 'USER');--> statement-breakpoint
-CREATE TABLE "site_access_counters" (
-	"site_id" uuid PRIMARY KEY NOT NULL,
-	"total" integer DEFAULT 0 NOT NULL,
-	"updated_time" timestamp (6) with time zone DEFAULT now() NOT NULL
+CREATE TABLE "site_access_events" (
+	"id" uuid PRIMARY KEY NOT NULL,
+	"site_id" uuid NOT NULL,
+	"event_type" "site_access_event_type_enum" DEFAULT 'OUTBOUND_CLICK' NOT NULL,
+	"source" varchar(64),
+	"referer_host" varchar(256),
+	"path" varchar(512),
+	"user_agent" varchar(512),
+	"occurred_time" timestamp (6) with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "site_architectures" (
@@ -47,12 +55,14 @@ CREATE TABLE "site_tags" (
 --> statement-breakpoint
 CREATE TABLE "sites" (
 	"id" uuid PRIMARY KEY NOT NULL,
-	"bid" varchar(64) NOT NULL,
+	"bid" varchar(64),
 	"name" varchar(64) NOT NULL,
 	"url" varchar(256) NOT NULL,
 	"sign" text DEFAULT '',
+	"icon_base64" text,
 	"feed" jsonb DEFAULT '[]'::jsonb,
 	"from" "from_enum"[],
+	"classification_status" "site_classification_status_enum" DEFAULT 'COMPLETE' NOT NULL,
 	"sitemap" varchar(256),
 	"link_page" varchar(256),
 	"join_time" timestamp (6) with time zone,
@@ -65,6 +75,23 @@ CREATE TABLE "sites" (
 	CONSTRAINT "sites_bid_unique" UNIQUE("bid"),
 	CONSTRAINT "sites_name_unique" UNIQUE("name"),
 	CONSTRAINT "sites_url_unique" UNIQUE("url")
+);
+--> statement-breakpoint
+CREATE TABLE "announcements" (
+	"id" uuid PRIMARY KEY NOT NULL,
+	"title" varchar(256) NOT NULL,
+	"summary" text NOT NULL,
+	"content" text,
+	"tag" varchar(64) NOT NULL,
+	"status" "announcement_status_enum" DEFAULT 'DRAFT' NOT NULL,
+	"publish_time" timestamp (6) with time zone,
+	"expire_time" timestamp (6) with time zone,
+	"expired_time" timestamp (6) with time zone,
+	"sort_order" integer DEFAULT 0 NOT NULL,
+	"created_by" uuid,
+	"updated_by" uuid,
+	"created_time" timestamp (6) with time zone DEFAULT now() NOT NULL,
+	"updated_time" timestamp (6) with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "feed_articles" (
@@ -313,13 +340,15 @@ CREATE TABLE "deployments" (
 	"created_time" timestamp (6) with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-ALTER TABLE "site_access_counters" ADD CONSTRAINT "site_access_counters_site_id_sites_id_fk" FOREIGN KEY ("site_id") REFERENCES "public"."sites"("id") ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
+ALTER TABLE "site_access_events" ADD CONSTRAINT "site_access_events_site_id_sites_id_fk" FOREIGN KEY ("site_id") REFERENCES "public"."sites"("id") ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE "site_architectures" ADD CONSTRAINT "site_architectures_site_id_sites_id_fk" FOREIGN KEY ("site_id") REFERENCES "public"."sites"("id") ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE "site_architectures" ADD CONSTRAINT "site_architectures_system_id_technology_catalogs_id_fk" FOREIGN KEY ("system_id") REFERENCES "public"."technology_catalogs"("id") ON DELETE set null ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE "site_architectures" ADD CONSTRAINT "site_architectures_framework_id_technology_catalogs_id_fk" FOREIGN KEY ("framework_id") REFERENCES "public"."technology_catalogs"("id") ON DELETE set null ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE "site_architectures" ADD CONSTRAINT "site_architectures_language_id_technology_catalogs_id_fk" FOREIGN KEY ("language_id") REFERENCES "public"."technology_catalogs"("id") ON DELETE set null ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE "site_tags" ADD CONSTRAINT "site_tags_site_id_sites_id_fk" FOREIGN KEY ("site_id") REFERENCES "public"."sites"("id") ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE "site_tags" ADD CONSTRAINT "site_tags_tag_id_tag_definitions_id_fk" FOREIGN KEY ("tag_id") REFERENCES "public"."tag_definitions"("id") ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
+ALTER TABLE "announcements" ADD CONSTRAINT "announcements_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE cascade;--> statement-breakpoint
+ALTER TABLE "announcements" ADD CONSTRAINT "announcements_updated_by_users_id_fk" FOREIGN KEY ("updated_by") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE "feed_articles" ADD CONSTRAINT "feed_articles_site_id_sites_id_fk" FOREIGN KEY ("site_id") REFERENCES "public"."sites"("id") ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE "article_feedback_audits" ADD CONSTRAINT "article_feedback_audits_article_id_feed_articles_id_fk" FOREIGN KEY ("article_id") REFERENCES "public"."feed_articles"("id") ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE "article_feedback_audits" ADD CONSTRAINT "article_feedback_audits_site_id_sites_id_fk" FOREIGN KEY ("site_id") REFERENCES "public"."sites"("id") ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
@@ -335,7 +364,12 @@ ALTER TABLE "site_claims" ADD CONSTRAINT "site_claims_user_id_users_id_fk" FOREI
 ALTER TABLE "site_warning_tags" ADD CONSTRAINT "site_warning_tags_site_id_sites_id_fk" FOREIGN KEY ("site_id") REFERENCES "public"."sites"("id") ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE "site_warning_tags" ADD CONSTRAINT "site_warning_tags_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE "site_checks" ADD CONSTRAINT "site_checks_site_id_sites_id_fk" FOREIGN KEY ("site_id") REFERENCES "public"."sites"("id") ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
-CREATE INDEX "site_access_counters_total_index" ON "site_access_counters" USING btree ("total" DESC NULLS LAST);--> statement-breakpoint
+CREATE INDEX "site_access_events_site_id_occurred_time_index" ON "site_access_events" USING btree ("site_id","occurred_time" DESC NULLS LAST);--> statement-breakpoint
+CREATE INDEX "site_access_events_site_id_event_type_occurred_time_index" ON "site_access_events" USING btree ("site_id","event_type","occurred_time" DESC NULLS LAST);--> statement-breakpoint
+CREATE INDEX "site_access_events_site_id_event_type_source_occurred_time_index" ON "site_access_events" USING btree ("site_id","event_type","source","occurred_time" DESC NULLS LAST);--> statement-breakpoint
+CREATE INDEX "site_access_events_event_type_occurred_time_index" ON "site_access_events" USING btree ("event_type","occurred_time" DESC NULLS LAST);--> statement-breakpoint
+CREATE INDEX "site_access_events_referer_host_index" ON "site_access_events" USING btree ("referer_host");--> statement-breakpoint
+CREATE INDEX "site_access_events_occurred_time_index" ON "site_access_events" USING btree ("occurred_time" DESC NULLS LAST);--> statement-breakpoint
 CREATE INDEX "site_architectures_system_id_index" ON "site_architectures" USING btree ("system_id");--> statement-breakpoint
 CREATE INDEX "site_architectures_framework_id_index" ON "site_architectures" USING btree ("framework_id");--> statement-breakpoint
 CREATE INDEX "site_architectures_language_id_index" ON "site_architectures" USING btree ("language_id");--> statement-breakpoint
@@ -348,6 +382,10 @@ CREATE INDEX "sites_is_show_index" ON "sites" USING btree ("is_show");--> statem
 CREATE INDEX "sites_recommend_index" ON "sites" USING btree ("recommend");--> statement-breakpoint
 CREATE INDEX "sites_join_time_index" ON "sites" USING btree ("join_time" DESC NULLS LAST);--> statement-breakpoint
 CREATE INDEX "sites_update_time_index" ON "sites" USING btree ("update_time" DESC NULLS LAST);--> statement-breakpoint
+CREATE INDEX "announcements_status_publish_time_index" ON "announcements" USING btree ("status","publish_time" DESC NULLS LAST);--> statement-breakpoint
+CREATE INDEX "announcements_expire_time_index" ON "announcements" USING btree ("expire_time");--> statement-breakpoint
+CREATE INDEX "announcements_sort_order_publish_time_index" ON "announcements" USING btree ("sort_order" DESC NULLS LAST,"publish_time" DESC NULLS LAST);--> statement-breakpoint
+CREATE INDEX "announcements_created_time_index" ON "announcements" USING btree ("created_time" DESC NULLS LAST);--> statement-breakpoint
 CREATE UNIQUE INDEX "feed_articles_site_id_guid_index" ON "feed_articles" USING btree ("site_id","guid");--> statement-breakpoint
 CREATE UNIQUE INDEX "feed_articles_site_id_url_index" ON "feed_articles" USING btree ("site_id","article_url");--> statement-breakpoint
 CREATE INDEX "feed_articles_site_id_published_time_index" ON "feed_articles" USING btree ("site_id","published_time" DESC NULLS LAST);--> statement-breakpoint
@@ -430,6 +468,34 @@ CREATE VIEW "public"."latest_site_checks" AS (
     sc.check_time as check_time
   from site_checks sc
   order by sc.site_id, sc.check_time desc, sc.id desc
+);--> statement-breakpoint
+CREATE VIEW "public"."site_access_counters" AS (
+  select
+    s.id as site_id,
+    count(sae.id)::int as total,
+    max(sae.occurred_time) as updated_time
+  from sites s
+  left join site_access_events sae on sae.site_id = s.id
+  group by s.id
+);--> statement-breakpoint
+CREATE VIEW "public"."site_access_event_type_stats" AS (
+  select
+    sae.site_id as site_id,
+    sae.event_type as event_type,
+    count(*)::int as total,
+    max(sae.occurred_time) as latest_access_time
+  from site_access_events sae
+  group by sae.site_id, sae.event_type
+);--> statement-breakpoint
+CREATE VIEW "public"."site_access_source_stats" AS (
+  select
+    sae.site_id as site_id,
+    sae.event_type as event_type,
+    sae.source as source,
+    count(*)::int as total,
+    max(sae.occurred_time) as latest_access_time
+  from site_access_events sae
+  group by sae.site_id, sae.event_type, sae.source
 );--> statement-breakpoint
 CREATE VIEW "public"."site_check_stats" AS (
   select

@@ -1,28 +1,59 @@
 {
-  "id": "b21e51b1-e003-41d3-bae9-b47a45401c81",
+  "id": "c4ec9da3-c30e-49e6-a16b-5655b6f82f67",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.site_access_counters": {
-      "name": "site_access_counters",
+    "public.site_access_events": {
+      "name": "site_access_events",
       "schema": "",
       "columns": {
-        "site_id": {
-          "name": "site_id",
+        "id": {
+          "name": "id",
           "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
-        "total": {
-          "name": "total",
-          "type": "integer",
+        "site_id": {
+          "name": "site_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_type": {
+          "name": "event_type",
+          "type": "site_access_event_type_enum",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "default": 0
+          "default": "'OUTBOUND_CLICK'"
         },
-        "updated_time": {
-          "name": "updated_time",
+        "source": {
+          "name": "source",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "referer_host": {
+          "name": "referer_host",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "path": {
+          "name": "path",
+          "type": "varchar(512)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_agent": {
+          "name": "user_agent",
+          "type": "varchar(512)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "occurred_time": {
+          "name": "occurred_time",
           "type": "timestamp (6) with time zone",
           "primaryKey": false,
           "notNull": true,
@@ -30,11 +61,128 @@
         }
       },
       "indexes": {
-        "site_access_counters_total_index": {
-          "name": "site_access_counters_total_index",
+        "site_access_events_site_id_occurred_time_index": {
+          "name": "site_access_events_site_id_occurred_time_index",
           "columns": [
             {
-              "expression": "total",
+              "expression": "site_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "occurred_time",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "site_access_events_site_id_event_type_occurred_time_index": {
+          "name": "site_access_events_site_id_event_type_occurred_time_index",
+          "columns": [
+            {
+              "expression": "site_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "event_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "occurred_time",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "site_access_events_site_id_event_type_source_occurred_time_index": {
+          "name": "site_access_events_site_id_event_type_source_occurred_time_index",
+          "columns": [
+            {
+              "expression": "site_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "event_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "source",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "occurred_time",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "site_access_events_event_type_occurred_time_index": {
+          "name": "site_access_events_event_type_occurred_time_index",
+          "columns": [
+            {
+              "expression": "event_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "occurred_time",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "site_access_events_referer_host_index": {
+          "name": "site_access_events_referer_host_index",
+          "columns": [
+            {
+              "expression": "referer_host",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "site_access_events_occurred_time_index": {
+          "name": "site_access_events_occurred_time_index",
+          "columns": [
+            {
+              "expression": "occurred_time",
               "isExpression": false,
               "asc": false,
               "nulls": "last"
@@ -47,9 +195,9 @@
         }
       },
       "foreignKeys": {
-        "site_access_counters_site_id_sites_id_fk": {
-          "name": "site_access_counters_site_id_sites_id_fk",
-          "tableFrom": "site_access_counters",
+        "site_access_events_site_id_sites_id_fk": {
+          "name": "site_access_events_site_id_sites_id_fk",
+          "tableFrom": "site_access_events",
           "tableTo": "sites",
           "columnsFrom": [
             "site_id"
@@ -329,7 +477,7 @@
           "name": "bid",
           "type": "varchar(64)",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "name": {
           "name": "name",
@@ -350,6 +498,12 @@
           "notNull": false,
           "default": "''"
         },
+        "icon_base64": {
+          "name": "icon_base64",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "feed": {
           "name": "feed",
           "type": "jsonb",
@@ -363,6 +517,14 @@
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": false
+        },
+        "classification_status": {
+          "name": "classification_status",
+          "type": "site_classification_status_enum",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'COMPLETE'"
         },
         "sitemap": {
           "name": "sitemap",
@@ -557,6 +719,208 @@
           ]
         }
       },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.announcements": {
+      "name": "announcements",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "varchar(256)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "summary": {
+          "name": "summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tag": {
+          "name": "tag",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "announcement_status_enum",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'DRAFT'"
+        },
+        "publish_time": {
+          "name": "publish_time",
+          "type": "timestamp (6) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expire_time": {
+          "name": "expire_time",
+          "type": "timestamp (6) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expired_time": {
+          "name": "expired_time",
+          "type": "timestamp (6) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_time": {
+          "name": "created_time",
+          "type": "timestamp (6) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_time": {
+          "name": "updated_time",
+          "type": "timestamp (6) with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "announcements_status_publish_time_index": {
+          "name": "announcements_status_publish_time_index",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "publish_time",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "announcements_expire_time_index": {
+          "name": "announcements_expire_time_index",
+          "columns": [
+            {
+              "expression": "expire_time",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "announcements_sort_order_publish_time_index": {
+          "name": "announcements_sort_order_publish_time_index",
+          "columns": [
+            {
+              "expression": "sort_order",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            },
+            {
+              "expression": "publish_time",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "announcements_created_time_index": {
+          "name": "announcements_created_time_index",
+          "columns": [
+            {
+              "expression": "created_time",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "announcements_created_by_users_id_fk": {
+          "name": "announcements_created_by_users_id_fk",
+          "tableFrom": "announcements",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "announcements_updated_by_users_id_fk": {
+          "name": "announcements_updated_by_users_id_fk",
+          "tableFrom": "announcements",
+          "tableTo": "users",
+          "columnsFrom": [
+            "updated_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -3582,6 +3946,16 @@
     }
   },
   "enums": {
+    "public.announcement_status_enum": {
+      "name": "announcement_status_enum",
+      "schema": "public",
+      "values": [
+        "DRAFT",
+        "SCHEDULED",
+        "PUBLISHED",
+        "EXPIRED"
+      ]
+    },
     "public.article_feedback_action_enum": {
       "name": "article_feedback_action_enum",
       "schema": "public",
@@ -3679,7 +4053,6 @@
         "BKZ",
         "TRAVELLINGS",
         "WEB_SUBMIT",
-        "ADMIN_ADD",
         "LINK_PAGE_SEARCH",
         "OLD_DATA"
       ]
@@ -3716,6 +4089,14 @@
         "INTERVAL",
         "MANUAL",
         "EVENT"
+      ]
+    },
+    "public.site_access_event_type_enum": {
+      "name": "site_access_event_type_enum",
+      "schema": "public",
+      "values": [
+        "OUTBOUND_CLICK",
+        "EMBED_PAGEVIEW"
       ]
     },
     "public.site_access_scope_enum": {
@@ -3764,6 +4145,14 @@
       "values": [
         "OWNER",
         "ADMIN"
+      ]
+    },
+    "public.site_classification_status_enum": {
+      "name": "site_classification_status_enum",
+      "schema": "public",
+      "values": [
+        "COMPLETE",
+        "NEEDS_REVIEW"
       ]
     },
     "public.site_status_tag_enum": {
@@ -3914,6 +4303,105 @@
       },
       "definition": "\n  select distinct on (sc.site_id)\n    sc.site_id as site_id,\n    sc.id as check_id,\n    sc.region as region,\n    sc.result as result,\n    sc.status_code as status_code,\n    sc.response_time_ms as response_time_ms,\n    sc.duration_ms as duration_ms,\n    sc.final_url as final_url,\n    sc.content_verified as content_verified,\n    sc.check_time as check_time\n  from site_checks sc\n  order by sc.site_id, sc.check_time desc, sc.id desc\n",
       "name": "latest_site_checks",
+      "schema": "public",
+      "isExisting": false,
+      "materialized": false
+    },
+    "public.site_access_counters": {
+      "columns": {
+        "site_id": {
+          "name": "site_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total": {
+          "name": "total",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_time": {
+          "name": "updated_time",
+          "type": "timestamp (6) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "definition": "\n  select\n    s.id as site_id,\n    count(sae.id)::int as total,\n    max(sae.occurred_time) as updated_time\n  from sites s\n  left join site_access_events sae on sae.site_id = s.id\n  group by s.id\n",
+      "name": "site_access_counters",
+      "schema": "public",
+      "isExisting": false,
+      "materialized": false
+    },
+    "public.site_access_event_type_stats": {
+      "columns": {
+        "site_id": {
+          "name": "site_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "event_type": {
+          "name": "event_type",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total": {
+          "name": "total",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "latest_access_time": {
+          "name": "latest_access_time",
+          "type": "timestamp (6) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "definition": "\n  select\n    sae.site_id as site_id,\n    sae.event_type as event_type,\n    count(*)::int as total,\n    max(sae.occurred_time) as latest_access_time\n  from site_access_events sae\n  group by sae.site_id, sae.event_type\n",
+      "name": "site_access_event_type_stats",
+      "schema": "public",
+      "isExisting": false,
+      "materialized": false
+    },
+    "public.site_access_source_stats": {
+      "columns": {
+        "site_id": {
+          "name": "site_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "event_type": {
+          "name": "event_type",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source": {
+          "name": "source",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total": {
+          "name": "total",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "latest_access_time": {
+          "name": "latest_access_time",
+          "type": "timestamp (6) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "definition": "\n  select\n    sae.site_id as site_id,\n    sae.event_type as event_type,\n    sae.source as source,\n    count(*)::int as total,\n    max(sae.occurred_time) as latest_access_time\n  from site_access_events sae\n  group by sae.site_id, sae.event_type, sae.source\n",
+      "name": "site_access_source_stats",
       "schema": "public",
       "isExisting": false,
       "materialized": false

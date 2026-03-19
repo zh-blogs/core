@@ -1,7 +1,6 @@
 import {
   boolean,
   index,
-  integer,
   jsonb,
   pgTable,
   primaryKey,
@@ -12,7 +11,13 @@ import {
 } from 'drizzle-orm/pg-core'
 import { v7 } from 'uuid'
 import type { FeedTypeKey } from '../constants/site'
-import { fromSources, siteAccessScopeEnum, siteStatusTypeEnum } from './enums'
+import {
+  fromSources,
+  siteAccessEventTypeEnum,
+  siteAccessScopeEnum,
+  siteClassificationStatusEnum,
+  siteStatusTypeEnum,
+} from './enums'
 import { TagDefinitions, TechnologyCatalogs } from './catalogs'
 
 export interface MultiFeed {
@@ -29,7 +34,7 @@ export const Sites = pgTable(
       .$default(() => v7())
       .primaryKey(),
     /** 面向外部展示与管理的站点唯一业务标识 */
-    bid: varchar({ length: 64 }).unique().notNull(),
+    bid: varchar({ length: 64 }).unique(),
     /** 站点名称 */
     name: varchar({ length: 64 }).unique().notNull(),
     /** 站点主页地址 */
@@ -42,6 +47,10 @@ export const Sites = pgTable(
     feed: jsonb().$type<MultiFeed[]>().default([]),
     /** 站点来源渠道 */
     from: fromSources().array(),
+    /** 站点分类信息是否已确认完整 */
+    classification_status: siteClassificationStatusEnum()
+      .notNull()
+      .default('COMPLETE'),
     /** 站点地图地址 */
     sitemap: varchar({ length: 256 }),
     /** 友链页地址 */
@@ -152,17 +161,59 @@ export const SiteArchitectures = pgTable(
   ],
 )
 
-export const SiteAccessCounters = pgTable(
-  'site_access_counters',
+/** 站点访问事件表，记录每次访问来源与入口信息 */
+export const SiteAccessEvents = pgTable(
+  'site_access_events',
   {
-    site_id: uuid().primaryKey().references(() => Sites.id, {
-      onDelete: 'cascade',
-      onUpdate: 'cascade',
-    }),
-    total: integer().notNull().default(0),
-    updated_time: timestamp({ withTimezone: true, precision: 6 })
+    /** 访问事件主键 */
+    id: uuid()
+      .$default(() => v7())
+      .primaryKey(),
+    /** 被访问的站点 */
+    site_id: uuid()
+      .notNull()
+      .references(() => Sites.id, {
+        onDelete: 'cascade',
+        onUpdate: 'cascade',
+      }),
+    /** 事件类型：默认记录本项目的跳转点击，也可记录嵌入脚本上报的访问 */
+    event_type: siteAccessEventTypeEnum().notNull().default('OUTBOUND_CLICK'),
+    /** 可选来源渠道标识，例如 direct / search / internal / embed */
+    source: varchar({ length: 64 }),
+    /** 来源域名或来源主机 */
+    referer_host: varchar({ length: 256 }),
+    /** 访问页面路径：跳转点击时为本项目页面路径，嵌入访问时为源站页面路径 */
+    path: varchar({ length: 512 }),
+    /** 访问终端标识 */
+    user_agent: varchar({ length: 512 }),
+    /** 事件发生时间 */
+    occurred_time: timestamp({ withTimezone: true, precision: 6 })
       .notNull()
       .defaultNow(),
   },
-  (table) => [index('site_access_counters_total_index').on(table.total.desc())],
+  (table) => [
+    index('site_access_events_site_id_occurred_time_index').on(
+      table.site_id,
+      table.occurred_time.desc(),
+    ),
+    index('site_access_events_site_id_event_type_occurred_time_index').on(
+      table.site_id,
+      table.event_type,
+      table.occurred_time.desc(),
+    ),
+    index('site_access_events_site_id_event_type_source_occurred_time_index').on(
+      table.site_id,
+      table.event_type,
+      table.source,
+      table.occurred_time.desc(),
+    ),
+    index('site_access_events_event_type_occurred_time_index').on(
+      table.event_type,
+      table.occurred_time.desc(),
+    ),
+    index('site_access_events_referer_host_index').on(table.referer_host),
+    index('site_access_events_occurred_time_index').on(
+      table.occurred_time.desc(),
+    ),
+  ],
 )

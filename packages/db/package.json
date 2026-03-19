@@ -8,7 +8,7 @@
     "generate": "drizzle-kit generate",
     "migrate": "drizzle-kit migrate",
     "drizzle": "drizzle-kit",
-    "test": "pnpm --dir ../.. exec vitest run --config packages/db/vitest.config.ts"
+    "test": "vitest run"
   },
   "exports": {
     ".": {

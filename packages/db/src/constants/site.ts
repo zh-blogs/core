@@ -23,10 +23,6 @@ export const MAIN_TAGS = {
     label: '综合',
     description: '内容主题较为综合，无法归为单一垂类的博客内容分类',
   },
-  OTHER: {
-    label: '其他',
-    description: '暂未归类或需要后续补充定义的博客内容分类',
-  },
 } as const
 
 export const MAIN_TAG_KEYS = Object.keys(MAIN_TAGS) as Array<
@@ -59,10 +55,6 @@ export const FROM_SOURCES = {
   WEB_SUBMIT: {
     label: '网页提交',
     description: '由用户通过网页表单主动提交',
-  },
-  ADMIN_ADD: {
-    label: '管理员添加',
-    description: '由后台管理员人工录入',
   },
   LINK_PAGE_SEARCH: {
     label: '友链发现',
@@ -100,6 +92,42 @@ export const FEED_TYPE_KEYS = Object.keys(FEED_TYPES) as Array<
 >
 
 export type FeedTypeKey = (typeof FEED_TYPE_KEYS)[number]
+
+export const SITE_CLASSIFICATION_STATUSES = {
+  COMPLETE: {
+    label: '分类完整',
+    description: '主标签已确认，无需额外补充分类型信息',
+  },
+  NEEDS_REVIEW: {
+    label: '待完善分类',
+    description: '主标签使用综合兜底，仍需用户或管理员补充分类型信息',
+  },
+} as const
+
+export const SITE_CLASSIFICATION_STATUS_KEYS = Object.keys(
+  SITE_CLASSIFICATION_STATUSES,
+) as Array<keyof typeof SITE_CLASSIFICATION_STATUSES>
+
+export type SiteClassificationStatusKey =
+  (typeof SITE_CLASSIFICATION_STATUS_KEYS)[number]
+
+export const SITE_ACCESS_EVENT_TYPES = {
+  OUTBOUND_CLICK: {
+    label: '跳转点击',
+    description: '用户在本项目页面点击目标站点链接并跳转的访问事件',
+  },
+  EMBED_PAGEVIEW: {
+    label: '嵌入访问',
+    description: '站长在源站完成嵌入统计脚本配置后上报的页面访问事件',
+  },
+} as const
+
+export const SITE_ACCESS_EVENT_TYPE_KEYS = Object.keys(
+  SITE_ACCESS_EVENT_TYPES,
+) as Array<keyof typeof SITE_ACCESS_EVENT_TYPES>
+
+export type SiteAccessEventTypeKey =
+  (typeof SITE_ACCESS_EVENT_TYPE_KEYS)[number]
 
 export const SITE_ACCESS_SCOPES = {
   CN_ONLY: {

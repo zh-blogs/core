@@ -11,9 +11,11 @@ import {
   SITE_WARNING_TAG_SOURCE_KEYS,
 } from '../constants/monitoring'
 import {
+  SITE_ACCESS_EVENT_TYPE_KEYS,
   FEED_TYPE_KEYS,
   FROM_SOURCE_KEYS,
   SITE_ACCESS_SCOPE_KEYS,
+  SITE_CLASSIFICATION_STATUS_KEYS,
   SITE_CLAIM_TYPE_KEYS,
 } from '../constants/site'
 import {
@@ -37,6 +39,14 @@ export const announcementStatusEnum = pgEnum(
 export const siteAccessScopeEnum = pgEnum(
   'site_access_scope_enum',
   SITE_ACCESS_SCOPE_KEYS as [string, ...string[]],
+)
+export const siteAccessEventTypeEnum = pgEnum(
+  'site_access_event_type_enum',
+  SITE_ACCESS_EVENT_TYPE_KEYS as [string, ...string[]],
+)
+export const siteClassificationStatusEnum = pgEnum(
+  'site_classification_status_enum',
+  SITE_CLASSIFICATION_STATUS_KEYS as [string, ...string[]],
 )
 export const siteClaimTypeEnum = pgEnum(
   'site_claim_type_enum',
