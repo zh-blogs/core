@@ -1,0 +1,330 @@
+<section
+  aria-atomic="false"
+  aria-live="polite"
+  class="pointer-events-none fixed inset-x-0 top-4 z-50 flex justify-center px-3.5 sm:justify-end sm:px-6"
+  data-site-notice-root
+>
+  <div class="flex w-full max-w-[24rem] flex-col gap-3" data-site-notice-stack></div>
+</section>
+
+<template data-site-notice-template>
+  <article
+    class="site-notification pointer-events-auto relative overflow-hidden rounded-md border bg-(--color-bg-raised) p-4 text-left shadow-[0_18px_40px_rgba(28,25,23,0.14)] dark:shadow-[0_18px_40px_rgba(0,0,0,0.34)] sm:p-5"
+    data-site-notice-item
+    role="status"
+  >
+    <header class="flex items-start justify-between gap-3">
+      <h2
+        class="min-w-0 text-xl leading-tight tracking-[-0.03em] text-(--color-fg)"
+        data-site-notice-title
+      >
+        通知
+      </h2>
+
+      <button
+        aria-label="关闭通知"
+        class="inline-flex h-6 w-6 shrink-0 items-center justify-center text-(--color-fg-3) transition hover:text-(--color-fg)"
+        data-site-notice-close
+        type="button"
+      >
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </header>
+
+    <p class="text-sm leading-5 text-(--color-fg-2) pt-3" data-site-notice-message>
+      通知内容
+    </p>
+
+    <div
+      aria-hidden="true"
+      class="site-notification-progress absolute inset-x-0 bottom-0 h-0.75"
+      data-site-notice-progress
+      hidden
+    >
+      <span
+        class="site-notification-progress-bar block h-full origin-left"
+        data-site-notice-progress-bar
+      ></span>
+    </div>
+  </article>
+</template>
+
+<script>
+  import {
+    DEFAULT_SITE_NOTICE_DURATION_MS,
+    SITE_NOTICE_OPEN_EVENT,
+    getLegacyDomainNoticeFromUrl,
+    type SiteNoticePayload,
+    type SiteNoticeTone,
+  } from "../lib/site-notice";
+
+  const stack = document.querySelector("[data-site-notice-stack]");
+  const template = document.querySelector("[data-site-notice-template]");
+
+  if (!(stack instanceof HTMLElement) || !(template instanceof HTMLTemplateElement)) {
+    console.error("site notice stack is missing");
+  } else {
+    const toneTokens: Record<SiteNoticeTone, { color: string; dot: string }> = {
+      info: {
+        color: "var(--color-info)",
+        dot: "var(--color-info-dot)",
+      },
+      neutral: {
+        color: "var(--color-fg-3)",
+        dot: "var(--color-info-dot)",
+      },
+      warning: {
+        color: "var(--color-warn)",
+        dot: "var(--color-warn-dot)",
+      },
+    };
+    const closeTimers = new Map<string, ReturnType<typeof setTimeout>>();
+    const remainingDurations = new Map<string, number>();
+    const timerStarts = new Map<string, number>();
+    let noticeIndex = 0;
+
+    const findNotice = (id: string): HTMLElement | undefined =>
+      [...stack.children].find(
+        (candidate): candidate is HTMLElement =>
+          candidate instanceof HTMLElement && candidate.dataset.noticeId === id,
+      );
+
+    const clearCloseTimer = (id: string) => {
+      const timer = closeTimers.get(id);
+
+      if (timer) {
+        window.clearTimeout(timer);
+        closeTimers.delete(id);
+      }
+    };
+
+    const clearNoticeState = (id: string) => {
+      clearCloseTimer(id);
+      remainingDurations.delete(id);
+      timerStarts.delete(id);
+    };
+
+    const pauseClose = (id: string) => {
+      const remaining = remainingDurations.get(id);
+      const startedAt = timerStarts.get(id);
+
+      if (typeof remaining !== "number" || typeof startedAt !== "number") {
+        clearCloseTimer(id);
+        return;
+      }
+
+      const elapsed = Date.now() - startedAt;
+      remainingDurations.set(id, Math.max(0, remaining - elapsed));
+      timerStarts.delete(id);
+      clearCloseTimer(id);
+    };
+
+    const closeNotice = (id?: string) => {
+      const target =
+        typeof id === "string" && id
+          ? findNotice(id)
+          : stack.firstElementChild instanceof HTMLElement
+            ? stack.firstElementChild
+            : null;
+
+      if (!target) {
+        return;
+      }
+
+      const targetId = target.dataset.noticeId;
+
+      if (!targetId) {
+        target.remove();
+        return;
+      }
+
+      if (target.dataset.state === "closing") {
+        return;
+      }
+
+      clearNoticeState(targetId);
+      target.dataset.state = "closing";
+
+      setTimeout(() => {
+        target.remove();
+      }, 180);
+    };
+
+    const scheduleClose = (id: string) => {
+      const remaining = remainingDurations.get(id);
+
+      if (typeof remaining !== "number" || remaining <= 0) {
+        return;
+      }
+
+      clearCloseTimer(id);
+      timerStarts.set(id, Date.now());
+      closeTimers.set(
+        id,
+        setTimeout(() => {
+          closeNotice(id);
+        }, remaining),
+      );
+    };
+
+    const buildNotice = (payload: SiteNoticePayload, id: string) => {
+      const element = template.content.firstElementChild?.cloneNode(true);
+
+      if (!(element instanceof HTMLElement)) {
+        return null;
+      }
+
+      const title = element.querySelector("[data-site-notice-title]");
+      const message = element.querySelector("[data-site-notice-message]");
+      const closeAction = element.querySelector("[data-site-notice-close]");
+      const progress = element.querySelector("[data-site-notice-progress]");
+      const progressBar = element.querySelector("[data-site-notice-progress-bar]");
+
+      if (
+        !(title instanceof HTMLElement) ||
+        !(message instanceof HTMLElement) ||
+        !(closeAction instanceof HTMLButtonElement) ||
+        !(progress instanceof HTMLElement) ||
+        !(progressBar instanceof HTMLElement)
+      ) {
+        return null;
+      }
+
+      const tokens = toneTokens[payload.tone ?? "warning"];
+      const durationMs =
+        payload.durationMs === undefined
+          ? DEFAULT_SITE_NOTICE_DURATION_MS
+          : payload.durationMs;
+
+      element.dataset.noticeId = id;
+      element.dataset.state = "idle";
+      element.style.borderColor = `color-mix(in srgb, ${tokens.color} 55%, var(--color-line-med))`;
+      element.style.setProperty("--site-notice-accent", tokens.dot);
+      element.style.setProperty(
+        "--site-notice-accent-soft",
+        `color-mix(in srgb, ${tokens.dot} 18%, transparent)`,
+      );
+      title.textContent = payload.title;
+      message.textContent = payload.message;
+
+      const resumeTimer = () => {
+        if (typeof durationMs !== "number" || durationMs <= 0) {
+          return;
+        }
+
+        progressBar.style.animationPlayState = "running";
+        scheduleClose(id);
+      };
+
+      closeAction.addEventListener("click", () => closeNotice(id));
+
+      if (typeof durationMs === "number" && durationMs > 0) {
+        progress.hidden = false;
+        progressBar.style.animationDuration = `${durationMs}ms`;
+        progressBar.style.animationPlayState = "running";
+        progressBar.style.animationName = "site-notice-progress";
+        remainingDurations.set(id, durationMs);
+
+        element.addEventListener("mouseenter", () => {
+          pauseClose(id);
+          progressBar.style.animationPlayState = "paused";
+        });
+        element.addEventListener("mouseleave", resumeTimer);
+      } else {
+        progress.hidden = true;
+      }
+
+      return {
+        element,
+        resumeTimer,
+      };
+    };
+
+    const openNotice = (payload: SiteNoticePayload): string => {
+      noticeIndex += 1;
+      const id = payload.id?.trim() || `site-notice-${Date.now()}-${noticeIndex}`;
+      const existing = findNotice(id);
+
+      if (existing) {
+        existing.remove();
+        clearNoticeState(id);
+      }
+
+      const result = buildNotice(payload, id);
+
+      if (!result) {
+        console.error("site notice item could not be created");
+        return id;
+      }
+
+      stack.prepend(result.element);
+      requestAnimationFrame(() => {
+        result.element.dataset.state = "open";
+      });
+      result.resumeTimer();
+
+      return id;
+    };
+
+    window.ZhblogsNotice = {
+      close: closeNotice,
+      open: openNotice,
+    };
+
+    window.addEventListener(SITE_NOTICE_OPEN_EVENT, (event) => {
+      const notice = (event as CustomEvent<SiteNoticePayload>).detail;
+
+      if (!notice) {
+        return;
+      }
+
+      openNotice(notice);
+    });
+
+    const initialNotice = getLegacyDomainNoticeFromUrl(window.location.href);
+
+    if (initialNotice) {
+      openNotice(initialNotice);
+    }
+  }
+</script>
+
+<style>
+  .site-notification {
+    opacity: 0;
+    transform: translateY(-10px);
+    transition:
+      opacity 180ms var(--ease-out-smooth),
+      transform 220ms var(--ease-out-smooth);
+  }
+
+  .site-notification[data-state="open"] {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .site-notification[data-state="closing"] {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  .site-notification-progress {
+    background: var(--site-notice-accent-soft);
+  }
+
+  .site-notification-progress-bar {
+    background: var(--site-notice-accent);
+    animation-fill-mode: forwards;
+    animation-timing-function: linear;
+  }
+
+  @keyframes site-notice-progress {
+    from {
+      transform: scaleX(1);
+    }
+
+    to {
+      transform: scaleX(0);
+    }
+  }
+</style>
