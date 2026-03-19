@@ -26,10 +26,9 @@
     "test:web": "cross-env NODE_ENV=test dotenv -e .env.test -- pnpm -F @zhblogs/web run test",
     "hooks:install": "node ./scripts/install-git-hooks.mjs",
     "commit:lint": "commitlint --from HEAD~1 --to HEAD",
-    "db:studio": "dotenv -e .env.dev -- pnpm -F @zhblogs/db drizzle studio",
+    "db:studio": "pnpm -F @zhblogs/db drizzle studio",
     "db:generate": "pnpm -F @zhblogs/db drizzle generate",
-    "db:migrate:dev": "dotenv -e .env.dev -- pnpm -F @zhblogs/db drizzle migrate",
-    "db:migrate": "dotenv -e .env.prod -- pnpm -F @zhblogs/db drizzle migrate",
+    "db:migrate": "pnpm -F @zhblogs/db drizzle migrate",
     "util:psl:update-rules": "pnpm -F @zhblogs/utils run psl:update-rules"
   },
   "license": "AGPL-3.0-only",
