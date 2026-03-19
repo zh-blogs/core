@@ -5,6 +5,7 @@ import { cachePlugin } from './plugins/cache'
 import { drizzlePlugin } from './plugins/drizzle'
 import { securityPlugin } from './plugins/security'
 import { registerHealthRoutes } from './routes/health'
+import { registerPresenceRoutes } from './routes/presence'
 
 export function createApp(options: AppBootstrapOptions = {}) {
   const app = fastify({
@@ -21,6 +22,7 @@ export function createApp(options: AppBootstrapOptions = {}) {
 
   app.after(() => {
     registerHealthRoutes(app)
+    registerPresenceRoutes(app)
   })
 
   return app

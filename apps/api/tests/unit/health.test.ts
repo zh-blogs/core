@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { createApp } from '../../src/app'
+import { createTestApp } from '../create-test-app'
 
 describe('app plugin registration', () => {
-  let app: ReturnType<typeof createApp> | undefined
+  let app: ReturnType<typeof createTestApp> | undefined
 
   afterEach(async () => {
     await app?.close()
@@ -10,7 +10,7 @@ describe('app plugin registration', () => {
   })
 
   it('decorates fastify instance with config, db and cache clients', async () => {
-    app = createApp({
+    app = createTestApp({
       disableExternalServices: true,
     })
 
@@ -23,19 +23,35 @@ describe('app plugin registration', () => {
     expect(app.db.cache).toBeDefined()
   })
 
-  it('only exposes health routes', async () => {
-    app = createApp({
+  it('exposes health, auth, presence and site submission routes', async () => {
+    app = createTestApp({
       disableExternalServices: true,
     })
 
+    await app.ready()
+
+    const routes = app.printRoutes()
     const health = await app.inject({ method: 'GET', url: '/health' })
     const missingDocs = await app.inject({ method: 'GET', url: '/docs' })
-    const missingAuth = await app.inject({ method: 'GET', url: '/auth/me' })
+    const currentUser = await app.inject({ method: 'GET', url: '/auth/me' })
+    const presence = await app.inject({ method: 'GET', url: '/api/presence/online' })
     const missingStats = await app.inject({ method: 'GET', url: '/api/stats' })
 
+    expect(routes).toContain('health (GET, HEAD)')
+    expect(routes).toContain('me (GET, HEAD)')
+    expect(routes).toContain('refresh (POST)')
+    expect(routes).toContain('grant-admin (POST)')
+    expect(routes).toContain('revoke-admin (POST)')
+    expect(routes).toContain('online (GET, HEAD)')
+    expect(routes).toContain('heartbeat (POST)')
+    expect(routes).toContain('stream (GET, HEAD)')
+    expect(routes).toContain('sites (POST)')
+    expect(routes).toContain(':siteId')
+    expect(routes).toContain('/updates (POST)')
     expect(health.statusCode).toBe(200)
+    expect(presence.statusCode).toBe(200)
     expect(missingDocs.statusCode).toBe(404)
-    expect(missingAuth.statusCode).toBe(404)
+    expect(currentUser.statusCode).toBe(401)
     expect(missingStats.statusCode).toBe(404)
   })
 })
