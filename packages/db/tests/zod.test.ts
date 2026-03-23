@@ -38,6 +38,7 @@ describe('db zod site url validation', () => {
           type: 'RSS',
         },
       ],
+      default_feed_url: 'https://blog.example.co.uk/feed.xml',
       sitemap: 'https://example.com/sitemap.xml',
       link_page: 'https://links.example.com/friends',
     })
@@ -67,6 +68,7 @@ describe('db zod site url validation', () => {
 
   it('still allows clearing nullable site urls on updates', () => {
     const result = siteUpdateSchema.safeParse({
+      default_feed_url: null,
       sitemap: null,
       link_page: null,
     })
@@ -79,6 +81,14 @@ describe('db zod site url validation', () => {
       action: 'CREATE',
       proposed_snapshot: {
         url: 'https://example.com',
+        default_feed_url: 'https://example.com/feed.xml',
+        feed: [
+          {
+            name: 'Primary Feed',
+            url: 'https://example.com/feed.xml',
+            type: 'RSS',
+          },
+        ],
         link_page: 'https://localhost/friends',
       },
     })
@@ -98,5 +108,35 @@ describe('db zod site url validation', () => {
     })
 
     expectFailurePath(result, 'payload_template.feed_url')
+  })
+
+  it('rejects default_feed_url when feed is empty', () => {
+    const result = siteInsertSchema.safeParse({
+      bid: 'example-blog',
+      name: 'Example Blog',
+      url: 'https://example.com',
+      feed: [],
+      default_feed_url: 'https://example.com/feed.xml',
+    })
+
+    expectFailurePath(result, 'default_feed_url')
+  })
+
+  it('rejects default_feed_url that is not present in feed', () => {
+    const result = siteInsertSchema.safeParse({
+      bid: 'example-blog',
+      name: 'Example Blog',
+      url: 'https://example.com',
+      feed: [
+        {
+          name: 'Primary Feed',
+          url: 'https://example.com/feed.xml',
+          type: 'RSS',
+        },
+      ],
+      default_feed_url: 'https://example.com/atom.xml',
+    })
+
+    expectFailurePath(result, 'default_feed_url')
   })
 })

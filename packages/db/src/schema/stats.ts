@@ -41,17 +41,18 @@ export const TechnologyStats = pgView('technology_stats', {
   site_count: integer('site_count'),
 }).as(sql`
   with technology_refs as (
-    select system_id as technology_id from site_architectures where system_id is not null
-    union all
-    select framework_id as technology_id from site_architectures where framework_id is not null
-    union all
-    select language_id as technology_id from site_architectures where language_id is not null
+    select distinct
+      sa.site_id,
+      pts.catalog_id as technology_id
+    from site_architectures sa
+    inner join program_technology_stacks pts on pts.program_id = sa.program_id
+    where pts.catalog_id is not null
   )
   select
     tc.id as technology_id,
     tc.name as technology_name,
     tc.technology_type as technology_type,
-    count(tr.technology_id)::int as site_count
+    count(tr.site_id)::int as site_count
   from technology_catalogs tc
   left join technology_refs tr on tr.technology_id = tc.id
   group by tc.id, tc.name, tc.technology_type

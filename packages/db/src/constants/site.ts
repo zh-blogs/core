@@ -166,3 +166,32 @@ export const SITE_CLAIM_TYPE_KEYS = Object.keys(SITE_CLAIM_TYPES) as Array<
 >
 
 export type SiteClaimTypeKey = (typeof SITE_CLAIM_TYPE_KEYS)[number]
+
+export const SITE_CLAIM_STATUSES = {
+  PENDING_VERIFICATION: {
+    label: '待验证',
+    description: '认领申请已提交，等待提交者完成所有权验证',
+  },
+  PENDING_REVIEW: {
+    label: '待审核',
+    description: '验证材料已提交，等待管理员审核',
+  },
+  APPROVED: {
+    label: '已通过',
+    description: '认领申请通过，站点归属关系已建立',
+  },
+  REJECTED: {
+    label: '已拒绝',
+    description: '认领申请被拒绝，需要重新发起',
+  },
+  CANCELED: {
+    label: '已撤销',
+    description: '申请人撤销或系统终止了本次认领流程',
+  },
+} as const
+
+export const SITE_CLAIM_STATUS_KEYS = Object.keys(SITE_CLAIM_STATUSES) as Array<
+  keyof typeof SITE_CLAIM_STATUSES
+>
+
+export type SiteClaimStatusKey = (typeof SITE_CLAIM_STATUS_KEYS)[number]

@@ -1,14 +1,17 @@
 import {
   boolean,
+  check,
   index,
   jsonb,
   pgTable,
   primaryKey,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
 import { v7 } from 'uuid'
 import type { FeedTypeKey } from '../constants/site'
 import {
@@ -16,6 +19,7 @@ import {
   siteAccessEventTypeEnum,
   siteAccessScopeEnum,
   siteClassificationStatusEnum,
+  siteTechStackCategoryEnum,
   siteStatusTypeEnum,
 } from './enums'
 import { TagDefinitions, TechnologyCatalogs } from './catalogs'
@@ -44,9 +48,11 @@ export const Sites = pgTable(
     /** 站点图标的 base64 编码字符串 */
     icon_base64: text(),
     /** 站点订阅源列表 */
-    feed: jsonb().$type<MultiFeed[]>().default([]),
+    feed: jsonb().$type<MultiFeed[]>().notNull().default([]),
+    /** 默认订阅源地址，指向 feed 数组中的某一项 */
+    default_feed_url: varchar({ length: 256 }),
     /** 站点来源渠道 */
-    from: fromSources().array(),
+    from: fromSources().array().notNull().default([]),
     /** 站点分类信息是否已确认完整 */
     classification_status: siteClassificationStatusEnum()
       .notNull()
@@ -56,11 +62,11 @@ export const Sites = pgTable(
     /** 友链页地址 */
     link_page: varchar({ length: 256 }),
     /** 站点加入时间 */
-    join_time: timestamp({ withTimezone: true, precision: 6 }).$default(
+    join_time: timestamp({ withTimezone: true, precision: 6 }).notNull().$default(
       () => new Date(),
     ),
     /** 站点最后更新时间 */
-    update_time: timestamp({ withTimezone: true, precision: 6 }).$default(
+    update_time: timestamp({ withTimezone: true, precision: 6 }).notNull().$default(
       () => new Date(),
     ),
     /** 站点访问属性：仅国内、仅海外、国内外都可访问 */
@@ -70,7 +76,7 @@ export const Sites = pgTable(
     /** 是否在前台显示 */
     is_show: boolean().notNull().default(true),
     /** 是否推荐 */
-    recommend: boolean().default(false),
+    recommend: boolean().notNull().default(false),
     /** 不显示或异常时的补充原因 */
     reason: text(),
   },
@@ -82,6 +88,48 @@ export const Sites = pgTable(
     index('sites_recommend_index').on(table.recommend),
     index('sites_join_time_index').on(table.join_time.desc()),
     index('sites_update_time_index').on(table.update_time.desc()),
+    check('sites_bid_not_blank_check', sql`btrim(${table.bid}) <> ''`),
+    check('sites_name_not_blank_check', sql`btrim(${table.name}) <> ''`),
+  ],
+)
+
+/** 程序定义表：用于站点主程序归档、统计与展示 */
+export const Programs = pgTable(
+  'programs',
+  {
+    id: uuid()
+      .$default(() => v7())
+      .primaryKey(),
+    /** 程序展示名称 */
+    name: varchar({ length: 128 }).notNull(),
+    /** 程序名称归一化键，用于查重与模糊检索 */
+    name_normalized: varchar({ length: 128 }).notNull(),
+    /** 程序是否开源 */
+    is_open_source: boolean().notNull().default(false),
+    /** 程序官网或主页 */
+    website_url: varchar({ length: 512 }),
+    /** 程序仓库地址 */
+    repo_url: varchar({ length: 512 }),
+    /** 是否启用 */
+    is_enabled: boolean().notNull().default(true),
+    /** 创建时间 */
+    created_time: timestamp({ withTimezone: true, precision: 6 })
+      .notNull()
+      .defaultNow(),
+    /** 更新时间 */
+    updated_time: timestamp({ withTimezone: true, precision: 6 })
+      .notNull()
+      .defaultNow()
+      .$onUpdateFn(() => new Date()),
+  },
+  (table) => [
+    uniqueIndex('programs_name_normalized_unique').on(table.name_normalized),
+    index('programs_enabled_name_index').on(table.is_enabled, table.name),
+    check('programs_name_not_blank_check', sql`btrim(${table.name}) <> ''`),
+    check(
+      'programs_name_normalized_not_blank_check',
+      sql`btrim(${table.name_normalized}) <> ''`,
+    ),
   ],
 )
 
@@ -118,7 +166,7 @@ export const SiteTags = pgTable(
   ],
 )
 
-/** 站点技术架构关联表，通过目录表表达系统、框架、语言 */
+/** 站点程序关联表：站点与程序一对一关联 */
 export const SiteArchitectures = pgTable(
   'site_architectures',
   {
@@ -129,19 +177,9 @@ export const SiteArchitectures = pgTable(
         onDelete: 'cascade',
         onUpdate: 'cascade',
       }),
-    /** 博客系统 */
-    system_id: uuid().references(() => TechnologyCatalogs.id, {
-      onDelete: 'set null',
-      onUpdate: 'cascade',
-    }),
-    /** 技术框架 */
-    framework_id: uuid().references(() => TechnologyCatalogs.id, {
-      onDelete: 'set null',
-      onUpdate: 'cascade',
-    }),
-    /** 编程语言 */
-    language_id: uuid().references(() => TechnologyCatalogs.id, {
-      onDelete: 'set null',
+    /** 博客程序（程序表项） */
+    program_id: uuid().notNull().references(() => Programs.id, {
+      onDelete: 'restrict',
       onUpdate: 'cascade',
     }),
     /** 创建时间 */
@@ -155,9 +193,61 @@ export const SiteArchitectures = pgTable(
       .$onUpdateFn(() => new Date()),
   },
   (table) => [
-    index('site_architectures_system_id_index').on(table.system_id),
-    index('site_architectures_framework_id_index').on(table.framework_id),
-    index('site_architectures_language_id_index').on(table.language_id),
+    index('site_architectures_program_id_index').on(table.program_id),
+  ],
+)
+
+/** 程序技术栈关联表：程序与技术栈候选词库的一对多关系 */
+export const ProgramTechnologyStacks = pgTable(
+  'program_technology_stacks',
+  {
+    id: uuid()
+      .$default(() => v7())
+      .primaryKey(),
+    /** 关联程序 */
+    program_id: uuid()
+      .notNull()
+      .references(() => Programs.id, {
+        onDelete: 'cascade',
+        onUpdate: 'cascade',
+      }),
+    /** 技术目录引用，不在目录中的自定义项可为空 */
+    catalog_id: uuid().references(() => TechnologyCatalogs.id, {
+      onDelete: 'set null',
+      onUpdate: 'cascade',
+    }),
+    /** 技术项分类 */
+    category: siteTechStackCategoryEnum().notNull(),
+    /** 自定义展示名称，目录命中时可为空 */
+    name_custom: varchar({ length: 128 }),
+    /** 归一化名称，用于去重与检索 */
+    name_normalized: varchar({ length: 128 }).notNull(),
+    /** 创建时间 */
+    created_time: timestamp({ withTimezone: true, precision: 6 })
+      .notNull()
+      .defaultNow(),
+    /** 更新时间 */
+    updated_time: timestamp({ withTimezone: true, precision: 6 })
+      .notNull()
+      .defaultNow()
+      .$onUpdateFn(() => new Date()),
+  },
+  (table) => [
+    index('program_technology_stacks_program_id_index').on(table.program_id),
+    index('program_technology_stacks_catalog_id_index').on(table.catalog_id),
+    index('program_technology_stacks_category_index').on(table.category),
+    index('program_technology_stacks_name_normalized_index').on(
+      table.name_normalized,
+    ),
+    uniqueIndex('program_technology_stacks_program_category_name_unique').on(
+      table.program_id,
+      table.category,
+      table.name_normalized,
+    ),
+    check(
+      'program_technology_stacks_name_normalized_not_blank_check',
+      sql`btrim(${table.name_normalized}) <> ''`,
+    ),
   ],
 )
 
@@ -179,7 +269,7 @@ export const SiteAccessEvents = pgTable(
     /** 事件类型：默认记录本项目的跳转点击，也可记录嵌入脚本上报的访问 */
     event_type: siteAccessEventTypeEnum().notNull().default('OUTBOUND_CLICK'),
     /** 可选来源渠道标识，例如 direct / search / internal / embed */
-    source: varchar({ length: 64 }),
+    source: varchar({ length: 64 }).notNull().default('UNKNOWN'),
     /** 来源域名或来源主机 */
     referer_host: varchar({ length: 256 }),
     /** 访问页面路径：跳转点击时为本项目页面路径，嵌入访问时为源站页面路径 */
@@ -214,6 +304,10 @@ export const SiteAccessEvents = pgTable(
     index('site_access_events_referer_host_index').on(table.referer_host),
     index('site_access_events_occurred_time_index').on(
       table.occurred_time.desc(),
+    ),
+    check(
+      'site_access_events_source_not_blank_check',
+      sql`btrim(${table.source}) <> ''`,
     ),
   ],
 )

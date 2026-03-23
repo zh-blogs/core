@@ -1,5 +1,6 @@
 import {
   boolean,
+  check,
   index,
   jsonb,
   pgTable,
@@ -9,6 +10,7 @@ import {
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
 import { v7 } from 'uuid'
 import { userOauthProviderEnum, userRoleEnum } from './enums'
 import { Sites } from './sites'
@@ -22,7 +24,7 @@ export const Users = pgTable(
       .$default(() => v7())
       .primaryKey(),
     /** 用户名，可用于个人页或后台识别 */
-    username: varchar({ length: 64 }),
+    username: varchar({ length: 64 }).notNull(),
     /** 用户昵称 */
     nickname: varchar({ length: 64 }).notNull(),
     /** 用户头像链接 */
@@ -38,11 +40,11 @@ export const Users = pgTable(
     /** 邮箱是否已验证 */
     is_verified: boolean().notNull().default(false),
     /** 用户档案扩展信息 */
-    profile: jsonb().$type<Record<string, unknown>>(),
+    profile: jsonb().$type<Record<string, unknown>>().notNull().default({}),
     /** 用户偏好设置 */
-    settings: jsonb().$type<Record<string, unknown>>(),
+    settings: jsonb().$type<Record<string, unknown>>().notNull().default({}),
     /** 额外保留字段，便于未来挂载 API Token、审计元数据等 */
-    metadata: jsonb().$type<Record<string, unknown>>(),
+    metadata: jsonb().$type<Record<string, unknown>>().notNull().default({}),
     /** 最后登录时间 */
     last_login_time: timestamp({ withTimezone: true, precision: 6 }),
     /** 创建时间 */
@@ -60,6 +62,8 @@ export const Users = pgTable(
     uniqueIndex('users_username_index').on(table.username),
     index('users_role_active_index').on(table.role, table.is_active),
     index('users_created_time_index').on(table.created_time.desc()),
+    check('users_username_not_blank_check', sql`btrim(${table.username}) <> ''`),
+    check('users_nickname_not_blank_check', sql`btrim(${table.nickname}) <> ''`),
   ],
 )
 
@@ -91,9 +95,9 @@ export const UserOauthAccounts = pgTable(
     /** 令牌失效时间 */
     expires_time: timestamp({ withTimezone: true, precision: 6 }),
     /** 授权范围 */
-    scopes: jsonb().$type<string[]>().default([]),
+    scopes: jsonb().$type<string[]>().notNull().default([]),
     /** 提供商返回的附加资料 */
-    profile: jsonb().$type<Record<string, unknown>>(),
+    profile: jsonb().$type<Record<string, unknown>>().notNull().default({}),
     /** 创建时间 */
     created_time: timestamp({ withTimezone: true, precision: 6 })
       .notNull()
@@ -134,7 +138,7 @@ export const UserApiTokens = pgTable(
     /** Token 哈希值，仅存储哈希而不存明文 */
     token_hash: varchar({ length: 256 }).notNull().unique(),
     /** 权限范围 */
-    scopes: jsonb().$type<string[]>().default([]),
+    scopes: jsonb().$type<string[]>().notNull().default([]),
     /** 是否启用 */
     is_active: boolean().notNull().default(true),
     /** 最后使用时间 */
@@ -190,7 +194,6 @@ export const UserSites = pgTable(
   },
   (table) => [
     uniqueIndex('user_sites_site_id_index').on(table.site_id),
-    uniqueIndex('user_sites_user_id_site_id_index').on(table.user_id, table.site_id),
     index('user_sites_user_id_index').on(table.user_id),
   ],
 )

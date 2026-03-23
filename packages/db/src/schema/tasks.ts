@@ -1,5 +1,7 @@
 import {
+  type AnyPgColumn,
   boolean,
+  check,
   index,
   integer,
   jsonb,
@@ -10,6 +12,7 @@ import {
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
 import { v7 } from 'uuid'
 import type { JobStatusKey, TaskTypeKey } from '../constants/task'
 import {
@@ -78,13 +81,13 @@ export const TaskSchedules = pgTable(
     /** 是否启用该调度定义 */
     is_enabled: boolean().notNull().default(true),
     /** 调度配置，如 cron 表达式、时区、时间窗 */
-    schedule_config: jsonb().$type<TaskScheduleConfig>(),
+    schedule_config: jsonb().$type<TaskScheduleConfig>().notNull().default({}),
     /** 事件触发或关联触发规则 */
-    trigger_rule: jsonb().$type<TaskTriggerRule>(),
+    trigger_rule: jsonb().$type<TaskTriggerRule>().notNull().default({}),
     /** 生成 job 时使用的默认载荷 */
-    payload_template: jsonb().$type<TaskPayloadTemplate>(),
+    payload_template: jsonb().$type<TaskPayloadTemplate>().notNull().default({}),
     /** 重试、超时、并发等策略 */
-    policy: jsonb().$type<JobPolicyConfig>(),
+    policy: jsonb().$type<JobPolicyConfig>().notNull().default({}),
     /** 下次计划触发时间，供调度器扫描 */
     next_run_time: timestamp({ withTimezone: true, precision: 6 }),
     /** 上次生成任务时间 */
@@ -113,6 +116,7 @@ export const TaskSchedules = pgTable(
       table.queue_name,
       table.is_enabled,
     ),
+    check('task_schedules_name_not_blank_check', sql`btrim(${table.name}) <> ''`),
   ],
 )
 
@@ -125,9 +129,15 @@ export const Jobs = pgTable(
       .$default(() => v7())
       .primaryKey(),
     /** 根任务 ID，用于串联一整条关联触发链路 */
-    root_job_id: uuid(),
+    root_job_id: uuid().references((): AnyPgColumn => Jobs.id, {
+      onDelete: 'set null',
+      onUpdate: 'cascade',
+    }),
     /** 父任务 ID，用于记录链式触发关系 */
-    parent_job_id: uuid(),
+    parent_job_id: uuid().references((): AnyPgColumn => Jobs.id, {
+      onDelete: 'set null',
+      onUpdate: 'cascade',
+    }),
     /** 来源调度定义，手动任务可为空 */
     schedule_id: uuid().references(() => TaskSchedules.id, {
       onDelete: 'set null',
@@ -212,7 +222,12 @@ export const Jobs = pgTable(
       table.locked_by,
       table.heartbeat_time,
     ),
-    uniqueIndex('jobs_dedupe_key_index').on(table.dedupe_key),
+    uniqueIndex('jobs_dedupe_key_index')
+      .on(table.dedupe_key)
+      .where(sql`${table.dedupe_key} is not null and ${table.dedupe_key} <> ''`),
+    check('jobs_priority_non_negative_check', sql`${table.priority} >= 0`),
+    check('jobs_attempt_count_non_negative_check', sql`${table.attempt_count} >= 0`),
+    check('jobs_max_attempts_positive_check', sql`${table.max_attempts} > 0`),
   ],
 )
 

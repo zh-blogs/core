@@ -1,4 +1,5 @@
 import {
+  check,
   index,
   jsonb,
   pgTable,
@@ -8,6 +9,7 @@ import {
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
 import { v7 } from 'uuid'
 import type { FeedTypeKey } from '../constants/site'
 import { articleVisibilityEnum, feedTypeEnum } from './enums'
@@ -46,7 +48,7 @@ export const FeedArticles = pgTable(
     /** 抓取来源的订阅类型 */
     feed_type: feedTypeEnum(),
     /** 抓取来源信息，记录文章来自哪个订阅源 */
-    source: jsonb().$type<FeedArticleSourceInfo>(),
+    source: jsonb().$type<FeedArticleSourceInfo>().notNull().default({}),
     /** 文章发布时间，以源站为准 */
     published_time: timestamp({ withTimezone: true, precision: 6 }),
     /** 本次抓取入库时间 */
@@ -59,10 +61,16 @@ export const FeedArticles = pgTable(
     visibility_reason: text(),
   },
   (table) => [
-    uniqueIndex('feed_articles_site_id_guid_index').on(table.site_id, table.guid),
+    uniqueIndex('feed_articles_site_id_guid_index')
+      .on(table.site_id, table.guid)
+      .where(sql`${table.guid} is not null and ${table.guid} <> ''`),
     uniqueIndex('feed_articles_site_id_url_index').on(
       table.site_id,
       table.article_url,
+    ),
+    check(
+      'feed_articles_visibility_reason_check',
+      sql`(${table.visibility} = 'VISIBLE' and ${table.visibility_reason} is null) or (${table.visibility} <> 'VISIBLE')`,
     ),
     index('feed_articles_site_id_published_time_index').on(
       table.site_id,

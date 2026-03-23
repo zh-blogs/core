@@ -1,5 +1,6 @@
 import {
   boolean,
+  check,
   index,
   integer,
   pgTable,
@@ -8,6 +9,7 @@ import {
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
 import { v7 } from 'uuid'
 import { siteCheckRegionEnum, siteCheckResultEnum } from './enums'
 import { Sites } from './sites'
@@ -44,7 +46,7 @@ export const SiteChecks = pgTable(
     /** 最终访问地址，用于记录 301/302 等跳转后的目标地址 */
     final_url: varchar({ length: 256 }),
     /** 响应内容是否通过内容有效性校验 */
-    content_verified: boolean(),
+    content_verified: boolean().notNull().default(false),
     /** 检测时间 */
     check_time: timestamp({ withTimezone: true, precision: 6 })
       .notNull()
@@ -69,5 +71,8 @@ export const SiteChecks = pgTable(
       table.result,
       table.check_time.desc(),
     ),
+    check('site_checks_status_code_valid_range_check', sql`${table.status_code} is null or (${table.status_code} >= 100 and ${table.status_code} <= 599)`),
+    check('site_checks_response_time_non_negative_check', sql`${table.response_time_ms} is null or ${table.response_time_ms} >= 0`),
+    check('site_checks_duration_non_negative_check', sql`${table.duration_ms} is null or ${table.duration_ms} >= 0`),
   ],
 )

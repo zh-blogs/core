@@ -1,5 +1,6 @@
 import {
   boolean,
+  check,
   index,
   jsonb,
   pgTable,
@@ -8,6 +9,7 @@ import {
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
 import { v7 } from 'uuid'
 import type {
   SiteStatusTypeKey,
@@ -15,6 +17,7 @@ import type {
 import type {
   FromSourceKey,
   SiteAccessScopeKey,
+  SiteClassificationStatusKey,
 } from '../constants/site'
 import { FeedArticles } from './feed-articles'
 import {
@@ -25,11 +28,20 @@ import {
 } from './enums'
 import type { MultiFeed } from './sites'
 import { Sites } from './sites'
+import { Users } from './users'
 
 export interface SiteAuditArchitectureSnapshot {
-  system_id?: string | null
-  framework_id?: string | null
-  language_id?: string | null
+  program_id?: string | null
+  program_name?: string | null
+  program_is_open_source?: boolean | null
+  stacks?: Array<{
+    category: 'FRAMEWORK' | 'LANGUAGE'
+    catalog_id?: string | null
+    name?: string | null
+    name_normalized?: string | null
+  }> | null
+  website_url?: string | null
+  repo_url?: string | null
 }
 
 /** 站点审核快照，用于新增/修改/删除审核时展示前后差异 */
@@ -40,7 +52,9 @@ export interface SiteAuditSnapshot {
   sign?: string | null
   icon_base64?: string | null
   feed?: MultiFeed[] | null
+  default_feed_url?: string | null
   from?: FromSourceKey[] | null
+  classification_status?: SiteClassificationStatusKey | null
   sitemap?: string | null
   link_page?: string | null
   access_scope?: SiteAccessScopeKey | null
@@ -49,6 +63,9 @@ export interface SiteAuditSnapshot {
   recommend?: boolean | null
   reason?: string | null
   tag_ids?: string[] | null
+  main_tag_id?: string | null
+  sub_tag_ids?: string[] | null
+  custom_sub_tags?: string[] | null
   architecture?: SiteAuditArchitectureSnapshot | null
 }
 
@@ -81,14 +98,21 @@ export const SiteAudits = pgTable(
     /** 申请提交后的目标快照，删除审核时可为空 */
     proposed_snapshot: jsonb().$type<SiteAuditSnapshot>(),
     /** 预计算的字段差异，方便前端直接展示 */
-    diff: jsonb().$type<SiteAuditDiffItem[]>().default([]),
+    diff: jsonb().$type<SiteAuditDiffItem[]>().notNull().default([]),
     /** 提交申请原因 */
     submit_reason: text(),
     /** 审核备注 */
     reviewer_comment: text(),
+    /** 执行审核的管理员用户 */
+    reviewed_by: uuid().references(() => Users.id, {
+      onDelete: 'set null',
+      onUpdate: 'cascade',
+    }),
     /** 申请人信息 */
     submitter_name: varchar({ length: 64 }),
     submitter_email: varchar({ length: 128 }),
+    /** 是否同意后续通过邮件接收审核结果通知 */
+    notify_by_email: boolean().notNull().default(false),
     /** 审核完成时间 */
     reviewed_time: timestamp({ withTimezone: true, precision: 6 }),
     /** 申请创建时间 */
@@ -111,6 +135,9 @@ export const SiteAudits = pgTable(
       table.created_time.desc(),
     ),
     index('site_audits_action_status_index').on(table.action, table.status),
+    index('site_audits_reviewed_by_index').on(table.reviewed_by),
+    check('site_audits_submitter_name_not_blank_check', sql`btrim(${table.submitter_name}) <> ''`),
+    check('site_audits_submitter_email_not_blank_check', sql`btrim(${table.submitter_email}) <> ''`),
   ],
 )
 
@@ -151,6 +178,11 @@ export const ArticleFeedbackAudits = pgTable(
     has_attachment: boolean().notNull().default(false),
     /** 审核备注 */
     reviewer_comment: text(),
+    /** 执行审核的管理员用户 */
+    reviewed_by: uuid().references(() => Users.id, {
+      onDelete: 'set null',
+      onUpdate: 'cascade',
+    }),
     /** 审核完成时间 */
     reviewed_time: timestamp({ withTimezone: true, precision: 6 }),
     /** 反馈创建时间 */
@@ -179,6 +211,15 @@ export const ArticleFeedbackAudits = pgTable(
     index('article_feedback_audits_action_status_index').on(
       table.action,
       table.status,
+    ),
+    index('article_feedback_audits_reviewed_by_index').on(table.reviewed_by),
+    check(
+      'article_feedback_audits_reporter_name_not_blank_check',
+      sql`btrim(${table.reporter_name}) <> ''`,
+    ),
+    check(
+      'article_feedback_audits_reporter_email_not_blank_check',
+      sql`btrim(${table.reporter_email}) <> ''`,
     ),
   ],
 )

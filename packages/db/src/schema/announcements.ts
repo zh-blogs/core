@@ -1,4 +1,5 @@
-import { index, integer, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
+import { check, index, integer, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
 import { v7 } from 'uuid'
 import { Users } from './users'
 import { announcementStatusEnum } from './enums'
@@ -60,5 +61,11 @@ export const Announcements = pgTable(
       table.publish_time.desc(),
     ),
     index('announcements_created_time_index').on(table.created_time.desc()),
+    check('announcements_title_not_blank_check', sql`btrim(${table.title}) <> ''`),
+    check('announcements_tag_not_blank_check', sql`btrim(${table.tag}) <> ''`),
+    check(
+      'announcements_publish_expire_timeline_check',
+      sql`${table.expire_time} is null or ${table.publish_time} is null or ${table.expire_time} >= ${table.publish_time}`,
+    ),
   ],
 )

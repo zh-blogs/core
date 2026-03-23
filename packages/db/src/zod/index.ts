@@ -31,7 +31,11 @@ import {
   SCHEDULE_MODE_KEYS,
   TASK_TYPE_KEYS,
 } from '../constants/task'
-import { TAG_TYPE_KEYS, TECHNOLOGY_TYPE_KEYS } from '../constants/taxonomy'
+import {
+  SITE_TECH_STACK_CATEGORY_KEYS,
+  TAG_TYPE_KEYS,
+  TECHNOLOGY_TYPE_KEYS,
+} from '../constants/taxonomy'
 import { USER_OAUTH_PROVIDER_KEYS, USER_ROLE_KEYS } from '../constants/user'
 import {
   Announcements,
@@ -50,6 +54,8 @@ import {
   SiteChecks,
   SiteClaims,
   SiteFeedArticleStats,
+  ProgramTechnologyStacks,
+  Programs,
   SiteTags,
   SiteWarningTagStats,
   SiteWarningTags,
@@ -128,6 +134,9 @@ export const jobStatusSchema = toEnumSchema(JOB_STATUS_KEYS)
 export const executionStatusSchema = toEnumSchema(EXECUTION_STATUS_KEYS)
 export const tagTypeSchema = toEnumSchema(TAG_TYPE_KEYS)
 export const technologyTypeSchema = toEnumSchema(TECHNOLOGY_TYPE_KEYS)
+export const siteTechStackCategorySchema = toEnumSchema(
+  SITE_TECH_STACK_CATEGORY_KEYS,
+)
 export const userRoleSchema = toEnumSchema(USER_ROLE_KEYS)
 export const userOauthProviderSchema = toEnumSchema(USER_OAUTH_PROVIDER_KEYS)
 export const siteCheckRegionSchema = toEnumSchema(SITE_CHECK_REGION_KEYS)
@@ -152,16 +161,75 @@ const multiFeedInputSchema = z.object({
   type: feedTypeSchema.optional(),
 })
 
+const normalizeFeedUrlValue = (value: string | null | undefined): string | null => {
+  const normalized = value?.trim()
+  return normalized ? normalized : null
+}
+
+const addDefaultFeedValidation = (schema: z.ZodTypeAny): z.ZodTypeAny =>
+  schema.superRefine((value: unknown, ctx) => {
+    const payload = value as {
+      feed?: Array<{ url: string }> | null
+      default_feed_url?: string | null
+    }
+
+    const feed = payload.feed ?? undefined
+    const defaultFeedUrl = normalizeFeedUrlValue(payload.default_feed_url)
+
+    if (feed === undefined) {
+      return
+    }
+
+    if (feed.length === 0) {
+      if (defaultFeedUrl !== null) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'default_feed_url must be null when feed is empty',
+          path: ['default_feed_url'],
+        })
+      }
+
+      return
+    }
+
+    if (defaultFeedUrl === null) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'default_feed_url is required when feed is not empty',
+        path: ['default_feed_url'],
+      })
+      return
+    }
+
+    if (!feed.some((item) => item.url === defaultFeedUrl)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'default_feed_url must match one feed url',
+        path: ['default_feed_url'],
+      })
+    }
+  })
+
 export const feedArticleSourceInfoSchema = z.object({
   feed_name: z.string().optional(),
   feed_url: z.string().optional(),
   feed_type: feedTypeSchema.optional(),
 })
 
+const siteArchitectureItemSchema = z.object({
+  category: siteTechStackCategorySchema.nullable().optional(),
+  catalog_id: z.uuid().nullable().optional(),
+  name: z.string().trim().min(1).max(128).nullable().optional(),
+  name_normalized: z.string().trim().min(1).max(128).nullable().optional(),
+})
+
 export const siteAuditArchitectureSchema = z.object({
-  system_id: z.uuid().nullable().optional(),
-  framework_id: z.uuid().nullable().optional(),
-  language_id: z.uuid().nullable().optional(),
+  program_id: z.uuid().nullable().optional(),
+  program_name: z.string().trim().min(1).max(128).nullable().optional(),
+  program_is_open_source: z.boolean().nullable().optional(),
+  stacks: z.array(siteArchitectureItemSchema).max(10).nullable().optional(),
+  website_url: nullableOptionalPublicSiteUrlSchema,
+  repo_url: nullableOptionalPublicSiteUrlSchema,
 })
 
 export const siteAuditSnapshotSchema = z.object({
@@ -171,6 +239,7 @@ export const siteAuditSnapshotSchema = z.object({
   sign: z.string().nullable().optional(),
   icon_base64: z.string().nullable().optional(),
   feed: z.array(multiFeedSchema).nullable().optional(),
+  default_feed_url: z.string().nullable().optional(),
   from: z.array(fromSourceSchema).nullable().optional(),
   classification_status: siteClassificationStatusSchema.nullable().optional(),
   sitemap: z.string().nullable().optional(),
@@ -181,16 +250,20 @@ export const siteAuditSnapshotSchema = z.object({
   recommend: z.boolean().nullable().optional(),
   reason: z.string().nullable().optional(),
   tag_ids: z.array(z.uuid()).nullable().optional(),
+  main_tag_id: z.uuid().nullable().optional(),
+  sub_tag_ids: z.array(z.uuid()).nullable().optional(),
+  custom_sub_tags: z.array(z.string()).nullable().optional(),
   architecture: siteAuditArchitectureSchema.nullable().optional(),
 })
 
-const siteAuditSnapshotInputSchema = z.object({
+const siteAuditSnapshotInputSchema = addDefaultFeedValidation(z.object({
   bid: z.string().nullable().optional(),
   name: z.string().nullable().optional(),
   url: nullableOptionalPublicSiteUrlSchema,
   sign: z.string().nullable().optional(),
   icon_base64: z.string().nullable().optional(),
   feed: z.array(multiFeedInputSchema).nullable().optional(),
+  default_feed_url: nullableOptionalPublicSiteUrlSchema,
   from: z.array(fromSourceSchema).nullable().optional(),
   classification_status: siteClassificationStatusSchema.nullable().optional(),
   sitemap: nullableOptionalPublicSiteUrlSchema,
@@ -201,8 +274,11 @@ const siteAuditSnapshotInputSchema = z.object({
   recommend: z.boolean().nullable().optional(),
   reason: z.string().nullable().optional(),
   tag_ids: z.array(z.uuid()).nullable().optional(),
+  main_tag_id: z.uuid().nullable().optional(),
+  sub_tag_ids: z.array(z.uuid()).nullable().optional(),
+  custom_sub_tags: z.array(z.string().trim().min(1).max(64)).nullable().optional(),
   architecture: siteAuditArchitectureSchema.nullable().optional(),
-})
+}))
 
 export const siteAuditDiffItemSchema = z.object({
   field: z.string(),
@@ -259,20 +335,25 @@ export const siteSelectSchema = createSelectSchema(Sites, {
   feed: z.array(multiFeedSchema),
   from: z.array(fromSourceSchema).nullable(),
 })
-export const siteInsertSchema = createInsertSchema(Sites, {
+const siteInsertSchemaBase: z.ZodTypeAny = (createInsertSchema(Sites) as z.ZodObject<any>).extend({
   url: publicSiteUrlSchema,
   feed: z.array(multiFeedInputSchema).optional(),
+  default_feed_url: nullableOptionalPublicSiteUrlSchema,
   from: z.array(fromSourceSchema).optional(),
   sitemap: nullableOptionalPublicSiteUrlSchema,
   link_page: nullableOptionalPublicSiteUrlSchema,
 })
-export const siteUpdateSchema = createUpdateSchema(Sites, {
+export const siteInsertSchema: z.ZodTypeAny = addDefaultFeedValidation(siteInsertSchemaBase)
+
+const siteUpdateSchemaBase: z.ZodTypeAny = (createUpdateSchema(Sites) as z.ZodObject<any>).extend({
   url: publicSiteUrlSchema.optional(),
   feed: z.array(multiFeedInputSchema).optional(),
+  default_feed_url: nullableOptionalPublicSiteUrlSchema,
   from: z.array(fromSourceSchema).optional(),
   sitemap: nullableOptionalPublicSiteUrlSchema,
   link_page: nullableOptionalPublicSiteUrlSchema,
 })
+export const siteUpdateSchema: z.ZodTypeAny = addDefaultFeedValidation(siteUpdateSchemaBase)
 
 export const announcementSelectSchema = createSelectSchema(Announcements)
 export const announcementInsertSchema = createInsertSchema(Announcements)
@@ -285,6 +366,18 @@ export const siteTagUpdateSchema = createUpdateSchema(SiteTags)
 export const siteArchitectureSelectSchema = createSelectSchema(SiteArchitectures)
 export const siteArchitectureInsertSchema = createInsertSchema(SiteArchitectures)
 export const siteArchitectureUpdateSchema = createUpdateSchema(SiteArchitectures)
+export const programSelectSchema = createSelectSchema(Programs)
+export const programInsertSchema = createInsertSchema(Programs)
+export const programUpdateSchema = createUpdateSchema(Programs)
+export const programTechnologyStackSelectSchema = createSelectSchema(
+  ProgramTechnologyStacks,
+)
+export const programTechnologyStackInsertSchema = createInsertSchema(
+  ProgramTechnologyStacks,
+)
+export const programTechnologyStackUpdateSchema = createUpdateSchema(
+  ProgramTechnologyStacks,
+)
 
 export const siteAccessEventSelectSchema = createSelectSchema(SiteAccessEvents)
 export const siteAccessEventInsertSchema = createInsertSchema(SiteAccessEvents)

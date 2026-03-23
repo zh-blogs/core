@@ -55,14 +55,14 @@ export const TechnologyCatalogs = pgTable(
       .primaryKey(),
     /** 技术名称 */
     name: varchar({ length: 128 }).notNull(),
+    /** 技术名称归一化键，用于查重与模糊匹配 */
+    name_normalized: varchar({ length: 128 }).notNull(),
     /** 技术类型 */
     technology_type: technologyTypeEnum().notNull(),
     /** 技术简介 */
     description: varchar({ length: 512 }),
     /** 官网链接 */
     official_url: varchar({ length: 256 }),
-    /** Logo 链接 */
-    logo_url: varchar({ length: 256 }),
     /** 是否启用 */
     is_enabled: boolean().notNull().default(true),
     /** 创建时间 */
@@ -80,9 +80,14 @@ export const TechnologyCatalogs = pgTable(
       table.name,
       table.technology_type,
     ),
+    uniqueIndex('technology_catalogs_name_normalized_type_index').on(
+      table.name_normalized,
+      table.technology_type,
+    ),
     index('technology_catalogs_type_enabled_index').on(
       table.technology_type,
       table.is_enabled,
     ),
+    index('technology_catalogs_name_normalized_index').on(table.name_normalized),
   ],
 )

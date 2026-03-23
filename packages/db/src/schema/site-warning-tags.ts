@@ -7,6 +7,7 @@ import {
 } from 'drizzle-orm/pg-core'
 import { v7 } from 'uuid'
 import { siteStatusTagEnum, siteWarningTagSourceEnum } from './enums'
+import { ArticleFeedbackAudits, SiteAudits } from './audits'
 import { Sites } from './sites'
 import { Users } from './users'
 
@@ -29,8 +30,16 @@ export const SiteWarningTags = pgTable(
     tag: siteStatusTagEnum().notNull(),
     /** 标签来源 */
     source: siteWarningTagSourceEnum().notNull(),
-    /** 来源记录 ID，例如文章反馈审核记录或站点反馈审核记录 */
-    source_record_id: uuid(),
+    /** 来源站点审核记录，仅在 source=SITE_FEEDBACK 时写入 */
+    source_site_audit_id: uuid().references(() => SiteAudits.id, {
+      onDelete: 'set null',
+      onUpdate: 'cascade',
+    }),
+    /** 来源文章反馈审核记录，仅在 source=ARTICLE_FEEDBACK 时写入 */
+    source_article_feedback_audit_id: uuid().references(() => ArticleFeedbackAudits.id, {
+      onDelete: 'set null',
+      onUpdate: 'cascade',
+    }),
     /** 人工巡查或补充说明 */
     note: text(),
     /** 创建该标签的管理员，自动流程可为空 */
@@ -54,6 +63,10 @@ export const SiteWarningTags = pgTable(
     index('site_warning_tags_site_id_source_index').on(
       table.site_id,
       table.source,
+    ),
+    index('site_warning_tags_source_site_audit_id_index').on(table.source_site_audit_id),
+    index('site_warning_tags_source_article_feedback_audit_id_index').on(
+      table.source_article_feedback_audit_id,
     ),
     index('site_warning_tags_tag_index').on(table.tag),
     index('site_warning_tags_source_index').on(table.source),

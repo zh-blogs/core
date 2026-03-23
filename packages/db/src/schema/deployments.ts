@@ -1,4 +1,5 @@
 import {
+  check,
   index,
   jsonb,
   pgTable,
@@ -6,6 +7,7 @@ import {
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
 import { v7 } from 'uuid'
 import { deploymentModuleEnum, deploymentStatusEnum } from './enums'
 
@@ -34,9 +36,9 @@ export const Deployments = pgTable(
     /** 分支或引用 */
     git_ref: varchar({ length: 256 }),
     /** 结构化部署元数据 */
-    metadata: jsonb().$type<Record<string, unknown>>(),
+    metadata: jsonb().$type<Record<string, unknown>>().notNull().default({}),
     /** 原始 Webhook 载荷 */
-    raw_payload: jsonb().$type<Record<string, unknown>>(),
+    raw_payload: jsonb().$type<Record<string, unknown>>().notNull().default({}),
     /** 部署开始时间 */
     started_time: timestamp({ withTimezone: true, precision: 6 }),
     /** 部署结束时间 */
@@ -63,5 +65,9 @@ export const Deployments = pgTable(
     index('deployments_workflow_run_id_index').on(table.workflow_run_id),
     index('deployments_delivery_id_index').on(table.delivery_id),
     index('deployments_modules_gin_index').using('gin', table.modules),
+    check(
+      'deployments_trigger_event_not_blank_check',
+      sql`btrim(${table.trigger_event}) <> ''`,
+    ),
   ],
 )

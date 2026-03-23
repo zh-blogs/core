@@ -17,6 +17,7 @@ import {
   SITE_ACCESS_SCOPE_KEYS,
   SITE_CLASSIFICATION_STATUS_KEYS,
   SITE_CLAIM_TYPE_KEYS,
+  SITE_CLAIM_STATUS_KEYS,
 } from '../constants/site'
 import {
   EXECUTION_STATUS_KEYS,
@@ -25,13 +26,18 @@ import {
   SCHEDULE_MODE_KEYS,
   TASK_TYPE_KEYS,
 } from '../constants/task'
-import { TAG_TYPE_KEYS, TECHNOLOGY_TYPE_KEYS } from '../constants/taxonomy'
+import {
+  SITE_TECH_STACK_CATEGORY_KEYS,
+  TAG_TYPE_KEYS,
+  TECHNOLOGY_TYPE_KEYS,
+} from '../constants/taxonomy'
 import { USER_OAUTH_PROVIDER_KEYS, USER_ROLE_KEYS } from '../constants/user'
 
-export const fromSources = pgEnum(
-  'from_enum',
+export const fromSourceEnum = pgEnum(
+  'from_source_enum',
   FROM_SOURCE_KEYS as [string, ...string[]],
 )
+export const fromSources = fromSourceEnum
 export const announcementStatusEnum = pgEnum(
   'announcement_status_enum',
   ANNOUNCEMENT_STATUS_KEYS as [string, ...string[]],
@@ -51,6 +57,10 @@ export const siteClassificationStatusEnum = pgEnum(
 export const siteClaimTypeEnum = pgEnum(
   'site_claim_type_enum',
   SITE_CLAIM_TYPE_KEYS as [string, ...string[]],
+)
+export const siteClaimStatusEnum = pgEnum(
+  'site_claim_status_enum',
+  SITE_CLAIM_STATUS_KEYS as [string, ...string[]],
 )
 export const articleVisibilityEnum = pgEnum(
   'article_visibility_enum',
@@ -103,6 +113,10 @@ export const tagTypeEnum = pgEnum(
 export const technologyTypeEnum = pgEnum(
   'technology_type_enum',
   TECHNOLOGY_TYPE_KEYS as [string, ...string[]],
+)
+export const siteTechStackCategoryEnum = pgEnum(
+  'site_tech_stack_category_enum',
+  SITE_TECH_STACK_CATEGORY_KEYS as [string, ...string[]],
 )
 export const userRoleEnum = pgEnum(
   'user_role_enum',

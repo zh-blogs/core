@@ -35,3 +35,21 @@ export const TECHNOLOGY_TYPE_KEYS = Object.keys(TECHNOLOGY_TYPES) as Array<
 >
 
 export type TechnologyTypeKey = (typeof TECHNOLOGY_TYPE_KEYS)[number]
+
+export const SITE_TECH_STACK_CATEGORIES = {
+  FRAMEWORK: {
+    label: '框架',
+    description: '用于网站构建或运行时的框架技术栈',
+  },
+  LANGUAGE: {
+    label: '语言',
+    description: '用于网站实现的编程语言技术栈',
+  },
+} as const
+
+export const SITE_TECH_STACK_CATEGORY_KEYS = Object.keys(
+  SITE_TECH_STACK_CATEGORIES,
+) as Array<keyof typeof SITE_TECH_STACK_CATEGORIES>
+
+export type SiteTechStackCategoryKey =
+  (typeof SITE_TECH_STACK_CATEGORY_KEYS)[number]
