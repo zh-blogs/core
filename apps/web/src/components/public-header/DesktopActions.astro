@@ -1,13 +1,14 @@
 ---
+import type { Icon } from '@tabler/icons-svelte';
 import IconArrowRight from '@tabler/icons-svelte/icons/arrow-right';
 import IconChevronDown from '@tabler/icons-svelte/icons/chevron-down';
 import IconMoonStars from '@tabler/icons-svelte/icons/moon-stars';
 import IconSunHigh from '@tabler/icons-svelte/icons/sun-high';
 
-const SunIcon = IconSunHigh as typeof IconSunHigh;
-const MoonIcon = IconMoonStars as typeof IconMoonStars;
-const ChevronIcon = IconChevronDown as typeof IconChevronDown;
-const ArrowIcon = IconArrowRight as typeof IconArrowRight;
+const SunIcon = IconSunHigh as Icon;
+const MoonIcon = IconMoonStars as Icon;
+const ChevronIcon = IconChevronDown as Icon;
+const ArrowIcon = IconArrowRight as Icon;
 ---
 
 <div class="ml-auto hidden items-center gap-2 lg:flex">

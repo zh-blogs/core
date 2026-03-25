@@ -20,28 +20,26 @@ interface Props {
 
 const { currentPath } = Astro.props;
 const isHome = currentPath === '/';
-const BrandIcon = IconListTree as typeof IconListTree;
-
 const primaryLinks = [
   {
     label: '博客列表',
     href: '/site',
-    icon: IconListDetails,
+    icon: IconListDetails as typeof IconListDetails,
   },
   {
     label: '订阅一览',
     href: '/site/stats#subscription',
-    icon: IconRss,
+    icon: IconRss as typeof IconRss,
   },
   {
     label: '随机前往',
     href: '/site/go-site',
-    icon: IconDice,
+    icon: IconDice as typeof IconDice,
   },
   {
     label: '统计信息',
     href: '/site/stats',
-    icon: IconChartBar,
+    icon: IconChartBar as typeof IconChartBar,
   },
 ];
 
@@ -49,22 +47,22 @@ const projectLinks = [
   {
     label: '文档',
     href: '/docs',
-    icon: IconBook2,
+    icon: IconBook2 as typeof IconBook2,
   },
   {
     label: '博客',
     href: '/blog',
-    icon: IconFileText,
+    icon: IconFileText as typeof IconFileText,
   },
   {
     label: '贡献',
     href: '/contribute',
-    icon: IconCirclePlus,
+    icon: IconCirclePlus as typeof IconCirclePlus,
   },
   {
     label: '关于',
     href: '/about',
-    icon: IconInfoCircle,
+    icon: IconInfoCircle as typeof IconInfoCircle,
   },
 ];
 
@@ -121,7 +119,7 @@ const projectActive = activeProjectHref !== null;
       <span
         class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-(--color-line-med) text-red-700 transition transform-[scaleX(-1)] dark:text-red-400"
       >
-        <BrandIcon size={28} stroke={2.45} class="block" />
+        <IconListTree size={28} stroke={2.45} class="block" />
       </span>
       <span
         class="flex min-w-0 max-w-0 flex-col overflow-hidden whitespace-nowrap transition-all duration-300 ease-out-smooth data-[visible=true]:max-w-56"

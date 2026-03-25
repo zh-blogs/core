@@ -1,0 +1,197 @@
+---
+interface TocHeading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+
+interface Props {
+  headings?: TocHeading[];
+}
+
+const { headings = [] } = Astro.props;
+const tocHeadings = headings.filter(
+  (heading) => heading.depth >= 2 && heading.depth <= 4 && heading.slug && heading.text,
+);
+---
+
+{
+  tocHeadings.length ? (
+    <aside class="hidden xl:block xl:w-64" data-content-toc>
+      <div class="sticky top-24 max-h-[calc(100vh-7.5rem)] overflow-y-auto rounded-md border border-(--color-line) bg-(--color-bg-soft) p-4">
+        <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-(--color-fg-3)">
+          页面目录
+        </p>
+
+        <div class="mt-3 h-1 rounded-full bg-(--color-line)">
+          <span
+            class="block h-full origin-left rounded-full bg-red-700 transition-transform duration-200 dark:bg-red-400"
+            data-toc-progress
+            style="transform:scaleX(0)"
+          />
+        </div>
+
+        <nav class="mt-4 grid gap-1" data-toc-nav>
+          {tocHeadings.map((heading) => (
+            <a
+              class:list={[
+                'rounded-sm px-2 py-1.5 text-sm text-(--color-fg-2) transition',
+                heading.depth === 3 ? 'pl-5 text-[13px]' : '',
+                heading.depth === 4 ? 'pl-8 text-[13px]' : '',
+              ]}
+              data-toc-link
+              data-toc-target={heading.slug}
+              href={`#${heading.slug}`}
+            >
+              {heading.text}
+            </a>
+          ))}
+        </nav>
+      </div>
+    </aside>
+  ) : null
+}
+
+<script is:inline>
+  (() => {
+    const roots = document.querySelectorAll('[data-content-toc]');
+
+    roots.forEach((root) => {
+      const shell = root.closest('[data-content-shell]');
+      const article = shell?.querySelector('[data-content-article]');
+      const progress = root.querySelector('[data-toc-progress]');
+      const links = Array.from(root.querySelectorAll('[data-toc-link]'));
+
+      if (!article || !progress || links.length === 0) {
+        return;
+      }
+
+      const headingById = new Map();
+      links.forEach((link) => {
+        const id = link.getAttribute('data-toc-target');
+
+        if (!id) {
+          return;
+        }
+
+        const heading = document.getElementById(id);
+
+        if (!heading) {
+          return;
+        }
+
+        headingById.set(id, heading);
+      });
+
+      const activeIds = new Set();
+
+      const collectSections = () => {
+        const headingEntries = links
+          .map((link) => {
+            const id = link.getAttribute('data-toc-target') || '';
+            const heading = headingById.get(id);
+
+            if (!id || !heading) {
+              return null;
+            }
+
+            return {
+              id,
+              heading,
+              top: heading.getBoundingClientRect().top + window.scrollY,
+            };
+          })
+          .filter((entry) => entry !== null);
+
+        const articleBottom =
+          article.getBoundingClientRect().top + window.scrollY + article.offsetHeight;
+
+        return headingEntries.map((entry, index) => {
+          const nextEntry = headingEntries[index + 1];
+
+          return {
+            id: entry.id,
+            start: entry.top,
+            end: nextEntry ? nextEntry.top : articleBottom,
+          };
+        });
+      };
+
+      const updateLinks = () => {
+        if (activeIds.size > 0) {
+          links.forEach((link) => {
+            const id = link.getAttribute('data-toc-target') || '';
+            const active = activeIds.has(id);
+
+            link.classList.toggle('is-visible', active);
+            link.classList.toggle('text-red-700', active);
+            link.classList.toggle('dark:text-red-400', active);
+            link.classList.toggle('font-medium', active);
+          });
+
+          return;
+        }
+
+        const anchorLine = window.scrollY + window.innerHeight * 0.35;
+        let currentId = '';
+
+        headingById.forEach((heading, id) => {
+          const top = heading.getBoundingClientRect().top + window.scrollY;
+
+          if (top <= anchorLine) {
+            currentId = id;
+          }
+        });
+
+        links.forEach((link) => {
+          const id = link.getAttribute('data-toc-target') || '';
+          const active = currentId !== '' && id === currentId;
+
+          link.classList.toggle('is-visible', active);
+          link.classList.toggle('text-red-700', active);
+          link.classList.toggle('dark:text-red-400', active);
+          link.classList.toggle('font-medium', active);
+        });
+      };
+
+      const updateActiveHeadings = () => {
+        activeIds.clear();
+
+        const sections = collectSections();
+        const viewportTop = window.scrollY;
+        const viewportBottom = viewportTop + window.innerHeight;
+
+        sections.forEach((section) => {
+          if (section.end > viewportTop && section.start < viewportBottom) {
+            activeIds.add(section.id);
+          }
+        });
+
+        updateLinks();
+      };
+
+      const updateProgress = () => {
+        const articleRect = article.getBoundingClientRect();
+        const articleTop = articleRect.top + window.scrollY;
+        const articleHeight = article.offsetHeight;
+        const viewportLine = window.scrollY + window.innerHeight * 0.35;
+        const maxRange = Math.max(articleHeight, 1);
+        const raw = (viewportLine - articleTop) / maxRange;
+        const value = Math.min(1, Math.max(0, raw));
+
+        progress.style.transform = `scaleX(${value})`;
+      };
+
+      const onScroll = () => {
+        updateProgress();
+        updateActiveHeadings();
+      };
+
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', onScroll);
+
+      updateProgress();
+      updateActiveHeadings();
+    });
+  })();
+</script>

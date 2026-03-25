@@ -1,0 +1,35 @@
+---
+import { formatZhDate } from '@/application/content/content.date';
+
+interface Props {
+  title: string;
+  description?: string;
+  dateLabel?: string;
+  dateValue?: Date | string;
+}
+
+const { title, description, dateLabel = '发布时间', dateValue } = Astro.props;
+const formattedDate = formatZhDate(dateValue);
+const hasMetaSlot = Astro.slots.has('meta');
+---
+
+<header class="border-b border-(--color-line) pb-8">
+  <h1 class="text-[clamp(2.2rem,6vw,3.6rem)] leading-none tracking-[-0.04em]">{title}</h1>
+
+  {
+    formattedDate || hasMetaSlot ? (
+      <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[11px] uppercase tracking-[0.18em] text-(--color-fg-3)">
+        {formattedDate ? (
+          <p>
+            {dateLabel} · {formattedDate}
+          </p>
+        ) : null}
+        <slot name="meta" />
+      </div>
+    ) : null
+  }
+
+  {description ? <p class="mt-4 text-[17px] leading-8 text-(--color-fg-2)">{description}</p> : null}
+
+  <slot />
+</header>
