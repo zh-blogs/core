@@ -12,6 +12,7 @@ import { registerAuthRoutes } from '@/presentation/auth/routes/auth.controller';
 import { registerHealthRoutes } from '@/presentation/health/routes/health.controller';
 import { registerInternalJobRoutes } from '@/presentation/jobs/routes';
 import { registerPresenceRoutes } from '@/presentation/presence/routes/presence.controller';
+import { registerPublicRoutes } from '@/presentation/public/routes/public.controller';
 import { registerAdminUserRoutes } from '@/presentation/user/routes/admin-user.controller';
 import { getLoggerOptions } from '@/shared/runtime/service/app-logger.service';
 
@@ -35,6 +36,7 @@ export function createApp(options: AppBootstrapOptions = {}) {
     registerAuthRoutes(app);
     registerAdminUserRoutes(app);
     registerInternalJobRoutes(app);
+    registerPublicRoutes(app);
   });
 
   return app;
