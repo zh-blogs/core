@@ -18,8 +18,14 @@ interface ZhblogsNoticeApi {
   ) => string;
 }
 
+interface ZhblogsToast {
+  close: (id?: string) => void;
+  open: (payload: import('./application/toast/toast.service').ToastPayload) => string;
+}
+
 interface Window {
   ZhblogsNotice?: ZhblogsNoticeApi;
+  ZhblogsToast?: ZhblogsToast;
   __setZhblogsTheme?: (nextTheme: 'light' | 'dark') => void;
   __toggleZhblogsTheme?: () => void;
 }

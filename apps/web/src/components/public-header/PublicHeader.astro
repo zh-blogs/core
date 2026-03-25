@@ -1,4 +1,5 @@
 ---
+import type { Icon } from '@tabler/icons-svelte';
 import IconBook2 from '@tabler/icons-svelte/icons/book-2';
 import IconChartBar from '@tabler/icons-svelte/icons/chart-bar';
 import IconCirclePlus from '@tabler/icons-svelte/icons/circle-plus';
@@ -24,22 +25,22 @@ const primaryLinks = [
   {
     label: '博客列表',
     href: '/site',
-    icon: IconListDetails as typeof IconListDetails,
+    icon: IconListDetails as Icon,
   },
   {
     label: '订阅一览',
     href: '/site/stats#subscription',
-    icon: IconRss as typeof IconRss,
+    icon: IconRss as Icon,
   },
   {
     label: '随机前往',
     href: '/site/go-site',
-    icon: IconDice as typeof IconDice,
+    icon: IconDice as Icon,
   },
   {
     label: '统计信息',
     href: '/site/stats',
-    icon: IconChartBar as typeof IconChartBar,
+    icon: IconChartBar as Icon,
   },
 ];
 
@@ -47,22 +48,22 @@ const projectLinks = [
   {
     label: '文档',
     href: '/docs',
-    icon: IconBook2 as typeof IconBook2,
+    icon: IconBook2 as Icon,
   },
   {
     label: '博客',
     href: '/blog',
-    icon: IconFileText as typeof IconFileText,
+    icon: IconFileText as Icon,
   },
   {
     label: '贡献',
     href: '/contribute',
-    icon: IconCirclePlus as typeof IconCirclePlus,
+    icon: IconCirclePlus as Icon,
   },
   {
     label: '关于',
     href: '/about',
-    icon: IconInfoCircle as typeof IconInfoCircle,
+    icon: IconInfoCircle as Icon,
   },
 ];
 
