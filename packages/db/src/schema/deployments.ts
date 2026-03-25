@@ -1,15 +1,8 @@
-import {
-  check,
-  index,
-  jsonb,
-  pgTable,
-  timestamp,
-  uuid,
-  varchar,
-} from 'drizzle-orm/pg-core'
-import { sql } from 'drizzle-orm'
-import { v7 } from 'uuid'
-import { deploymentModuleEnum, deploymentStatusEnum } from './enums'
+import { sql } from 'drizzle-orm';
+import { check, index, jsonb, pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import { v7 } from 'uuid';
+
+import { deploymentModuleEnum, deploymentStatusEnum } from './enums';
 
 /** 部署运维表，合并 GitHub Webhook 触发信息与部署执行结果 */
 export const Deployments = pgTable(
@@ -44,15 +37,10 @@ export const Deployments = pgTable(
     /** 部署结束时间 */
     finished_time: timestamp({ withTimezone: true, precision: 6 }),
     /** 创建时间 */
-    created_time: timestamp({ withTimezone: true, precision: 6 })
-      .notNull()
-      .defaultNow(),
+    created_time: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
   },
   (table) => [
-    index('deployments_status_created_time_index').on(
-      table.status,
-      table.created_time.desc(),
-    ),
+    index('deployments_status_created_time_index').on(table.status, table.created_time.desc()),
     index('deployments_commit_sha_created_time_index').on(
       table.commit_sha,
       table.created_time.desc(),
@@ -65,9 +53,6 @@ export const Deployments = pgTable(
     index('deployments_workflow_run_id_index').on(table.workflow_run_id),
     index('deployments_delivery_id_index').on(table.delivery_id),
     index('deployments_modules_gin_index').using('gin', table.modules),
-    check(
-      'deployments_trigger_event_not_blank_check',
-      sql`btrim(${table.trigger_event}) <> ''`,
-    ),
+    check('deployments_trigger_event_not_blank_check', sql`btrim(${table.trigger_event}) <> ''`),
   ],
-)
+);

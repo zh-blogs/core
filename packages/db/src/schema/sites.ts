@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   boolean,
   check,
@@ -10,24 +11,25 @@ import {
   uniqueIndex,
   uuid,
   varchar,
-} from 'drizzle-orm/pg-core'
-import { sql } from 'drizzle-orm'
-import { v7 } from 'uuid'
-import type { FeedTypeKey } from '../constants/site'
+} from 'drizzle-orm/pg-core';
+import { v7 } from 'uuid';
+
+import type { FeedTypeKey } from '../constants/site';
+
+import { TagDefinitions, TechnologyCatalogs } from './catalogs';
 import {
   fromSources,
   siteAccessEventTypeEnum,
   siteAccessScopeEnum,
   siteClassificationStatusEnum,
-  siteTechStackCategoryEnum,
   siteStatusTypeEnum,
-} from './enums'
-import { TagDefinitions, TechnologyCatalogs } from './catalogs'
+  siteTechStackCategoryEnum,
+} from './enums';
 
 export interface MultiFeed {
-  name: string
-  url: string
-  type?: FeedTypeKey
+  name: string;
+  url: string;
+  type?: FeedTypeKey;
 }
 
 export const Sites = pgTable(
@@ -54,21 +56,19 @@ export const Sites = pgTable(
     /** 站点来源渠道 */
     from: fromSources().array().notNull().default([]),
     /** 站点分类信息是否已确认完整 */
-    classification_status: siteClassificationStatusEnum()
-      .notNull()
-      .default('COMPLETE'),
+    classification_status: siteClassificationStatusEnum().notNull().default('COMPLETE'),
     /** 站点地图地址 */
     sitemap: varchar({ length: 256 }),
     /** 友链页地址 */
     link_page: varchar({ length: 256 }),
     /** 站点加入时间 */
-    join_time: timestamp({ withTimezone: true, precision: 6 }).notNull().$default(
-      () => new Date(),
-    ),
+    join_time: timestamp({ withTimezone: true, precision: 6 })
+      .notNull()
+      .$default(() => new Date()),
     /** 站点最后更新时间 */
-    update_time: timestamp({ withTimezone: true, precision: 6 }).notNull().$default(
-      () => new Date(),
-    ),
+    update_time: timestamp({ withTimezone: true, precision: 6 })
+      .notNull()
+      .$default(() => new Date()),
     /** 站点访问属性：仅国内、仅海外、国内外都可访问 */
     access_scope: siteAccessScopeEnum().notNull().default('BOTH'),
     /** 站点当前简易显示状态，取最近一次检测归并结果 */
@@ -91,7 +91,7 @@ export const Sites = pgTable(
     check('sites_bid_not_blank_check', sql`btrim(${table.bid}) <> ''`),
     check('sites_name_not_blank_check', sql`btrim(${table.name}) <> ''`),
   ],
-)
+);
 
 /** 程序定义表：用于站点主程序归档、统计与展示 */
 export const Programs = pgTable(
@@ -113,9 +113,7 @@ export const Programs = pgTable(
     /** 是否启用 */
     is_enabled: boolean().notNull().default(true),
     /** 创建时间 */
-    created_time: timestamp({ withTimezone: true, precision: 6 })
-      .notNull()
-      .defaultNow(),
+    created_time: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
     /** 更新时间 */
     updated_time: timestamp({ withTimezone: true, precision: 6 })
       .notNull()
@@ -126,12 +124,9 @@ export const Programs = pgTable(
     uniqueIndex('programs_name_normalized_unique').on(table.name_normalized),
     index('programs_enabled_name_index').on(table.is_enabled, table.name),
     check('programs_name_not_blank_check', sql`btrim(${table.name}) <> ''`),
-    check(
-      'programs_name_normalized_not_blank_check',
-      sql`btrim(${table.name_normalized}) <> ''`,
-    ),
+    check('programs_name_normalized_not_blank_check', sql`btrim(${table.name_normalized}) <> ''`),
   ],
-)
+);
 
 /** 站点标签关联表，通过标签定义表表达主标签和副标签 */
 export const SiteTags = pgTable(
@@ -152,9 +147,7 @@ export const SiteTags = pgTable(
         onUpdate: 'cascade',
       }),
     /** 关联创建时间 */
-    created_time: timestamp({ withTimezone: true, precision: 6 })
-      .notNull()
-      .defaultNow(),
+    created_time: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
   },
   (table) => [
     primaryKey({
@@ -164,7 +157,7 @@ export const SiteTags = pgTable(
     index('site_tags_site_id_index').on(table.site_id),
     index('site_tags_tag_id_index').on(table.tag_id),
   ],
-)
+);
 
 /** 站点程序关联表：站点与程序一对一关联 */
 export const SiteArchitectures = pgTable(
@@ -178,24 +171,22 @@ export const SiteArchitectures = pgTable(
         onUpdate: 'cascade',
       }),
     /** 博客程序（程序表项） */
-    program_id: uuid().notNull().references(() => Programs.id, {
-      onDelete: 'restrict',
-      onUpdate: 'cascade',
-    }),
-    /** 创建时间 */
-    created_time: timestamp({ withTimezone: true, precision: 6 })
+    program_id: uuid()
       .notNull()
-      .defaultNow(),
+      .references(() => Programs.id, {
+        onDelete: 'restrict',
+        onUpdate: 'cascade',
+      }),
+    /** 创建时间 */
+    created_time: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
     /** 更新时间 */
     updated_time: timestamp({ withTimezone: true, precision: 6 })
       .notNull()
       .defaultNow()
       .$onUpdateFn(() => new Date()),
   },
-  (table) => [
-    index('site_architectures_program_id_index').on(table.program_id),
-  ],
-)
+  (table) => [index('site_architectures_program_id_index').on(table.program_id)],
+);
 
 /** 程序技术栈关联表：程序与技术栈候选词库的一对多关系 */
 export const ProgramTechnologyStacks = pgTable(
@@ -223,9 +214,7 @@ export const ProgramTechnologyStacks = pgTable(
     /** 归一化名称，用于去重与检索 */
     name_normalized: varchar({ length: 128 }).notNull(),
     /** 创建时间 */
-    created_time: timestamp({ withTimezone: true, precision: 6 })
-      .notNull()
-      .defaultNow(),
+    created_time: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
     /** 更新时间 */
     updated_time: timestamp({ withTimezone: true, precision: 6 })
       .notNull()
@@ -236,9 +225,7 @@ export const ProgramTechnologyStacks = pgTable(
     index('program_technology_stacks_program_id_index').on(table.program_id),
     index('program_technology_stacks_catalog_id_index').on(table.catalog_id),
     index('program_technology_stacks_category_index').on(table.category),
-    index('program_technology_stacks_name_normalized_index').on(
-      table.name_normalized,
-    ),
+    index('program_technology_stacks_name_normalized_index').on(table.name_normalized),
     uniqueIndex('program_technology_stacks_program_category_name_unique').on(
       table.program_id,
       table.category,
@@ -249,7 +236,7 @@ export const ProgramTechnologyStacks = pgTable(
       sql`btrim(${table.name_normalized}) <> ''`,
     ),
   ],
-)
+);
 
 /** 站点访问事件表，记录每次访问来源与入口信息 */
 export const SiteAccessEvents = pgTable(
@@ -277,9 +264,7 @@ export const SiteAccessEvents = pgTable(
     /** 访问终端标识 */
     user_agent: varchar({ length: 512 }),
     /** 事件发生时间 */
-    occurred_time: timestamp({ withTimezone: true, precision: 6 })
-      .notNull()
-      .defaultNow(),
+    occurred_time: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
   },
   (table) => [
     index('site_access_events_site_id_occurred_time_index').on(
@@ -302,12 +287,7 @@ export const SiteAccessEvents = pgTable(
       table.occurred_time.desc(),
     ),
     index('site_access_events_referer_host_index').on(table.referer_host),
-    index('site_access_events_occurred_time_index').on(
-      table.occurred_time.desc(),
-    ),
-    check(
-      'site_access_events_source_not_blank_check',
-      sql`btrim(${table.source}) <> ''`,
-    ),
+    index('site_access_events_occurred_time_index').on(table.occurred_time.desc()),
+    check('site_access_events_source_not_blank_check', sql`btrim(${table.source}) <> ''`),
   ],
-)
+);

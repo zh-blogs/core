@@ -11,13 +11,13 @@ export const SITE_AUDIT_ACTIONS = {
     label: '删除审核',
     description: '站点删除申请的审核流程',
   },
-} as const
+} as const;
 
 export const SITE_AUDIT_ACTION_KEYS = Object.keys(SITE_AUDIT_ACTIONS) as Array<
   keyof typeof SITE_AUDIT_ACTIONS
->
+>;
 
-export type SiteAuditActionKey = (typeof SITE_AUDIT_ACTION_KEYS)[number]
+export type SiteAuditActionKey = (typeof SITE_AUDIT_ACTION_KEYS)[number];
 
 export const AUDIT_STATUSES = {
   PENDING: {
@@ -36,10 +36,8 @@ export const AUDIT_STATUSES = {
     label: '已撤销',
     description: '申请人主动撤销或流程被终止',
   },
-} as const
+} as const;
 
-export const AUDIT_STATUS_KEYS = Object.keys(AUDIT_STATUSES) as Array<
-  keyof typeof AUDIT_STATUSES
->
+export const AUDIT_STATUS_KEYS = Object.keys(AUDIT_STATUSES) as Array<keyof typeof AUDIT_STATUSES>;
 
-export type AuditStatusKey = (typeof AUDIT_STATUS_KEYS)[number]
+export type AuditStatusKey = (typeof AUDIT_STATUS_KEYS)[number];

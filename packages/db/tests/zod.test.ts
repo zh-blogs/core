@@ -1,29 +1,29 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest';
+
 import {
   siteAuditInsertSchema,
+  siteClaimStatusSchema,
   siteInsertSchema,
   siteUpdateSchema,
   taskScheduleInsertSchema,
-} from '../src/zod/index.ts'
+} from '../src/zod/index.ts';
 
 const expectSuccess = (result: { success: boolean; error?: { issues: unknown } }) => {
   if (!result.success) {
-    throw new Error(JSON.stringify(result.error?.issues))
+    throw new Error(JSON.stringify(result.error?.issues));
   }
-}
+};
 
 const expectFailurePath = (
   result: {
-    success: boolean
-    error?: { issues: Array<{ path: Array<string | number> }> }
+    success: boolean;
+    error?: { issues: Array<{ path: PropertyKey[] }> };
   },
   expectedPath: string,
 ) => {
-  expect(result.success).toBe(false)
-  expect(
-    result.error?.issues.some((issue) => issue.path.join('.') === expectedPath),
-  ).toBe(true)
-}
+  expect(result.success).toBe(false);
+  expect(result.error?.issues.some((issue) => issue.path.join('.') === expectedPath)).toBe(true);
+};
 
 describe('db zod site url validation', () => {
   it('accepts valid public site urls in site inserts', () => {
@@ -41,40 +41,40 @@ describe('db zod site url validation', () => {
       default_feed_url: 'https://blog.example.co.uk/feed.xml',
       sitemap: 'https://example.com/sitemap.xml',
       link_page: 'https://links.example.com/friends',
-    })
+    });
 
-    expectSuccess(result)
-  })
+    expectSuccess(result);
+  });
 
   it('rejects non-absolute site urls', () => {
     const result = siteInsertSchema.safeParse({
       bid: 'missing-scheme',
       name: 'Missing Scheme',
       url: 'example.com',
-    })
+    });
 
-    expectFailurePath(result, 'url')
-  })
+    expectFailurePath(result, 'url');
+  });
 
   it('rejects invalid hostname labels', () => {
     const result = siteInsertSchema.safeParse({
       bid: 'bad-hostname',
       name: 'Bad Hostname',
       url: 'https://foo_bar.com',
-    })
+    });
 
-    expectFailurePath(result, 'url')
-  })
+    expectFailurePath(result, 'url');
+  });
 
   it('still allows clearing nullable site urls on updates', () => {
     const result = siteUpdateSchema.safeParse({
       default_feed_url: null,
       sitemap: null,
       link_page: null,
-    })
+    });
 
-    expectSuccess(result)
-  })
+    expectSuccess(result);
+  });
 
   it('validates nested site snapshot urls', () => {
     const result = siteAuditInsertSchema.safeParse({
@@ -91,10 +91,10 @@ describe('db zod site url validation', () => {
         ],
         link_page: 'https://localhost/friends',
       },
-    })
+    });
 
-    expectFailurePath(result, 'proposed_snapshot.link_page')
-  })
+    expectFailurePath(result, 'proposed_snapshot.link_page');
+  });
 
   it('validates payload_template.feed_url', () => {
     const result = taskScheduleInsertSchema.safeParse({
@@ -105,10 +105,10 @@ describe('db zod site url validation', () => {
       payload_template: {
         feed_url: 'https://localhost/feed.xml',
       },
-    })
+    });
 
-    expectFailurePath(result, 'payload_template.feed_url')
-  })
+    expectFailurePath(result, 'payload_template.feed_url');
+  });
 
   it('rejects default_feed_url when feed is empty', () => {
     const result = siteInsertSchema.safeParse({
@@ -117,10 +117,10 @@ describe('db zod site url validation', () => {
       url: 'https://example.com',
       feed: [],
       default_feed_url: 'https://example.com/feed.xml',
-    })
+    });
 
-    expectFailurePath(result, 'default_feed_url')
-  })
+    expectFailurePath(result, 'default_feed_url');
+  });
 
   it('rejects default_feed_url that is not present in feed', () => {
     const result = siteInsertSchema.safeParse({
@@ -135,8 +135,14 @@ describe('db zod site url validation', () => {
         },
       ],
       default_feed_url: 'https://example.com/atom.xml',
-    })
+    });
 
-    expectFailurePath(result, 'default_feed_url')
-  })
-})
+    expectFailurePath(result, 'default_feed_url');
+  });
+
+  it('accepts new claim statuses and rejects legacy status', () => {
+    expect(siteClaimStatusSchema.safeParse('PENDING_VERIFICATION').success).toBe(true);
+    expect(siteClaimStatusSchema.safeParse('PENDING_REVIEW').success).toBe(true);
+    expect(siteClaimStatusSchema.safeParse('PENDING').success).toBe(false);
+  });
+});

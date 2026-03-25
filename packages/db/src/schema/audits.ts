@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   boolean,
   check,
@@ -8,72 +9,71 @@ import {
   timestamp,
   uuid,
   varchar,
-} from 'drizzle-orm/pg-core'
-import { sql } from 'drizzle-orm'
-import { v7 } from 'uuid'
-import type {
-  SiteStatusTypeKey,
-} from '../constants/monitoring'
+} from 'drizzle-orm/pg-core';
+import { v7 } from 'uuid';
+
+import type { SiteStatusTypeKey } from '../constants/monitoring';
 import type {
   FromSourceKey,
   SiteAccessScopeKey,
   SiteClassificationStatusKey,
-} from '../constants/site'
-import { FeedArticles } from './feed-articles'
+} from '../constants/site';
+
 import {
   articleFeedbackActionEnum,
   articleFeedbackReasonEnum,
   auditStatusEnum,
   siteAuditActionEnum,
-} from './enums'
-import type { MultiFeed } from './sites'
-import { Sites } from './sites'
-import { Users } from './users'
+} from './enums';
+import { FeedArticles } from './feed-articles';
+import type { MultiFeed } from './sites';
+import { Sites } from './sites';
+import { Users } from './users';
 
 export interface SiteAuditArchitectureSnapshot {
-  program_id?: string | null
-  program_name?: string | null
-  program_is_open_source?: boolean | null
+  program_id?: string | null;
+  program_name?: string | null;
+  program_is_open_source?: boolean | null;
   stacks?: Array<{
-    category: 'FRAMEWORK' | 'LANGUAGE'
-    catalog_id?: string | null
-    name?: string | null
-    name_normalized?: string | null
-  }> | null
-  website_url?: string | null
-  repo_url?: string | null
+    category: 'FRAMEWORK' | 'LANGUAGE';
+    catalog_id?: string | null;
+    name?: string | null;
+    name_normalized?: string | null;
+  }> | null;
+  website_url?: string | null;
+  repo_url?: string | null;
 }
 
 /** 站点审核快照，用于新增/修改/删除审核时展示前后差异 */
 export interface SiteAuditSnapshot {
-  bid?: string | null
-  name?: string | null
-  url?: string | null
-  sign?: string | null
-  icon_base64?: string | null
-  feed?: MultiFeed[] | null
-  default_feed_url?: string | null
-  from?: FromSourceKey[] | null
-  classification_status?: SiteClassificationStatusKey | null
-  sitemap?: string | null
-  link_page?: string | null
-  access_scope?: SiteAccessScopeKey | null
-  status?: SiteStatusTypeKey | null
-  is_show?: boolean | null
-  recommend?: boolean | null
-  reason?: string | null
-  tag_ids?: string[] | null
-  main_tag_id?: string | null
-  sub_tag_ids?: string[] | null
-  custom_sub_tags?: string[] | null
-  architecture?: SiteAuditArchitectureSnapshot | null
+  bid?: string | null;
+  name?: string | null;
+  url?: string | null;
+  sign?: string | null;
+  icon_base64?: string | null;
+  feed?: MultiFeed[] | null;
+  default_feed_url?: string | null;
+  from?: FromSourceKey[] | null;
+  classification_status?: SiteClassificationStatusKey | null;
+  sitemap?: string | null;
+  link_page?: string | null;
+  access_scope?: SiteAccessScopeKey | null;
+  status?: SiteStatusTypeKey | null;
+  is_show?: boolean | null;
+  recommend?: boolean | null;
+  reason?: string | null;
+  tag_ids?: string[] | null;
+  main_tag_id?: string | null;
+  sub_tag_ids?: string[] | null;
+  custom_sub_tags?: string[] | null;
+  architecture?: SiteAuditArchitectureSnapshot | null;
 }
 
 /** 前端 diff 视图可直接消费的字段差异 */
 export interface SiteAuditDiffItem {
-  field: string
-  before: unknown
-  after: unknown
+  field: string;
+  before: unknown;
+  after: unknown;
 }
 
 /** 站点信息审核表，覆盖新增、修改申请、删除申请 */
@@ -116,9 +116,7 @@ export const SiteAudits = pgTable(
     /** 审核完成时间 */
     reviewed_time: timestamp({ withTimezone: true, precision: 6 }),
     /** 申请创建时间 */
-    created_time: timestamp({ withTimezone: true, precision: 6 })
-      .notNull()
-      .defaultNow(),
+    created_time: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
     /** 审核记录最后更新时间 */
     updated_time: timestamp({ withTimezone: true, precision: 6 })
       .notNull()
@@ -126,20 +124,17 @@ export const SiteAudits = pgTable(
       .$onUpdateFn(() => new Date()),
   },
   (table) => [
-    index('site_audits_site_id_created_time_index').on(
-      table.site_id,
-      table.created_time.desc(),
-    ),
-    index('site_audits_status_created_time_index').on(
-      table.status,
-      table.created_time.desc(),
-    ),
+    index('site_audits_site_id_created_time_index').on(table.site_id, table.created_time.desc()),
+    index('site_audits_status_created_time_index').on(table.status, table.created_time.desc()),
     index('site_audits_action_status_index').on(table.action, table.status),
     index('site_audits_reviewed_by_index').on(table.reviewed_by),
     check('site_audits_submitter_name_not_blank_check', sql`btrim(${table.submitter_name}) <> ''`),
-    check('site_audits_submitter_email_not_blank_check', sql`btrim(${table.submitter_email}) <> ''`),
+    check(
+      'site_audits_submitter_email_not_blank_check',
+      sql`btrim(${table.submitter_email}) <> ''`,
+    ),
   ],
-)
+);
 
 /** RSS 文章问题反馈审核表，用于隐藏或删除抓取文章 */
 export const ArticleFeedbackAudits = pgTable(
@@ -186,9 +181,7 @@ export const ArticleFeedbackAudits = pgTable(
     /** 审核完成时间 */
     reviewed_time: timestamp({ withTimezone: true, precision: 6 }),
     /** 反馈创建时间 */
-    created_time: timestamp({ withTimezone: true, precision: 6 })
-      .notNull()
-      .defaultNow(),
+    created_time: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
     /** 反馈记录最后更新时间 */
     updated_time: timestamp({ withTimezone: true, precision: 6 })
       .notNull()
@@ -200,18 +193,12 @@ export const ArticleFeedbackAudits = pgTable(
       table.article_id,
       table.created_time.desc(),
     ),
-    index('article_feedback_audits_site_id_status_index').on(
-      table.site_id,
-      table.status,
-    ),
+    index('article_feedback_audits_site_id_status_index').on(table.site_id, table.status),
     index('article_feedback_audits_status_created_time_index').on(
       table.status,
       table.created_time.desc(),
     ),
-    index('article_feedback_audits_action_status_index').on(
-      table.action,
-      table.status,
-    ),
+    index('article_feedback_audits_action_status_index').on(table.action, table.status),
     index('article_feedback_audits_reviewed_by_index').on(table.reviewed_by),
     check(
       'article_feedback_audits_reporter_name_not_blank_check',
@@ -222,4 +209,4 @@ export const ArticleFeedbackAudits = pgTable(
       sql`btrim(${table.reporter_email}) <> ''`,
     ),
   ],
-)
+);

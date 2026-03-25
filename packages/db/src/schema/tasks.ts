@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   type AnyPgColumn,
   boolean,
@@ -11,55 +12,56 @@ import {
   uniqueIndex,
   uuid,
   varchar,
-} from 'drizzle-orm/pg-core'
-import { sql } from 'drizzle-orm'
-import { v7 } from 'uuid'
-import type { JobStatusKey, TaskTypeKey } from '../constants/task'
+} from 'drizzle-orm/pg-core';
+import { v7 } from 'uuid';
+
+import type { JobStatusKey, TaskTypeKey } from '../constants/task';
+
 import {
   executionStatusEnum,
   jobStatusEnum,
   jobTriggerSourceEnum,
   scheduleModeEnum,
   taskTypeEnum,
-} from './enums'
+} from './enums';
 
 /** 调度器元数据，可由 Worker 调度器或后台管理界面维护 */
 export interface TaskScheduleConfig {
-  cron?: string
-  interval_seconds?: number
-  timezone?: string
-  jitter_seconds?: number
-  start_at?: string
-  end_at?: string
+  cron?: string;
+  interval_seconds?: number;
+  timezone?: string;
+  jitter_seconds?: number;
+  start_at?: string;
+  end_at?: string;
 }
 
 /** 默认任务载荷模板，用于生成实际 jobs.payload */
 export interface TaskPayloadTemplate {
-  site_id?: string
-  site_ids?: string[]
-  feed_url?: string
-  target_email?: string
-  message_channel?: string
-  message_template?: string
-  options?: Record<string, unknown>
+  site_id?: string;
+  site_ids?: string[];
+  feed_url?: string;
+  target_email?: string;
+  message_channel?: string;
+  message_template?: string;
+  options?: Record<string, unknown>;
 }
 
 /** 任务依赖或事件触发条件定义 */
 export interface TaskTriggerRule {
-  event?: string
-  parent_task_type?: TaskTypeKey
-  parent_status?: JobStatusKey
-  only_on_success?: boolean
-  delay_seconds?: number
+  event?: string;
+  parent_task_type?: TaskTypeKey;
+  parent_status?: JobStatusKey;
+  only_on_success?: boolean;
+  delay_seconds?: number;
 }
 
 /** 重试、超时和并发配置 */
 export interface JobPolicyConfig {
-  max_attempts?: number
-  timeout_seconds?: number
-  retry_backoff_seconds?: number[]
-  concurrency_key?: string
-  dedupe_window_seconds?: number
+  max_attempts?: number;
+  timeout_seconds?: number;
+  retry_backoff_seconds?: number[];
+  concurrency_key?: string;
+  dedupe_window_seconds?: number;
 }
 
 /** 调度定义表，描述任务如何被创建 */
@@ -93,9 +95,7 @@ export const TaskSchedules = pgTable(
     /** 上次生成任务时间 */
     last_run_time: timestamp({ withTimezone: true, precision: 6 }),
     /** 创建时间 */
-    created_time: timestamp({ withTimezone: true, precision: 6 })
-      .notNull()
-      .defaultNow(),
+    created_time: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
     /** 调度定义最后更新时间 */
     updated_time: timestamp({ withTimezone: true, precision: 6 })
       .notNull()
@@ -104,21 +104,12 @@ export const TaskSchedules = pgTable(
   },
   (table) => [
     uniqueIndex('task_schedules_name_index').on(table.name),
-    index('task_schedules_enabled_next_run_index').on(
-      table.is_enabled,
-      table.next_run_time,
-    ),
-    index('task_schedules_type_enabled_index').on(
-      table.task_type,
-      table.is_enabled,
-    ),
-    index('task_schedules_queue_enabled_index').on(
-      table.queue_name,
-      table.is_enabled,
-    ),
+    index('task_schedules_enabled_next_run_index').on(table.is_enabled, table.next_run_time),
+    index('task_schedules_type_enabled_index').on(table.task_type, table.is_enabled),
+    index('task_schedules_queue_enabled_index').on(table.queue_name, table.is_enabled),
     check('task_schedules_name_not_blank_check', sql`btrim(${table.name}) <> ''`),
   ],
-)
+);
 
 /** 实际待消费任务表，对应文档中的 PostgreSQL jobs 队列 */
 export const Jobs = pgTable(
@@ -166,9 +157,7 @@ export const Jobs = pgTable(
     /** 幂等或去重键 */
     dedupe_key: varchar({ length: 256 }),
     /** 任务最早可执行时间 */
-    run_at: timestamp({ withTimezone: true, precision: 6 })
-      .notNull()
-      .defaultNow(),
+    run_at: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
     /** 被消费者锁定的时间 */
     locked_at: timestamp({ withTimezone: true, precision: 6 }),
     /** 当前锁定该任务的 Worker 标识 */
@@ -186,9 +175,7 @@ export const Jobs = pgTable(
     /** 失败错误信息 */
     error_message: text(),
     /** 任务创建时间 */
-    created_time: timestamp({ withTimezone: true, precision: 6 })
-      .notNull()
-      .defaultNow(),
+    created_time: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
     /** 任务最后更新时间 */
     updated_time: timestamp({ withTimezone: true, precision: 6 })
       .notNull()
@@ -202,26 +189,11 @@ export const Jobs = pgTable(
       table.run_at,
       table.priority.desc(),
     ),
-    index('jobs_status_next_retry_time_index').on(
-      table.status,
-      table.next_retry_time,
-    ),
-    index('jobs_schedule_created_time_index').on(
-      table.schedule_id,
-      table.created_time.desc(),
-    ),
-    index('jobs_root_job_created_time_index').on(
-      table.root_job_id,
-      table.created_time.desc(),
-    ),
-    index('jobs_parent_job_created_time_index').on(
-      table.parent_job_id,
-      table.created_time.desc(),
-    ),
-    index('jobs_locked_by_heartbeat_time_index').on(
-      table.locked_by,
-      table.heartbeat_time,
-    ),
+    index('jobs_status_next_retry_time_index').on(table.status, table.next_retry_time),
+    index('jobs_schedule_created_time_index').on(table.schedule_id, table.created_time.desc()),
+    index('jobs_root_job_created_time_index').on(table.root_job_id, table.created_time.desc()),
+    index('jobs_parent_job_created_time_index').on(table.parent_job_id, table.created_time.desc()),
+    index('jobs_locked_by_heartbeat_time_index').on(table.locked_by, table.heartbeat_time),
     uniqueIndex('jobs_dedupe_key_index')
       .on(table.dedupe_key)
       .where(sql`${table.dedupe_key} is not null and ${table.dedupe_key} <> ''`),
@@ -229,7 +201,7 @@ export const Jobs = pgTable(
     check('jobs_attempt_count_non_negative_check', sql`${table.attempt_count} >= 0`),
     check('jobs_max_attempts_positive_check', sql`${table.max_attempts} > 0`),
   ],
-)
+);
 
 /** 每次消费尝试的执行明细表，用于重试追踪和故障排查 */
 export const JobExecutions = pgTable(
@@ -261,9 +233,7 @@ export const JobExecutions = pgTable(
     /** 错误摘要 */
     error_message: text(),
     /** 开始时间 */
-    started_time: timestamp({ withTimezone: true, precision: 6 })
-      .notNull()
-      .defaultNow(),
+    started_time: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
     /** 完成时间 */
     finished_time: timestamp({ withTimezone: true, precision: 6 }),
     /** 执行耗时，毫秒 */
@@ -271,23 +241,15 @@ export const JobExecutions = pgTable(
     /** 最后一次心跳时间 */
     heartbeat_time: timestamp({ withTimezone: true, precision: 6 }),
     /** 执行记录创建时间 */
-    created_time: timestamp({ withTimezone: true, precision: 6 })
-      .notNull()
-      .defaultNow(),
+    created_time: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
   },
   (table) => [
-    uniqueIndex('job_executions_job_id_attempt_no_index').on(
-      table.job_id,
-      table.attempt_no,
-    ),
-    index('job_executions_job_id_started_time_index').on(
-      table.job_id,
-      table.started_time.desc(),
-    ),
+    uniqueIndex('job_executions_job_id_attempt_no_index').on(table.job_id, table.attempt_no),
+    index('job_executions_job_id_started_time_index').on(table.job_id, table.started_time.desc()),
     index('job_executions_worker_status_started_time_index').on(
       table.worker_id,
       table.status,
       table.started_time.desc(),
     ),
   ],
-)
+);

@@ -11,13 +11,13 @@ export const ARTICLE_VISIBILITIES = {
     label: '删除',
     description: '文章记录被逻辑删除或不再对外提供',
   },
-} as const
+} as const;
 
 export const ARTICLE_VISIBILITY_KEYS = Object.keys(ARTICLE_VISIBILITIES) as Array<
   keyof typeof ARTICLE_VISIBILITIES
->
+>;
 
-export type ArticleVisibilityKey = (typeof ARTICLE_VISIBILITY_KEYS)[number]
+export type ArticleVisibilityKey = (typeof ARTICLE_VISIBILITY_KEYS)[number];
 
 export const ARTICLE_FEEDBACK_ACTIONS = {
   HIDE: {
@@ -28,13 +28,13 @@ export const ARTICLE_FEEDBACK_ACTIONS = {
     label: '删除文章',
     description: '审核通过后将文章标记为删除状态',
   },
-} as const
+} as const;
 
-export const ARTICLE_FEEDBACK_ACTION_KEYS = Object.keys(
-  ARTICLE_FEEDBACK_ACTIONS,
-) as Array<keyof typeof ARTICLE_FEEDBACK_ACTIONS>
+export const ARTICLE_FEEDBACK_ACTION_KEYS = Object.keys(ARTICLE_FEEDBACK_ACTIONS) as Array<
+  keyof typeof ARTICLE_FEEDBACK_ACTIONS
+>;
 
-export type ArticleFeedbackActionKey = (typeof ARTICLE_FEEDBACK_ACTION_KEYS)[number]
+export type ArticleFeedbackActionKey = (typeof ARTICLE_FEEDBACK_ACTION_KEYS)[number];
 
 export const ARTICLE_FEEDBACK_REASONS = {
   CONTENT_ERROR: {
@@ -69,10 +69,10 @@ export const ARTICLE_FEEDBACK_REASONS = {
     label: '其他问题',
     description: '不属于预定义分类的其他反馈问题',
   },
-} as const
+} as const;
 
-export const ARTICLE_FEEDBACK_REASON_KEYS = Object.keys(
-  ARTICLE_FEEDBACK_REASONS,
-) as Array<keyof typeof ARTICLE_FEEDBACK_REASONS>
+export const ARTICLE_FEEDBACK_REASON_KEYS = Object.keys(ARTICLE_FEEDBACK_REASONS) as Array<
+  keyof typeof ARTICLE_FEEDBACK_REASONS
+>;
 
-export type ArticleFeedbackReasonKey = (typeof ARTICLE_FEEDBACK_REASON_KEYS)[number]
+export type ArticleFeedbackReasonKey = (typeof ARTICLE_FEEDBACK_REASON_KEYS)[number];

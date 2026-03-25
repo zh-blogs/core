@@ -27,13 +27,11 @@ export const TASK_TYPES = {
     label: '自定义任务',
     description: '用于兼容临时扩展的自定义任务类型',
   },
-} as const
+} as const;
 
-export const TASK_TYPE_KEYS = Object.keys(TASK_TYPES) as Array<
-  keyof typeof TASK_TYPES
->
+export const TASK_TYPE_KEYS = Object.keys(TASK_TYPES) as Array<keyof typeof TASK_TYPES>;
 
-export type TaskTypeKey = (typeof TASK_TYPE_KEYS)[number]
+export type TaskTypeKey = (typeof TASK_TYPE_KEYS)[number];
 
 export const SCHEDULE_MODES = {
   CRON: {
@@ -52,13 +50,11 @@ export const SCHEDULE_MODES = {
     label: '事件触发',
     description: '由业务事件或关联任务完成后触发创建',
   },
-} as const
+} as const;
 
-export const SCHEDULE_MODE_KEYS = Object.keys(SCHEDULE_MODES) as Array<
-  keyof typeof SCHEDULE_MODES
->
+export const SCHEDULE_MODE_KEYS = Object.keys(SCHEDULE_MODES) as Array<keyof typeof SCHEDULE_MODES>;
 
-export type ScheduleModeKey = (typeof SCHEDULE_MODE_KEYS)[number]
+export type ScheduleModeKey = (typeof SCHEDULE_MODE_KEYS)[number];
 
 export const JOB_TRIGGER_SOURCES = {
   SCHEDULE: {
@@ -85,13 +81,13 @@ export const JOB_TRIGGER_SOURCES = {
     label: '系统触发',
     description: '由系统内部流程自动产生的任务',
   },
-} as const
+} as const;
 
-export const JOB_TRIGGER_SOURCE_KEYS = Object.keys(
-  JOB_TRIGGER_SOURCES,
-) as Array<keyof typeof JOB_TRIGGER_SOURCES>
+export const JOB_TRIGGER_SOURCE_KEYS = Object.keys(JOB_TRIGGER_SOURCES) as Array<
+  keyof typeof JOB_TRIGGER_SOURCES
+>;
 
-export type JobTriggerSourceKey = (typeof JOB_TRIGGER_SOURCE_KEYS)[number]
+export type JobTriggerSourceKey = (typeof JOB_TRIGGER_SOURCE_KEYS)[number];
 
 export const JOB_STATUSES = {
   PENDING: {
@@ -118,13 +114,11 @@ export const JOB_STATUSES = {
     label: '死信',
     description: '任务多次重试后仍失败，被转入死信状态',
   },
-} as const
+} as const;
 
-export const JOB_STATUS_KEYS = Object.keys(JOB_STATUSES) as Array<
-  keyof typeof JOB_STATUSES
->
+export const JOB_STATUS_KEYS = Object.keys(JOB_STATUSES) as Array<keyof typeof JOB_STATUSES>;
 
-export type JobStatusKey = (typeof JOB_STATUS_KEYS)[number]
+export type JobStatusKey = (typeof JOB_STATUS_KEYS)[number];
 
 export const EXECUTION_STATUSES = {
   RUNNING: {
@@ -147,10 +141,10 @@ export const EXECUTION_STATUSES = {
     label: '已取消',
     description: '本次执行尝试被取消',
   },
-} as const
+} as const;
 
 export const EXECUTION_STATUS_KEYS = Object.keys(EXECUTION_STATUSES) as Array<
   keyof typeof EXECUTION_STATUSES
->
+>;
 
-export type ExecutionStatusKey = (typeof EXECUTION_STATUS_KEYS)[number]
+export type ExecutionStatusKey = (typeof EXECUTION_STATUS_KEYS)[number];

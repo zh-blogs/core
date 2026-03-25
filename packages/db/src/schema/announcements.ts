@@ -1,8 +1,18 @@
-import { sql } from 'drizzle-orm'
-import { check, index, integer, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
-import { v7 } from 'uuid'
-import { Users } from './users'
-import { announcementStatusEnum } from './enums'
+import { sql } from 'drizzle-orm';
+import {
+  check,
+  index,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
+import { v7 } from 'uuid';
+
+import { announcementStatusEnum } from './enums';
+import { Users } from './users';
 
 /** 公告表，支持草稿、预发布、即时发布和过期生命周期。 */
 export const Announcements = pgTable(
@@ -41,9 +51,7 @@ export const Announcements = pgTable(
       onUpdate: 'cascade',
     }),
     /** 创建时间 */
-    created_time: timestamp({ withTimezone: true, precision: 6 })
-      .notNull()
-      .defaultNow(),
+    created_time: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
     /** 更新时间 */
     updated_time: timestamp({ withTimezone: true, precision: 6 })
       .notNull()
@@ -51,10 +59,7 @@ export const Announcements = pgTable(
       .$onUpdateFn(() => new Date()),
   },
   (table) => [
-    index('announcements_status_publish_time_index').on(
-      table.status,
-      table.publish_time.desc(),
-    ),
+    index('announcements_status_publish_time_index').on(table.status, table.publish_time.desc()),
     index('announcements_expire_time_index').on(table.expire_time),
     index('announcements_sort_order_publish_time_index').on(
       table.sort_order.desc(),
@@ -68,4 +73,4 @@ export const Announcements = pgTable(
       sql`${table.expire_time} is null or ${table.publish_time} is null or ${table.expire_time} >= ${table.publish_time}`,
     ),
   ],
-)
+);

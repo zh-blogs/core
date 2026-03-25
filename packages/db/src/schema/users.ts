@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   boolean,
   check,
@@ -9,11 +10,11 @@ import {
   uniqueIndex,
   uuid,
   varchar,
-} from 'drizzle-orm/pg-core'
-import { sql } from 'drizzle-orm'
-import { v7 } from 'uuid'
-import { userOauthProviderEnum, userRoleEnum } from './enums'
-import { Sites } from './sites'
+} from 'drizzle-orm/pg-core';
+import { v7 } from 'uuid';
+
+import { userOauthProviderEnum, userRoleEnum } from './enums';
+import { Sites } from './sites';
 
 /** 用户主表，保留基础身份信息并预留扩展能力 */
 export const Users = pgTable(
@@ -48,9 +49,7 @@ export const Users = pgTable(
     /** 最后登录时间 */
     last_login_time: timestamp({ withTimezone: true, precision: 6 }),
     /** 创建时间 */
-    created_time: timestamp({ withTimezone: true, precision: 6 })
-      .notNull()
-      .defaultNow(),
+    created_time: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
     /** 更新时间 */
     updated_time: timestamp({ withTimezone: true, precision: 6 })
       .notNull()
@@ -65,7 +64,7 @@ export const Users = pgTable(
     check('users_username_not_blank_check', sql`btrim(${table.username}) <> ''`),
     check('users_nickname_not_blank_check', sql`btrim(${table.nickname}) <> ''`),
   ],
-)
+);
 
 /** 第三方登录授权表，当前优先支持 GitHub，后续可扩展更多提供商 */
 export const UserOauthAccounts = pgTable(
@@ -99,9 +98,7 @@ export const UserOauthAccounts = pgTable(
     /** 提供商返回的附加资料 */
     profile: jsonb().$type<Record<string, unknown>>().notNull().default({}),
     /** 创建时间 */
-    created_time: timestamp({ withTimezone: true, precision: 6 })
-      .notNull()
-      .defaultNow(),
+    created_time: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
     /** 更新时间 */
     updated_time: timestamp({ withTimezone: true, precision: 6 })
       .notNull()
@@ -116,7 +113,7 @@ export const UserOauthAccounts = pgTable(
     index('user_oauth_accounts_user_id_index').on(table.user_id),
     index('user_oauth_accounts_provider_index').on(table.provider),
   ],
-)
+);
 
 /** 用户 API 访问令牌表，支持未来开放 API 能力时按用户签发多 Token */
 export const UserApiTokens = pgTable(
@@ -146,9 +143,7 @@ export const UserApiTokens = pgTable(
     /** 过期时间 */
     expires_time: timestamp({ withTimezone: true, precision: 6 }),
     /** 创建时间 */
-    created_time: timestamp({ withTimezone: true, precision: 6 })
-      .notNull()
-      .defaultNow(),
+    created_time: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
     /** 更新时间 */
     updated_time: timestamp({ withTimezone: true, precision: 6 })
       .notNull()
@@ -157,13 +152,10 @@ export const UserApiTokens = pgTable(
   },
   (table) => [
     index('user_api_tokens_user_id_index').on(table.user_id),
-    index('user_api_tokens_user_id_active_index').on(
-      table.user_id,
-      table.is_active,
-    ),
+    index('user_api_tokens_user_id_active_index').on(table.user_id, table.is_active),
     index('user_api_tokens_expires_time_index').on(table.expires_time),
   ],
-)
+);
 
 /** 用户与站点关联表，一个用户可关联多个站点，一个站点仅归属一个用户 */
 export const UserSites = pgTable(
@@ -188,12 +180,10 @@ export const UserSites = pgTable(
         onUpdate: 'cascade',
       }),
     /** 关联建立时间 */
-    created_time: timestamp({ withTimezone: true, precision: 6 })
-      .notNull()
-      .defaultNow(),
+    created_time: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
   },
   (table) => [
     uniqueIndex('user_sites_site_id_index').on(table.site_id),
     index('user_sites_user_id_index').on(table.user_id),
   ],
-)
+);

@@ -7,13 +7,11 @@ export const TAG_TYPES = {
     label: '副标签',
     description: '用于补充站点细分主题的标签',
   },
-} as const
+} as const;
 
-export const TAG_TYPE_KEYS = Object.keys(TAG_TYPES) as Array<
-  keyof typeof TAG_TYPES
->
+export const TAG_TYPE_KEYS = Object.keys(TAG_TYPES) as Array<keyof typeof TAG_TYPES>;
 
-export type TagTypeKey = (typeof TAG_TYPE_KEYS)[number]
+export type TagTypeKey = (typeof TAG_TYPE_KEYS)[number];
 
 export const TECHNOLOGY_TYPES = {
   SYSTEM: {
@@ -28,13 +26,13 @@ export const TECHNOLOGY_TYPES = {
     label: '编程语言',
     description: '用于实现博客系统的主要编程语言',
   },
-} as const
+} as const;
 
 export const TECHNOLOGY_TYPE_KEYS = Object.keys(TECHNOLOGY_TYPES) as Array<
   keyof typeof TECHNOLOGY_TYPES
->
+>;
 
-export type TechnologyTypeKey = (typeof TECHNOLOGY_TYPE_KEYS)[number]
+export type TechnologyTypeKey = (typeof TECHNOLOGY_TYPE_KEYS)[number];
 
 export const SITE_TECH_STACK_CATEGORIES = {
   FRAMEWORK: {
@@ -45,11 +43,10 @@ export const SITE_TECH_STACK_CATEGORIES = {
     label: '语言',
     description: '用于网站实现的编程语言技术栈',
   },
-} as const
+} as const;
 
-export const SITE_TECH_STACK_CATEGORY_KEYS = Object.keys(
-  SITE_TECH_STACK_CATEGORIES,
-) as Array<keyof typeof SITE_TECH_STACK_CATEGORIES>
+export const SITE_TECH_STACK_CATEGORY_KEYS = Object.keys(SITE_TECH_STACK_CATEGORIES) as Array<
+  keyof typeof SITE_TECH_STACK_CATEGORIES
+>;
 
-export type SiteTechStackCategoryKey =
-  (typeof SITE_TECH_STACK_CATEGORY_KEYS)[number]
+export type SiteTechStackCategoryKey = (typeof SITE_TECH_STACK_CATEGORY_KEYS)[number];

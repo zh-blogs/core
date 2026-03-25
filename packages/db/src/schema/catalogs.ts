@@ -6,9 +6,10 @@ import {
   uniqueIndex,
   uuid,
   varchar,
-} from 'drizzle-orm/pg-core'
-import { v7 } from 'uuid'
-import { tagTypeEnum, technologyTypeEnum } from './enums'
+} from 'drizzle-orm/pg-core';
+import { v7 } from 'uuid';
+
+import { tagTypeEnum, technologyTypeEnum } from './enums';
 
 /** 标签定义表，用于主标签、副标签的展示描述与筛选映射 */
 export const TagDefinitions = pgTable(
@@ -27,9 +28,7 @@ export const TagDefinitions = pgTable(
     /** 是否启用 */
     is_enabled: boolean().notNull().default(true),
     /** 创建时间 */
-    created_time: timestamp({ withTimezone: true, precision: 6 })
-      .notNull()
-      .defaultNow(),
+    created_time: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
     /** 更新时间 */
     updated_time: timestamp({ withTimezone: true, precision: 6 })
       .notNull()
@@ -38,12 +37,9 @@ export const TagDefinitions = pgTable(
   },
   (table) => [
     uniqueIndex('tag_definitions_name_type_index').on(table.name, table.tag_type),
-    index('tag_definitions_type_enabled_index').on(
-      table.tag_type,
-      table.is_enabled,
-    ),
+    index('tag_definitions_type_enabled_index').on(table.tag_type, table.is_enabled),
   ],
-)
+);
 
 /** 技术目录表，用于博客系统、框架、语言等展示信息与站点架构引用 */
 export const TechnologyCatalogs = pgTable(
@@ -66,9 +62,7 @@ export const TechnologyCatalogs = pgTable(
     /** 是否启用 */
     is_enabled: boolean().notNull().default(true),
     /** 创建时间 */
-    created_time: timestamp({ withTimezone: true, precision: 6 })
-      .notNull()
-      .defaultNow(),
+    created_time: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
     /** 更新时间 */
     updated_time: timestamp({ withTimezone: true, precision: 6 })
       .notNull()
@@ -76,18 +70,12 @@ export const TechnologyCatalogs = pgTable(
       .$onUpdateFn(() => new Date()),
   },
   (table) => [
-    uniqueIndex('technology_catalogs_name_type_index').on(
-      table.name,
-      table.technology_type,
-    ),
+    uniqueIndex('technology_catalogs_name_type_index').on(table.name, table.technology_type),
     uniqueIndex('technology_catalogs_name_normalized_type_index').on(
       table.name_normalized,
       table.technology_type,
     ),
-    index('technology_catalogs_type_enabled_index').on(
-      table.technology_type,
-      table.is_enabled,
-    ),
+    index('technology_catalogs_type_enabled_index').on(table.technology_type, table.is_enabled),
     index('technology_catalogs_name_normalized_index').on(table.name_normalized),
   ],
-)
+);

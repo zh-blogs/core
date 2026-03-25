@@ -23,13 +23,13 @@ export const DEPLOYMENT_STATUSES = {
     label: '已跳过',
     description: '部署流程因无变更或策略原因被跳过',
   },
-} as const
+} as const;
 
-export const DEPLOYMENT_STATUS_KEYS = Object.keys(
-  DEPLOYMENT_STATUSES,
-) as Array<keyof typeof DEPLOYMENT_STATUSES>
+export const DEPLOYMENT_STATUS_KEYS = Object.keys(DEPLOYMENT_STATUSES) as Array<
+  keyof typeof DEPLOYMENT_STATUSES
+>;
 
-export type DeploymentStatusKey = (typeof DEPLOYMENT_STATUS_KEYS)[number]
+export type DeploymentStatusKey = (typeof DEPLOYMENT_STATUS_KEYS)[number];
 
 export const DEPLOYMENT_MODULES = {
   WEB: {
@@ -64,10 +64,10 @@ export const DEPLOYMENT_MODULES = {
     label: 'DB',
     description: '数据库模块，通常与公共模块全量更新同时记录',
   },
-} as const
+} as const;
 
 export const DEPLOYMENT_MODULE_KEYS = Object.keys(DEPLOYMENT_MODULES) as Array<
   keyof typeof DEPLOYMENT_MODULES
->
+>;
 
-export type DeploymentModuleKey = (typeof DEPLOYMENT_MODULE_KEYS)[number]
+export type DeploymentModuleKey = (typeof DEPLOYMENT_MODULE_KEYS)[number];

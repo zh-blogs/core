@@ -1,12 +1,5 @@
-import { sql } from 'drizzle-orm'
-import {
-  boolean,
-  integer,
-  pgView,
-  timestamp,
-  uuid,
-  varchar,
-} from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm';
+import { boolean, integer, pgView, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 
 /** 标签使用统计视图 */
 export const TagStats = pgView('tag_stats', {
@@ -27,7 +20,7 @@ export const TagStats = pgView('tag_stats', {
   from tag_definitions td
   left join site_tags st on st.tag_id = td.id
   group by td.id, td.name, td.tag_type
-`)
+`);
 
 /** 技术架构使用统计视图 */
 export const TechnologyStats = pgView('technology_stats', {
@@ -56,7 +49,7 @@ export const TechnologyStats = pgView('technology_stats', {
   from technology_catalogs tc
   left join technology_refs tr on tr.technology_id = tc.id
   group by tc.id, tc.name, tc.technology_type
-`)
+`);
 
 /** 站点检测统计视图 */
 export const SiteCheckStats = pgView('site_check_stats', {
@@ -79,7 +72,7 @@ export const SiteCheckStats = pgView('site_check_stats', {
     avg(sc.response_time_ms)::int as avg_response_time_ms
   from site_checks sc
   group by sc.site_id
-`)
+`);
 
 /** 站点最新一次检测结果视图 */
 export const LatestSiteChecks = pgView('latest_site_checks', {
@@ -117,7 +110,7 @@ export const LatestSiteChecks = pgView('latest_site_checks', {
     sc.check_time as check_time
   from site_checks sc
   order by sc.site_id, sc.check_time desc, sc.id desc
-`)
+`);
 
 /** 站点文章聚合统计视图 */
 export const SiteFeedArticleStats = pgView('site_feed_article_stats', {
@@ -146,7 +139,7 @@ export const SiteFeedArticleStats = pgView('site_feed_article_stats', {
     max(fa.published_time) as latest_published_time
   from feed_articles fa
   group by fa.site_id
-`)
+`);
 
 /** 站点访问计数聚合视图 */
 export const SiteAccessCounters = pgView('site_access_counters', {
@@ -167,7 +160,7 @@ export const SiteAccessCounters = pgView('site_access_counters', {
   from sites s
   left join site_access_events sae on sae.site_id = s.id
   group by s.id
-`)
+`);
 
 /** 站点访问来源聚合视图 */
 export const SiteAccessSourceStats = pgView('site_access_source_stats', {
@@ -193,7 +186,7 @@ export const SiteAccessSourceStats = pgView('site_access_source_stats', {
     max(sae.occurred_time) as latest_access_time
   from site_access_events sae
   group by sae.site_id, sae.event_type, sae.source
-`)
+`);
 
 /** 站点按访问事件类型聚合统计视图 */
 export const SiteAccessEventTypeStats = pgView('site_access_event_type_stats', {
@@ -216,7 +209,7 @@ export const SiteAccessEventTypeStats = pgView('site_access_event_type_stats', {
     max(sae.occurred_time) as latest_access_time
   from site_access_events sae
   group by sae.site_id, sae.event_type
-`)
+`);
 
 /** 站点警示标签统计视图 */
 export const SiteWarningTagStats = pgView('site_warning_tag_stats', {
@@ -230,4 +223,4 @@ export const SiteWarningTagStats = pgView('site_warning_tag_stats', {
     count(distinct swt.site_id)::int as site_count
   from site_warning_tags swt
   group by swt.tag
-`)
+`);

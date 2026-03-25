@@ -15,23 +15,21 @@ export const USER_ROLES = {
     label: '普通用户',
     description: '具备基础登录与交互能力',
   },
-} as const
+} as const;
 
-export const USER_ROLE_KEYS = Object.keys(USER_ROLES) as Array<
-  keyof typeof USER_ROLES
->
+export const USER_ROLE_KEYS = Object.keys(USER_ROLES) as Array<keyof typeof USER_ROLES>;
 
-export type UserRoleKey = (typeof USER_ROLE_KEYS)[number]
+export type UserRoleKey = (typeof USER_ROLE_KEYS)[number];
 
 export const USER_OAUTH_PROVIDERS = {
   GITHUB: {
     label: 'GitHub',
     description: '使用 GitHub 账号进行登录与授权',
   },
-} as const
+} as const;
 
-export const USER_OAUTH_PROVIDER_KEYS = Object.keys(
-  USER_OAUTH_PROVIDERS,
-) as Array<keyof typeof USER_OAUTH_PROVIDERS>
+export const USER_OAUTH_PROVIDER_KEYS = Object.keys(USER_OAUTH_PROVIDERS) as Array<
+  keyof typeof USER_OAUTH_PROVIDERS
+>;
 
-export type UserOauthProviderKey = (typeof USER_OAUTH_PROVIDER_KEYS)[number]
+export type UserOauthProviderKey = (typeof USER_OAUTH_PROVIDER_KEYS)[number];

@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   check,
   index,
@@ -8,18 +9,19 @@ import {
   uniqueIndex,
   uuid,
   varchar,
-} from 'drizzle-orm/pg-core'
-import { sql } from 'drizzle-orm'
-import { v7 } from 'uuid'
-import type { FeedTypeKey } from '../constants/site'
-import { articleVisibilityEnum, feedTypeEnum } from './enums'
-import { Sites } from './sites'
+} from 'drizzle-orm/pg-core';
+import { v7 } from 'uuid';
+
+import type { FeedTypeKey } from '../constants/site';
+
+import { articleVisibilityEnum, feedTypeEnum } from './enums';
+import { Sites } from './sites';
 
 /** 抓取来源信息，用于记录文章来自哪个 Feed */
 export interface FeedArticleSourceInfo {
-  feed_name?: string
-  feed_url?: string
-  feed_type?: FeedTypeKey
+  feed_name?: string;
+  feed_url?: string;
+  feed_type?: FeedTypeKey;
 }
 
 /** RSS 抓取后的文章落库表 */
@@ -52,9 +54,7 @@ export const FeedArticles = pgTable(
     /** 文章发布时间，以源站为准 */
     published_time: timestamp({ withTimezone: true, precision: 6 }),
     /** 本次抓取入库时间 */
-    fetched_time: timestamp({ withTimezone: true, precision: 6 })
-      .notNull()
-      .defaultNow(),
+    fetched_time: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
     /** 前台文章可见性，可被反馈审核流修改 */
     visibility: articleVisibilityEnum().notNull().default('VISIBLE'),
     /** 隐藏或删除原因 */
@@ -64,10 +64,7 @@ export const FeedArticles = pgTable(
     uniqueIndex('feed_articles_site_id_guid_index')
       .on(table.site_id, table.guid)
       .where(sql`${table.guid} is not null and ${table.guid} <> ''`),
-    uniqueIndex('feed_articles_site_id_url_index').on(
-      table.site_id,
-      table.article_url,
-    ),
+    uniqueIndex('feed_articles_site_id_url_index').on(table.site_id, table.article_url),
     check(
       'feed_articles_visibility_reason_check',
       sql`(${table.visibility} = 'VISIBLE' and ${table.visibility_reason} is null) or (${table.visibility} <> 'VISIBLE')`,
@@ -88,4 +85,4 @@ export const FeedArticles = pgTable(
     ),
     index('feed_articles_fetched_time_index').on(table.fetched_time.desc()),
   ],
-)
+);

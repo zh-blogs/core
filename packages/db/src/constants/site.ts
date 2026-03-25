@@ -23,13 +23,11 @@ export const MAIN_TAGS = {
     label: '综合',
     description: '内容主题较为综合，无法归为单一垂类的博客内容分类',
   },
-} as const
+} as const;
 
-export const MAIN_TAG_KEYS = Object.keys(MAIN_TAGS) as Array<
-  keyof typeof MAIN_TAGS
->
+export const MAIN_TAG_KEYS = Object.keys(MAIN_TAGS) as Array<keyof typeof MAIN_TAGS>;
 
-export type MainTagKey = (typeof MAIN_TAG_KEYS)[number]
+export type MainTagKey = (typeof MAIN_TAG_KEYS)[number];
 
 export const FROM_SOURCES = {
   CIB: {
@@ -64,13 +62,11 @@ export const FROM_SOURCES = {
     label: '旧版数据迁移',
     description: '从历史系统或旧数据结构迁移而来',
   },
-} as const
+} as const;
 
-export const FROM_SOURCE_KEYS = Object.keys(FROM_SOURCES) as Array<
-  keyof typeof FROM_SOURCES
->
+export const FROM_SOURCE_KEYS = Object.keys(FROM_SOURCES) as Array<keyof typeof FROM_SOURCES>;
 
-export type FromSourceKey = (typeof FROM_SOURCE_KEYS)[number]
+export type FromSourceKey = (typeof FROM_SOURCE_KEYS)[number];
 
 export const FEED_TYPES = {
   RSS: {
@@ -85,13 +81,11 @@ export const FEED_TYPES = {
     label: 'JSON Feed',
     description: '使用 JSON Feed 规范提供的订阅源',
   },
-} as const
+} as const;
 
-export const FEED_TYPE_KEYS = Object.keys(FEED_TYPES) as Array<
-  keyof typeof FEED_TYPES
->
+export const FEED_TYPE_KEYS = Object.keys(FEED_TYPES) as Array<keyof typeof FEED_TYPES>;
 
-export type FeedTypeKey = (typeof FEED_TYPE_KEYS)[number]
+export type FeedTypeKey = (typeof FEED_TYPE_KEYS)[number];
 
 export const SITE_CLASSIFICATION_STATUSES = {
   COMPLETE: {
@@ -102,14 +96,13 @@ export const SITE_CLASSIFICATION_STATUSES = {
     label: '待完善分类',
     description: '主标签使用综合兜底，仍需用户或管理员补充分类型信息',
   },
-} as const
+} as const;
 
-export const SITE_CLASSIFICATION_STATUS_KEYS = Object.keys(
-  SITE_CLASSIFICATION_STATUSES,
-) as Array<keyof typeof SITE_CLASSIFICATION_STATUSES>
+export const SITE_CLASSIFICATION_STATUS_KEYS = Object.keys(SITE_CLASSIFICATION_STATUSES) as Array<
+  keyof typeof SITE_CLASSIFICATION_STATUSES
+>;
 
-export type SiteClassificationStatusKey =
-  (typeof SITE_CLASSIFICATION_STATUS_KEYS)[number]
+export type SiteClassificationStatusKey = (typeof SITE_CLASSIFICATION_STATUS_KEYS)[number];
 
 export const SITE_ACCESS_EVENT_TYPES = {
   OUTBOUND_CLICK: {
@@ -120,14 +113,13 @@ export const SITE_ACCESS_EVENT_TYPES = {
     label: '嵌入访问',
     description: '站长在源站完成嵌入统计脚本配置后上报的页面访问事件',
   },
-} as const
+} as const;
 
-export const SITE_ACCESS_EVENT_TYPE_KEYS = Object.keys(
-  SITE_ACCESS_EVENT_TYPES,
-) as Array<keyof typeof SITE_ACCESS_EVENT_TYPES>
+export const SITE_ACCESS_EVENT_TYPE_KEYS = Object.keys(SITE_ACCESS_EVENT_TYPES) as Array<
+  keyof typeof SITE_ACCESS_EVENT_TYPES
+>;
 
-export type SiteAccessEventTypeKey =
-  (typeof SITE_ACCESS_EVENT_TYPE_KEYS)[number]
+export type SiteAccessEventTypeKey = (typeof SITE_ACCESS_EVENT_TYPE_KEYS)[number];
 
 export const SITE_ACCESS_SCOPES = {
   CN_ONLY: {
@@ -142,13 +134,13 @@ export const SITE_ACCESS_SCOPES = {
     label: '国内外均可访问',
     description: '站点在国内与海外网络环境下都可正常访问',
   },
-} as const
+} as const;
 
 export const SITE_ACCESS_SCOPE_KEYS = Object.keys(SITE_ACCESS_SCOPES) as Array<
   keyof typeof SITE_ACCESS_SCOPES
->
+>;
 
-export type SiteAccessScopeKey = (typeof SITE_ACCESS_SCOPE_KEYS)[number]
+export type SiteAccessScopeKey = (typeof SITE_ACCESS_SCOPE_KEYS)[number];
 
 export const SITE_CLAIM_TYPES = {
   OWNER: {
@@ -159,13 +151,13 @@ export const SITE_CLAIM_TYPES = {
     label: '管理员认证',
     description: '由管理员审核确认后建立站点归属关系',
   },
-} as const
+} as const;
 
 export const SITE_CLAIM_TYPE_KEYS = Object.keys(SITE_CLAIM_TYPES) as Array<
   keyof typeof SITE_CLAIM_TYPES
->
+>;
 
-export type SiteClaimTypeKey = (typeof SITE_CLAIM_TYPE_KEYS)[number]
+export type SiteClaimTypeKey = (typeof SITE_CLAIM_TYPE_KEYS)[number];
 
 export const SITE_CLAIM_STATUSES = {
   PENDING_VERIFICATION: {
@@ -188,10 +180,10 @@ export const SITE_CLAIM_STATUSES = {
     label: '已撤销',
     description: '申请人撤销或系统终止了本次认领流程',
   },
-} as const
+} as const;
 
 export const SITE_CLAIM_STATUS_KEYS = Object.keys(SITE_CLAIM_STATUSES) as Array<
   keyof typeof SITE_CLAIM_STATUSES
->
+>;
 
-export type SiteClaimStatusKey = (typeof SITE_CLAIM_STATUS_KEYS)[number]
+export type SiteClaimStatusKey = (typeof SITE_CLAIM_STATUS_KEYS)[number];

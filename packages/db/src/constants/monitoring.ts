@@ -11,13 +11,13 @@ export const SITE_CHECK_REGIONS = {
     label: '未知',
     description: '无法识别或未标注检测来源地域',
   },
-} as const
+} as const;
 
 export const SITE_CHECK_REGION_KEYS = Object.keys(SITE_CHECK_REGIONS) as Array<
   keyof typeof SITE_CHECK_REGIONS
->
+>;
 
-export type SiteCheckRegionKey = (typeof SITE_CHECK_REGION_KEYS)[number]
+export type SiteCheckRegionKey = (typeof SITE_CHECK_REGION_KEYS)[number];
 
 export const SITE_CHECK_RESULTS = {
   SUCCESS: {
@@ -48,13 +48,13 @@ export const SITE_CHECK_RESULTS = {
     label: '访问受限',
     description: '站点受区域、风控或权限限制而不可访问',
   },
-} as const
+} as const;
 
 export const SITE_CHECK_RESULT_KEYS = Object.keys(SITE_CHECK_RESULTS) as Array<
   keyof typeof SITE_CHECK_RESULTS
->
+>;
 
-export type SiteCheckResultKey = (typeof SITE_CHECK_RESULT_KEYS)[number]
+export type SiteCheckResultKey = (typeof SITE_CHECK_RESULT_KEYS)[number];
 
 export const SITE_STATUS_TYPES = {
   OK: {
@@ -69,13 +69,13 @@ export const SITE_STATUS_TYPES = {
     label: 'SSL证书错误',
     description: '网站证书异常或 TLS 握手失败导致不可正常访问',
   },
-} as const
+} as const;
 
 export const SITE_STATUS_TYPE_KEYS = Object.keys(SITE_STATUS_TYPES) as Array<
   keyof typeof SITE_STATUS_TYPES
->
+>;
 
-export type SiteStatusTypeKey = (typeof SITE_STATUS_TYPE_KEYS)[number]
+export type SiteStatusTypeKey = (typeof SITE_STATUS_TYPE_KEYS)[number];
 
 export const SITE_STATUS_TAGS = {
   EXTERNAL_LIMIT: {
@@ -102,13 +102,13 @@ export const SITE_STATUS_TAGS = {
     label: '敏感内容',
     description: '站点存在敏感或不适宜公开展示的内容风险',
   },
-} as const
+} as const;
 
 export const SITE_STATUS_TAG_KEYS = Object.keys(SITE_STATUS_TAGS) as Array<
   keyof typeof SITE_STATUS_TAGS
->
+>;
 
-export type SiteStatusTagKey = (typeof SITE_STATUS_TAG_KEYS)[number]
+export type SiteStatusTagKey = (typeof SITE_STATUS_TAG_KEYS)[number];
 
 export const SITE_WARNING_TAG_SOURCES = {
   ARTICLE_FEEDBACK: {
@@ -123,10 +123,10 @@ export const SITE_WARNING_TAG_SOURCES = {
     label: '人工巡查',
     description: '由管理员巡查后手动打上的警示标签',
   },
-} as const
+} as const;
 
-export const SITE_WARNING_TAG_SOURCE_KEYS = Object.keys(
-  SITE_WARNING_TAG_SOURCES,
-) as Array<keyof typeof SITE_WARNING_TAG_SOURCES>
+export const SITE_WARNING_TAG_SOURCE_KEYS = Object.keys(SITE_WARNING_TAG_SOURCES) as Array<
+  keyof typeof SITE_WARNING_TAG_SOURCES
+>;
 
-export type SiteWarningTagSourceKey = (typeof SITE_WARNING_TAG_SOURCE_KEYS)[number]
+export type SiteWarningTagSourceKey = (typeof SITE_WARNING_TAG_SOURCE_KEYS)[number];

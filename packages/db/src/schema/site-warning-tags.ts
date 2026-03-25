@@ -1,15 +1,10 @@
-import {
-  index,
-  pgTable,
-  text,
-  timestamp,
-  uuid,
-} from 'drizzle-orm/pg-core'
-import { v7 } from 'uuid'
-import { siteStatusTagEnum, siteWarningTagSourceEnum } from './enums'
-import { ArticleFeedbackAudits, SiteAudits } from './audits'
-import { Sites } from './sites'
-import { Users } from './users'
+import { index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { v7 } from 'uuid';
+
+import { ArticleFeedbackAudits, SiteAudits } from './audits';
+import { siteStatusTagEnum, siteWarningTagSourceEnum } from './enums';
+import { Sites } from './sites';
+import { Users } from './users';
 
 /** 站点警示标签表，用于承接文章反馈、站点反馈与人工巡查产生的警示标记 */
 export const SiteWarningTags = pgTable(
@@ -48,9 +43,7 @@ export const SiteWarningTags = pgTable(
       onUpdate: 'cascade',
     }),
     /** 创建时间 */
-    created_time: timestamp({ withTimezone: true, precision: 6 })
-      .notNull()
-      .defaultNow(),
+    created_time: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
     /** 更新时间 */
     updated_time: timestamp({ withTimezone: true, precision: 6 })
       .notNull()
@@ -60,10 +53,7 @@ export const SiteWarningTags = pgTable(
   (table) => [
     index('site_warning_tags_site_id_index').on(table.site_id),
     index('site_warning_tags_site_id_tag_index').on(table.site_id, table.tag),
-    index('site_warning_tags_site_id_source_index').on(
-      table.site_id,
-      table.source,
-    ),
+    index('site_warning_tags_site_id_source_index').on(table.site_id, table.source),
     index('site_warning_tags_source_site_audit_id_index').on(table.source_site_audit_id),
     index('site_warning_tags_source_article_feedback_audit_id_index').on(
       table.source_article_feedback_audit_id,
@@ -73,4 +63,4 @@ export const SiteWarningTags = pgTable(
     index('site_warning_tags_created_by_index').on(table.created_by),
     index('site_warning_tags_created_time_index').on(table.created_time.desc()),
   ],
-)
+);

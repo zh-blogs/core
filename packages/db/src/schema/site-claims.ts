@@ -1,8 +1,9 @@
-import { index, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
-import { v7 } from 'uuid'
-import { siteClaimStatusEnum, siteClaimTypeEnum } from './enums'
-import { Sites } from './sites'
-import { Users } from './users'
+import { index, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import { v7 } from 'uuid';
+
+import { siteClaimStatusEnum, siteClaimTypeEnum } from './enums';
+import { Sites } from './sites';
+import { Users } from './users';
 
 /** 站点认领申请表，用于记录认领流程本身，认领成功后再写入用户与站点关联表 */
 export const SiteClaims = pgTable(
@@ -44,9 +45,7 @@ export const SiteClaims = pgTable(
       onUpdate: 'cascade',
     }),
     /** 提交时间 */
-    submitted_time: timestamp({ withTimezone: true, precision: 6 })
-      .notNull()
-      .defaultNow(),
+    submitted_time: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
     /** 审核完成时间 */
     reviewed_time: timestamp({ withTimezone: true, precision: 6 }),
     /** 记录更新时间 */
@@ -60,10 +59,7 @@ export const SiteClaims = pgTable(
     index('site_claims_user_id_status_index').on(table.user_id, table.status),
     index('site_claims_claim_type_index').on(table.claim_type),
     index('site_claims_verification_token_index').on(table.verification_token),
-    index('site_claims_status_submitted_time_index').on(
-      table.status,
-      table.submitted_time.desc(),
-    ),
+    index('site_claims_status_submitted_time_index').on(table.status, table.submitted_time.desc()),
     index('site_claims_submitted_time_index').on(table.submitted_time.desc()),
   ],
-)
+);
