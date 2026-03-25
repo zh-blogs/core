@@ -1,0 +1,34 @@
+---
+import IconMenu2 from '@tabler/icons-svelte/icons/menu-2';
+import IconMoonStars from '@tabler/icons-svelte/icons/moon-stars';
+import IconSunHigh from '@tabler/icons-svelte/icons/sun-high';
+import IconX from '@tabler/icons-svelte/icons/x';
+
+const SunIcon = IconSunHigh as typeof IconSunHigh;
+const MoonIcon = IconMoonStars as typeof IconMoonStars;
+const MenuIcon = IconMenu2 as typeof IconMenu2;
+const CloseIcon = IconX as typeof IconX;
+---
+
+<div class="ml-auto flex items-center gap-2 lg:hidden">
+  <button
+    aria-label="切换主题"
+    class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-(--color-line-med) text-(--color-fg-2) transition hover:border-red-700/30 hover:text-red-700 dark:hover:border-red-400/30 dark:hover:text-red-400"
+    data-theme-toggle
+    type="button"
+  >
+    <SunIcon size={17} stroke={1.5} class="block dark:hidden" />
+    <MoonIcon size={17} stroke={1.5} class="hidden dark:block" />
+  </button>
+
+  <button
+    aria-expanded="false"
+    aria-label="切换菜单"
+    class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-(--color-line-med) text-(--color-fg-2) transition hover:border-red-700/30 hover:text-red-700 dark:hover:border-red-400/30 dark:hover:text-red-400"
+    data-mobile-toggle
+    type="button"
+  >
+    <MenuIcon size={17} stroke={1.5} class="block data-[open=true]:hidden" data-open="false" />
+    <CloseIcon size={17} stroke={1.5} class="hidden data-[open=true]:block" data-open="false" />
+  </button>
+</div>

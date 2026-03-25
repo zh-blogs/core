@@ -1,0 +1,112 @@
+---
+import type { Icon } from '@tabler/icons-svelte';
+import IconArrowRight from '@tabler/icons-svelte/icons/arrow-right';
+import IconChevronDown from '@tabler/icons-svelte/icons/chevron-down';
+
+const ChevronIcon = IconChevronDown as typeof IconChevronDown;
+const ArrowIcon = IconArrowRight as typeof IconArrowRight;
+
+type HeaderLink = {
+  label: string;
+  href: string;
+  icon: Icon;
+};
+
+interface Props {
+  primaryLinks: HeaderLink[];
+  projectLinks: HeaderLink[];
+  activePrimaryHref: string | null;
+  activeProjectHref: string | null;
+  projectActive: boolean;
+}
+
+const { primaryLinks, projectLinks, activePrimaryHref, activeProjectHref, projectActive } =
+  Astro.props;
+---
+
+<nav class="hidden flex-1 items-center justify-center gap-1 text-sm text-(--color-fg-2) lg:flex">
+  {
+    primaryLinks.map((item) => {
+      const Icon = item.icon;
+      const active = activePrimaryHref === item.href;
+
+      return (
+        <a
+          class:list={[
+            'group/nav-link relative inline-flex items-center gap-2 px-3 py-2 transition',
+            active ? 'text-red-700 dark:text-red-400' : 'hover:text-(--color-fg)',
+          ]}
+          href={item.href}
+        >
+          <Icon size={14} stroke={1.5} class="block" />
+          <span>{item.label}</span>
+          <span
+            aria-hidden="true"
+            class:list={[
+              'pointer-events-none absolute inset-x-0 bottom-0 h-px origin-center transition duration-200 ease-out group-hover/nav-link:scale-x-100',
+              active ? 'scale-x-100 bg-red-700 dark:bg-red-400' : 'scale-x-0 bg-current',
+            ]}
+          />
+        </a>
+      );
+    })
+  }
+
+  <div class="group/project relative" data-menu-root data-open="false">
+    <button
+      aria-expanded="false"
+      class:list={[
+        'group/nav-link relative inline-flex items-center gap-2 px-3 py-2 transition',
+        projectActive ? 'text-red-700 dark:text-red-400' : 'hover:text-(--color-fg)',
+      ]}
+      data-menu-toggle
+      type="button"
+    >
+      <span>项目相关</span>
+      <ChevronIcon
+        size={14}
+        stroke={1.5}
+        class="block transition duration-200 ease-out group-hover/project:rotate-180 group-focus-within/project:rotate-180 group-data-[open=true]/project:rotate-180"
+      />
+      <span
+        aria-hidden="true"
+        class:list={[
+          'pointer-events-none absolute inset-x-0 bottom-0 h-px origin-center transition duration-200 ease-out group-hover/project:scale-x-100 group-focus-within/project:scale-x-100 group-data-[open=true]/project:scale-x-100',
+          projectActive ? 'scale-x-100 bg-red-700 dark:bg-red-400' : 'scale-x-0 bg-current',
+        ]}></span>
+    </button>
+
+    <div
+      class="pointer-events-none absolute left-1/2 top-full z-40 w-48 -translate-x-1/2 pt-2 opacity-0 transition duration-200 ease-out group-hover/project:pointer-events-auto group-hover/project:opacity-100 group-focus-within/project:pointer-events-auto group-focus-within/project:opacity-100 group-data-[open=true]/project:pointer-events-auto group-data-[open=true]/project:opacity-100"
+    >
+      <div
+        class="translate-y-2 rounded-md border border-(--color-line-med) bg-(--color-bg) p-2 transition duration-200 ease-out group-hover/project:translate-y-0 group-focus-within/project:translate-y-0 group-data-[open=true]/project:translate-y-0"
+      >
+        {
+          projectLinks.map((item) => {
+            const Icon = item.icon;
+            const active = activeProjectHref === item.href;
+
+            return (
+              <a
+                class:list={[
+                  'inline-flex w-full items-center justify-between gap-3 rounded-sm px-3 py-2 text-sm transition',
+                  active
+                    ? 'bg-(--color-bg-raised) text-red-700 dark:text-red-400'
+                    : 'text-(--color-fg-2) hover:bg-(--color-bg-raised) hover:text-(--color-fg)',
+                ]}
+                href={item.href}
+              >
+                <span class="inline-flex items-center gap-2">
+                  <Icon size={14} stroke={1.5} class="block" />
+                  <span>{item.label}</span>
+                </span>
+                <ArrowIcon size={13} stroke={1.5} class="block" />
+              </a>
+            );
+          })
+        }
+      </div>
+    </div>
+  </div>
+</nav>

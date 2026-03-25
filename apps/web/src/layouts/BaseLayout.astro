@@ -1,13 +1,14 @@
 ---
-import BuildFooter from "../components/BuildFooter.astro";
-import GlobalNoticeCenter from "../components/GlobalNoticeCenter.astro";
-import "../styles/index.css";
+import BuildFooter from '../components/BuildFooter.astro';
+import GlobalNoticeCenter from '../components/GlobalNoticeCenter.astro';
+
+import '../styles/index.css';
 
 interface Props {
   title?: string;
 }
 
-const { title = "ZhBlogs" } = Astro.props;
+const { title = '集博栈' } = Astro.props;
 ---
 
 <!doctype html>
@@ -15,8 +16,43 @@ const { title = "ZhBlogs" } = Astro.props;
   <head>
     <meta charset="utf-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
+    <script is:inline>
+      (() => {
+        const root = document.documentElement;
+        const storageKey = 'zhblogs-theme';
+        const savedTheme = localStorage.getItem(storageKey);
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme =
+          savedTheme === 'light' || savedTheme === 'dark'
+            ? savedTheme
+            : systemDark
+              ? 'dark'
+              : 'light';
+
+        root.dataset.theme = theme;
+        root.style.colorScheme = theme;
+
+        window.__setZhblogsTheme = (nextTheme) => {
+          root.dataset.theme = nextTheme;
+          root.style.colorScheme = nextTheme;
+          localStorage.setItem(storageKey, nextTheme);
+        };
+
+        window.__toggleZhblogsTheme = () => {
+          const nextTheme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+
+          window.__setZhblogsTheme(nextTheme);
+        };
+      })();
+    </script>
     <title>{title}</title>
   </head>
   <body class="min-h-screen">
@@ -25,5 +61,18 @@ const { title = "ZhBlogs" } = Astro.props;
       <BuildFooter />
     </div>
     <GlobalNoticeCenter />
+    <script is:inline>
+      document.addEventListener('click', (event) => {
+        const target = event.target;
+
+        if (!(target instanceof Element)) {
+          return;
+        }
+
+        if (target.closest('[data-theme-toggle]')) {
+          window.__toggleZhblogsTheme?.();
+        }
+      });
+    </script>
   </body>
 </html>

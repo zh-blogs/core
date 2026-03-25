@@ -1,0 +1,173 @@
+---
+import IconBook2 from '@tabler/icons-svelte/icons/book-2';
+import IconChartBar from '@tabler/icons-svelte/icons/chart-bar';
+import IconCirclePlus from '@tabler/icons-svelte/icons/circle-plus';
+import IconDice from '@tabler/icons-svelte/icons/dice';
+import IconFileText from '@tabler/icons-svelte/icons/file-text';
+import IconInfoCircle from '@tabler/icons-svelte/icons/info-circle';
+import IconListDetails from '@tabler/icons-svelte/icons/list-details';
+import IconListTree from '@tabler/icons-svelte/icons/list-tree';
+import IconRss from '@tabler/icons-svelte/icons/rss';
+
+import DesktopActions from './DesktopActions.astro';
+import DesktopNav from './DesktopNav.astro';
+import MobileHeaderControls from './MobileHeaderControls.astro';
+import MobilePanel from './MobilePanel.astro';
+
+interface Props {
+  currentPath: string;
+}
+
+const { currentPath } = Astro.props;
+const isHome = currentPath === '/';
+const BrandIcon = IconListTree as typeof IconListTree;
+
+const primaryLinks = [
+  {
+    label: '博客列表',
+    href: '/site',
+    icon: IconListDetails,
+  },
+  {
+    label: '订阅一览',
+    href: '/site/stats#subscription',
+    icon: IconRss,
+  },
+  {
+    label: '随机前往',
+    href: '/site/go-site',
+    icon: IconDice,
+  },
+  {
+    label: '统计信息',
+    href: '/site/stats',
+    icon: IconChartBar,
+  },
+];
+
+const projectLinks = [
+  {
+    label: '文档',
+    href: '/docs',
+    icon: IconBook2,
+  },
+  {
+    label: '博客',
+    href: '/blog',
+    icon: IconFileText,
+  },
+  {
+    label: '贡献',
+    href: '/contribute',
+    icon: IconCirclePlus,
+  },
+  {
+    label: '关于',
+    href: '/about',
+    icon: IconInfoCircle,
+  },
+];
+
+const normalizePath = (value: string): string => {
+  if (value.length > 1 && value.endsWith('/')) {
+    return value.slice(0, -1);
+  }
+
+  return value;
+};
+
+const pickActiveHref = (links: Array<{ href: string }>): string | null => {
+  const normalizedCurrentPath = normalizePath(currentPath);
+
+  let bestHref: string | null = null;
+  let bestScore = -1;
+
+  for (const item of links) {
+    const hrefPath = normalizePath(item.href.split('#')[0] || item.href);
+    const hasHash = item.href.includes('#');
+
+    let score = -1;
+
+    if (normalizedCurrentPath === hrefPath) {
+      score = hasHash ? 19 : 20;
+    } else if (hrefPath !== '/' && normalizedCurrentPath.startsWith(`${hrefPath}/`)) {
+      score = hasHash ? 9 : 10;
+    }
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestHref = item.href;
+    }
+  }
+
+  return bestScore >= 0 ? bestHref : null;
+};
+
+const activePrimaryHref = pickActiveHref(primaryLinks);
+const activeProjectHref = pickActiveHref(projectLinks);
+const projectActive = activeProjectHref !== null;
+---
+
+<header
+  class="sticky top-0 z-50 border-b border-(--color-line) bg-(--color-bg)/95 backdrop-blur-sm"
+  data-public-header
+  data-home={isHome ? 'true' : 'false'}
+>
+  <div class="mx-auto flex w-full max-w-368 items-center gap-4 px-3.5 py-3 xs:px-4 sm:px-6 lg:px-8">
+    <a
+      class="inline-flex min-w-0 items-center gap-3 text-(--color-fg) transition hover:text-red-700 dark:hover:text-red-400"
+      href="/"
+    >
+      <span
+        class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-(--color-line-med) text-red-700 transition transform-[scaleX(-1)] dark:text-red-400"
+      >
+        <BrandIcon size={28} stroke={2.45} class="block" />
+      </span>
+      <span
+        class="flex min-w-0 max-w-0 flex-col overflow-hidden whitespace-nowrap transition-all duration-300 ease-out-smooth data-[visible=true]:max-w-56"
+        data-brand-shell
+        data-visible={isHome ? 'false' : 'true'}
+      >
+        <span
+          class="font-mono text-[11px] uppercase tracking-[0.18em] text-(--color-fg-3) transition-all duration-300 ease-out-smooth data-[visible=false]:translate-x-2 data-[visible=false]:opacity-0 data-[visible=true]:translate-x-0 data-[visible=true]:opacity-100"
+          data-brand-node
+          data-visible={isHome ? 'false' : 'true'}
+        >
+          原中文博客列表导航
+        </span>
+        <span
+          class="text-base font-medium tracking-[0.04em] transition-all duration-300 ease-out-smooth data-[visible=false]:translate-x-2 data-[visible=false]:opacity-0 data-[visible=true]:translate-x-0 data-[visible=true]:opacity-100"
+          data-brand-node
+          data-visible={isHome ? 'false' : 'true'}
+        >
+          集博栈
+        </span>
+      </span>
+    </a>
+
+    <DesktopNav
+      primaryLinks={primaryLinks}
+      projectLinks={projectLinks}
+      activePrimaryHref={activePrimaryHref}
+      activeProjectHref={activeProjectHref}
+      projectActive={projectActive}
+    />
+
+    <DesktopActions />
+    <MobileHeaderControls />
+  </div>
+
+  <MobilePanel
+    primaryLinks={primaryLinks}
+    projectLinks={projectLinks}
+    activePrimaryHref={activePrimaryHref}
+    activeProjectHref={activeProjectHref}
+    projectActive={projectActive}
+  />
+</header>
+
+<script>
+  import { initPublicHeader } from '@/shared/browser/public-header.browser';
+
+  initPublicHeader();
+</script>

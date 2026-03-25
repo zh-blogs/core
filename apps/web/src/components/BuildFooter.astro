@@ -1,27 +1,27 @@
 ---
-import { getApiBaseUrl } from "../lib/server/auth";
+import { getApiBaseUrl } from '@/application/auth/auth.server';
 
 const buildYear = new Date(__ZHBLOGS_BUILD_METADATA__.buildTime).getFullYear();
-const icpText = "陇ICP备 2021003047号-5";
+const icpText = '陇ICP备 2021003047号-5';
 const presenceApiBaseUrl = getApiBaseUrl();
 
 const statementLinks = [
-  { label: "免责声明", href: "/disclaimer" },
-  { label: "版权声明", href: "/copyright" },
-  { label: "隐私说明", href: "/privacy" },
-  { label: "社区公约", href: "/community" },
+  { label: '免责声明', href: '/disclaimer' },
+  { label: '版权声明', href: '/copyright' },
+  { label: '隐私说明', href: '/privacy' },
+  { label: '社区公约', href: '/community' },
 ];
 
 const friendLinks = [
-  { label: "开往", href: "https://www.travellings.cn/", external: true },
-  { label: "博友圈", href: "https://www.boyouquan.com/", external: true },
-  { label: "BlogFinder", href: "https://bf.zzxworld.com/", external: true },
+  { label: '开往', href: 'https://www.travellings.cn/', external: true },
+  { label: '博友圈', href: 'https://www.boyouquan.com/', external: true },
+  { label: 'BlogFinder', href: 'https://bf.zzxworld.com/', external: true },
   {
-    label: "中文独立博客列表",
-    href: "https://github.com/timqian/chinese-independent-blogs",
+    label: '中文独立博客列表',
+    href: 'https://github.com/timqian/chinese-independent-blogs',
     external: true,
   },
-  { label: "优秀个人独立博客导航", href: "http://www.jetli.com.cn/", external: true },
+  { label: '优秀个人独立博客导航', href: 'http://www.jetli.com.cn/', external: true },
 ];
 ---
 
@@ -53,9 +53,7 @@ const friendLinks = [
     </div>
 
     <div class="flex flex-col gap-4 lg:px-6">
-      <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-(--color-fg-3)">
-        站点声明
-      </p>
+      <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-(--color-fg-3)">站点声明</p>
       <ul class="grid gap-3">
         {
           statementLinks.map((item) => (
@@ -73,9 +71,7 @@ const friendLinks = [
     </div>
 
     <div class="flex flex-col gap-4">
-      <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-(--color-fg-3)">
-        友情链接
-      </p>
+      <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-(--color-fg-3)">友情链接</p>
       <ul class="grid gap-3">
         {
           friendLinks.map((item) => (
@@ -83,8 +79,8 @@ const friendLinks = [
               <a
                 class="inline-flex text-sm leading-7 text-(--color-fg-2) transition hover:text-red-700 dark:hover:text-red-400"
                 href={item.href}
-                rel={item.external ? "noreferrer" : undefined}
-                target={item.external ? "_blank" : undefined}
+                rel={item.external ? 'noreferrer' : undefined}
+                target={item.external ? '_blank' : undefined}
               >
                 {item.label}
               </a>
@@ -97,12 +93,16 @@ const friendLinks = [
 </footer>
 
 <script>
-  import { initBuildFooterPresence } from "../lib/browser/presence";
+  import { initBuildFooterPresence } from '@/application/presence/presence.browser';
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => {
-      initBuildFooterPresence();
-    }, { once: true });
+  if (document.readyState === 'loading') {
+    document.addEventListener(
+      'DOMContentLoaded',
+      () => {
+        initBuildFooterPresence();
+      },
+      { once: true },
+    );
   } else {
     initBuildFooterPresence();
   }

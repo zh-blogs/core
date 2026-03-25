@@ -1,0 +1,137 @@
+---
+import type { Icon } from '@tabler/icons-svelte';
+import IconArrowRight from '@tabler/icons-svelte/icons/arrow-right';
+import IconChevronDown from '@tabler/icons-svelte/icons/chevron-down';
+import IconInfoCircle from '@tabler/icons-svelte/icons/info-circle';
+
+const ArrowIcon = IconArrowRight as typeof IconArrowRight;
+const ChevronIcon = IconChevronDown as typeof IconChevronDown;
+const InfoIcon = IconInfoCircle as typeof IconInfoCircle;
+
+type HeaderLink = {
+  label: string;
+  href: string;
+  icon: Icon;
+};
+
+interface Props {
+  primaryLinks: HeaderLink[];
+  projectLinks: HeaderLink[];
+  activePrimaryHref: string | null;
+  activeProjectHref: string | null;
+  projectActive: boolean;
+}
+
+const { primaryLinks, projectLinks, activePrimaryHref, activeProjectHref, projectActive } =
+  Astro.props;
+---
+
+<div
+  class="mx-auto hidden w-full max-w-368 border-t border-(--color-line) px-3.5 py-3 xs:px-4 sm:px-6 lg:hidden lg:px-8"
+  data-mobile-panel
+>
+  <nav class="flex flex-col gap-1 text-sm text-(--color-fg-2)">
+    {
+      primaryLinks.map((item) => {
+        const Icon = item.icon;
+        const active = activePrimaryHref === item.href;
+
+        return (
+          <a
+            class:list={[
+              'inline-flex items-center justify-between gap-3 rounded-md px-3 py-2 transition',
+              active
+                ? 'bg-(--color-bg-raised) text-red-700 dark:text-red-400'
+                : 'hover:bg-(--color-bg-raised) hover:text-(--color-fg)',
+            ]}
+            href={item.href}
+          >
+            <span class="inline-flex items-center gap-3">
+              <Icon style="width:15px;height:15px;stroke-width:1.5;" class="block" />
+              <span>{item.label}</span>
+            </span>
+            <ArrowIcon size={14} stroke={1.5} class="block" />
+          </a>
+        );
+      })
+    }
+
+    <div class="group/mobile-project" data-menu-root data-open="false">
+      <button
+        aria-expanded="false"
+        class:list={[
+          'inline-flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 transition',
+          projectActive
+            ? 'bg-(--color-bg-raised) text-red-700 dark:text-red-400'
+            : 'hover:bg-(--color-bg-raised) hover:text-(--color-fg)',
+        ]}
+        data-menu-toggle
+        type="button"
+      >
+        <span class="inline-flex items-center gap-3">
+          <InfoIcon size={15} stroke={1.5} class="block" />
+          <span>项目相关</span>
+        </span>
+        <ChevronIcon
+          size={15}
+          stroke={1.5}
+          class="block transition duration-200 ease-out group-data-[open=true]/mobile-project:rotate-180"
+        />
+      </button>
+
+      <div class="hidden flex-col gap-1 pt-1 group-data-[open=true]/mobile-project:flex">
+        {
+          projectLinks.map((item) => {
+            const Icon = item.icon;
+            const active = activeProjectHref === item.href;
+
+            return (
+              <a
+                class:list={[
+                  'inline-flex items-center justify-between gap-3 rounded-md px-3 py-2 pl-10 text-sm transition',
+                  active
+                    ? 'bg-(--color-bg-raised) text-red-700 dark:text-red-400'
+                    : 'hover:bg-(--color-bg-raised) hover:text-(--color-fg)',
+                ]}
+                href={item.href}
+              >
+                <span class="inline-flex items-center gap-3">
+                  <Icon style="width:14px;height:14px;stroke-width:1.5;" class="block" />
+                  <span>{item.label}</span>
+                </span>
+                <ArrowIcon size={13} stroke={1.5} class="block" />
+              </a>
+            );
+          })
+        }
+      </div>
+    </div>
+  </nav>
+
+  <div class="mt-3 grid grid-cols-2 gap-2">
+    <a
+      class="inline-flex min-h-10 items-center justify-center rounded-md border border-red-700/20 px-3 text-sm font-medium text-red-700 transition hover:bg-(--color-bg-raised) dark:border-red-400/20 dark:text-red-400"
+      href="/site/submit"
+    >
+      <span>提交博客</span>
+    </a>
+    <a
+      class="inline-flex min-h-10 items-center justify-center rounded-md border border-red-700/20 px-3 text-sm font-medium text-red-700 transition hover:bg-(--color-bg-raised) dark:border-red-400/20 dark:text-red-400"
+      href="/site/submit/update"
+    >
+      <span>修改信息</span>
+    </a>
+    <a
+      class="inline-flex min-h-10 items-center justify-center rounded-md border border-red-700/20 px-3 text-sm font-medium text-red-700 transition hover:bg-(--color-bg-raised) dark:border-red-400/20 dark:text-red-400"
+      href="/site/submit/delete"
+    >
+      <span>删除申请</span>
+    </a>
+    <a
+      class="inline-flex min-h-10 items-center justify-center rounded-md border border-red-700/20 px-3 text-sm font-medium text-red-700 transition hover:bg-(--color-bg-raised) dark:border-red-400/20 dark:text-red-400"
+      href="/site/submit/query"
+    >
+      <span>查询结果</span>
+    </a>
+  </div>
+</div>

@@ -1,0 +1,78 @@
+---
+import IconArrowRight from '@tabler/icons-svelte/icons/arrow-right';
+import IconChevronDown from '@tabler/icons-svelte/icons/chevron-down';
+import IconMoonStars from '@tabler/icons-svelte/icons/moon-stars';
+import IconSunHigh from '@tabler/icons-svelte/icons/sun-high';
+
+const SunIcon = IconSunHigh as typeof IconSunHigh;
+const MoonIcon = IconMoonStars as typeof IconMoonStars;
+const ChevronIcon = IconChevronDown as typeof IconChevronDown;
+const ArrowIcon = IconArrowRight as typeof IconArrowRight;
+---
+
+<div class="ml-auto hidden items-center gap-2 lg:flex">
+  <button
+    aria-label="切换主题"
+    class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-(--color-line-med) text-(--color-fg-2) transition hover:border-red-700/30 hover:text-red-700 dark:hover:border-red-400/30 dark:hover:text-red-400"
+    data-theme-toggle
+    type="button"
+  >
+    <SunIcon size={17} stroke={1.5} class="block dark:hidden" />
+    <MoonIcon size={17} stroke={1.5} class="hidden dark:block" />
+  </button>
+
+  <div
+    class="group/submit relative inline-flex h-10 shrink-0 items-stretch rounded-md border border-red-700/20 text-red-700 dark:border-red-400/20 dark:text-red-400"
+    data-submit-root
+    data-open="false"
+  >
+    <a
+      class="inline-flex h-full items-center gap-2 px-4 text-sm font-medium transition hover:bg-(--color-bg-raised)"
+      href="/site/submit"
+    >
+      <span>提交博客</span>
+    </a>
+    <button
+      aria-expanded="false"
+      class="inline-flex h-full items-center justify-center border-l border-red-700/15 px-3 transition hover:bg-(--color-bg-raised) dark:border-red-400/15"
+      data-submit-toggle
+      type="button"
+    >
+      <ChevronIcon
+        size={14}
+        stroke={1.5}
+        class="block transition duration-200 ease-out group-hover/submit:rotate-180 group-focus-within/submit:rotate-180 group-data-[open=true]/submit:rotate-180"
+      />
+    </button>
+
+    <div
+      class="pointer-events-none absolute right-0 top-full z-40 w-40 pt-2 opacity-0 transition duration-200 ease-out group-hover/submit:pointer-events-auto group-hover/submit:opacity-100 group-focus-within/submit:pointer-events-auto group-focus-within/submit:opacity-100 group-data-[open=true]/submit:pointer-events-auto group-data-[open=true]/submit:opacity-100"
+    >
+      <div
+        class="translate-y-2 rounded-md border border-(--color-line-med) bg-(--color-bg) p-2 transition duration-200 ease-out group-hover/submit:translate-y-0 group-focus-within/submit:translate-y-0 group-data-[open=true]/submit:translate-y-0"
+      >
+        <a
+          class="inline-flex w-full items-center justify-between gap-3 rounded-sm px-3 py-2 text-sm text-(--color-fg-2) transition hover:bg-(--color-bg-raised) hover:text-(--color-fg)"
+          href="/site/submit/update"
+        >
+          <span>修改信息</span>
+          <ArrowIcon size={13} stroke={1.5} class="block" />
+        </a>
+        <a
+          class="inline-flex w-full items-center justify-between gap-3 rounded-sm px-3 py-2 text-sm text-(--color-fg-2) transition hover:bg-(--color-bg-raised) hover:text-(--color-fg)"
+          href="/site/submit/delete"
+        >
+          <span>删除申请</span>
+          <ArrowIcon size={13} stroke={1.5} class="block" />
+        </a>
+        <a
+          class="inline-flex w-full items-center justify-between gap-3 rounded-sm px-3 py-2 text-sm text-(--color-fg-2) transition hover:bg-(--color-bg-raised) hover:text-(--color-fg)"
+          href="/site/submit/query"
+        >
+          <span>查询结果</span>
+          <ArrowIcon size={13} stroke={1.5} class="block" />
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

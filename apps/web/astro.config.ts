@@ -6,7 +6,7 @@ import svelte from '@astrojs/svelte';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'astro/config';
 
-import { buildMetadataIntegration } from '@/integrations/build-metadata';
+import { buildMetadataIntegration } from './src/integrations/build-metadata';
 
 // https://astro.build/config
 export default defineConfig({
