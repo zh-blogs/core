@@ -2,6 +2,14 @@
   "extends": "@zhblogs/configs/tsconfig.base.json",
   "compilerOptions": {
     "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@tests/*": [
+        "./tests/*"
+      ]
+    },
     "types": [
       "node"
     ],

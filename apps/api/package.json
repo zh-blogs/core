@@ -13,10 +13,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@fastify/cookie": "^11.0.2",
     "@fastify/compress": "^8.3.1",
     "@fastify/cors": "^11.2.0",
     "@fastify/env": "^5.0.3",
     "@fastify/helmet": "^13.0.2",
+    "@fastify/oauth2": "^8.1.1",
+    "@fastify/rate-limit": "^10.3.0",
     "@fastify/sensible": "^6.0.4",
     "@valkey/valkey-glide": "^2.2.7",
     "@zhblogs/configs": "workspace:*",

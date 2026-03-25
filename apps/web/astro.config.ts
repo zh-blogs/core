@@ -1,5 +1,5 @@
 import { defineConfig } from "astro/config";
-import { buildMetadataIntegration } from "./src/integrations/build-metadata";
+import { buildMetadataIntegration } from "./src/shared/integrations/build-metadata";
 import tailwindcss from "@tailwindcss/vite";
 import mdx from "@astrojs/mdx";
 import node from "@astrojs/node";
@@ -40,6 +40,10 @@ export default defineConfig({
     "/charts": {
       status: 301,
       destination: "/site/stats",
+    },
+    "/site/submit/create": {
+      status: 301,
+      destination: "/site/submit",
     },
   },
   integrations: [

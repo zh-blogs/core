@@ -7,7 +7,9 @@
     "build": "astro build",
     "preview": "astro preview",
     "start": "node dist/server/index.mjs",
-    "test": "playwright test",
+    "test": "pnpm test:unit",
+    "test:unit": "vitest run tests/unit",
+    "test:e2e": "playwright test",
     "astro": "astro"
   },
   "dependencies": {
