@@ -1,5 +1,5 @@
-import { sql } from 'drizzle-orm'
-import type { FastifyInstance } from 'fastify'
+import { sql } from 'drizzle-orm';
+import type { FastifyInstance } from 'fastify';
 
 const healthResponseSchema = {
   type: 'object',
@@ -19,7 +19,7 @@ const healthResponseSchema = {
     },
   },
   required: ['ok', 'service', 'environment', 'plugins'],
-} as const
+} as const;
 
 const dependencyHealthSchema = {
   type: 'object',
@@ -29,7 +29,7 @@ const dependencyHealthSchema = {
     check: { type: 'string' },
   },
   required: ['ok', 'service', 'check'],
-} as const
+} as const;
 
 export function registerHealthRoutes(app: FastifyInstance): void {
   app.get(
@@ -54,7 +54,7 @@ export function registerHealthRoutes(app: FastifyInstance): void {
         security: true,
       },
     }),
-  )
+  );
 
   app.get(
     '/health/db',
@@ -74,26 +74,26 @@ export function registerHealthRoutes(app: FastifyInstance): void {
           ok: true,
           service: 'database',
           check: 'skipped',
-        }
+        };
       }
 
       try {
-        await app.db.read.execute(sql`select 1`)
+        await app.db.read.execute(sql`select 1`);
         return {
           ok: true,
           service: 'database',
           check: 'ready',
-        }
+        };
       } catch (error) {
-        app.log.error({ error }, 'database health check failed')
+        app.log.error({ error }, 'database health check failed');
         return reply.code(503).send({
           ok: false,
           service: 'database',
           check: 'failed',
-        })
+        });
       }
     },
-  )
+  );
 
   app.get(
     '/health/cache',
@@ -113,24 +113,24 @@ export function registerHealthRoutes(app: FastifyInstance): void {
           ok: true,
           service: 'cache',
           check: 'skipped',
-        }
+        };
       }
 
       try {
-        await app.db.cache?.ping()
+        await app.db.cache?.ping();
         return {
           ok: true,
           service: 'cache',
           check: 'ready',
-        }
+        };
       } catch (error) {
-        app.log.error({ error }, 'cache health check failed')
+        app.log.error({ error }, 'cache health check failed');
         return reply.code(503).send({
           ok: false,
           service: 'cache',
           check: 'failed',
-        })
+        });
       }
     },
-  )
+  );
 }

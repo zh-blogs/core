@@ -1,32 +1,33 @@
-import { mkdirSync } from 'node:fs'
-import { join } from 'node:path'
-import pino from 'pino'
+import { mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 
-const DEFAULT_LOG_DIR = join(process.cwd(), 'logs')
+import type pino from 'pino';
+
+const DEFAULT_LOG_DIR = join(process.cwd(), 'logs');
 
 const resolveLogLevel = (): string => {
   if (process.env.API_LOG_LEVEL) {
-    return process.env.API_LOG_LEVEL
+    return process.env.API_LOG_LEVEL;
   }
 
-  const env = process.env.NODE_ENV ?? 'development'
+  const env = process.env.NODE_ENV ?? 'development';
   if (env === 'production') {
-    return 'info'
+    return 'info';
   }
 
-  return 'debug'
-}
+  return 'debug';
+};
 
 const getLogFilePath = (env: string): string => {
-  const logDir = process.env.API_LOG_DIR ?? DEFAULT_LOG_DIR
-  mkdirSync(logDir, { recursive: true })
-  return join(logDir, `api-${env}.log`)
-}
+  const logDir = process.env.API_LOG_DIR ?? DEFAULT_LOG_DIR;
+  mkdirSync(logDir, { recursive: true });
+  return join(logDir, `api-${env}.log`);
+};
 
 export function getLoggerOptions(): pino.LoggerOptions {
-  const env = process.env.NODE_ENV ?? 'development'
-  const level = resolveLogLevel()
-  const logFilePath = getLogFilePath(env)
+  const env = process.env.NODE_ENV ?? 'development';
+  const level = resolveLogLevel();
+  const logFilePath = getLogFilePath(env);
 
   if (env === 'production') {
     return {
@@ -47,7 +48,7 @@ export function getLoggerOptions(): pino.LoggerOptions {
           },
         ],
       },
-    }
+    };
   }
 
   return {
@@ -72,5 +73,5 @@ export function getLoggerOptions(): pino.LoggerOptions {
         },
       ],
     },
-  }
+  };
 }

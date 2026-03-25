@@ -1,10 +1,12 @@
-import { dbRead, dbWrite } from '@zhblogs/db'
-import fp from 'fastify-plugin'
-import type { AppDb, DbRead, DbWrite } from './dependencies'
+import { dbRead, dbWrite } from '@zhblogs/db';
+
+import fp from 'fastify-plugin';
+
+import type { AppDb } from '@/shared/runtime/types/app-dependencies.types';
 
 declare module 'fastify' {
   interface FastifyInstance {
-    db: AppDb
+    db: AppDb;
   }
 }
 
@@ -13,7 +15,7 @@ export const drizzlePlugin = fp(
     app.decorate('db', {
       read: dbRead,
       write: dbWrite,
-    } satisfies AppDb)
+    } satisfies AppDb);
   },
   { name: 'drizzle', dependencies: ['config'] },
-)
+);

@@ -1,4 +1,5 @@
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance } from 'fastify';
+
 import {
   createPresenceEventHub,
   createPresenceSnapshot,
@@ -10,7 +11,7 @@ import {
   PRESENCE_STREAM_HEARTBEAT_MS,
   readPresenceCount,
   touchPresence,
-} from '../lib/presence'
+} from '@/application/presence/usecase/presence.usecase';
 
 const presenceCountDataSchema = {
   type: 'object',
@@ -18,7 +19,7 @@ const presenceCountDataSchema = {
     count: { type: 'number' },
   },
   required: ['count'],
-} as const
+} as const;
 
 const presenceOnlineResponseSchema = {
   type: 'object',
@@ -35,7 +36,7 @@ const presenceOnlineResponseSchema = {
     },
   },
   required: ['ok', 'data'],
-} as const
+} as const;
 
 const presenceHeartbeatBodySchema = {
   type: 'object',
@@ -44,7 +45,7 @@ const presenceHeartbeatBodySchema = {
     clientId: { type: 'string', minLength: 1 },
   },
   required: ['clientId'],
-} as const
+} as const;
 
 const presenceHeartbeatResponseSchema = {
   type: 'object',
@@ -53,7 +54,7 @@ const presenceHeartbeatResponseSchema = {
     data: presenceCountDataSchema,
   },
   required: ['ok', 'data'],
-} as const
+} as const;
 
 const presenceErrorResponseSchema = {
   type: 'object',
@@ -62,14 +63,14 @@ const presenceErrorResponseSchema = {
     message: { type: 'string' },
   },
   required: ['ok', 'message'],
-} as const
+} as const;
 
 const CLIENT_ID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function registerPresenceRoutes(app: FastifyInstance): void {
-  const hub = createPresenceEventHub()
-  let lastPublishedCount: number | null = null
+  const hub = createPresenceEventHub();
+  let lastPublishedCount: number | null = null;
 
   app.get(
     '/api/presence/online',
@@ -91,9 +92,9 @@ export function registerPresenceRoutes(app: FastifyInstance): void {
     },
     async (_request, reply) => {
       try {
-        const count = await readPresenceCount(app.db.cache)
+        const count = await readPresenceCount(app.db.cache);
 
-        reply.header('cache-control', 'no-store')
+        reply.header('cache-control', 'no-store');
 
         return {
           ok: true,
@@ -102,17 +103,17 @@ export function registerPresenceRoutes(app: FastifyInstance): void {
             activeWindowMs: PRESENCE_ACTIVE_WINDOW_MS,
             heartbeatIntervalMs: PRESENCE_HEARTBEAT_INTERVAL_MS,
           },
-        }
+        };
       } catch (error) {
-        app.log.error({ error }, 'failed to read online presence count')
+        app.log.error({ error }, 'failed to read online presence count');
 
         return reply.code(503).send({
           ok: false,
           message: 'Presence service is temporarily unavailable.',
-        })
+        });
       }
     },
-  )
+  );
 
   app.post(
     '/api/presence/heartbeat',
@@ -135,23 +136,23 @@ export function registerPresenceRoutes(app: FastifyInstance): void {
       },
     },
     async (request, reply) => {
-      const payload = request.body as { clientId: string }
+      const payload = request.body as { clientId: string };
 
       if (!CLIENT_ID_PATTERN.test(payload.clientId)) {
         return reply.code(400).send({
           ok: false,
           message: 'clientId must be a valid UUID.',
-        })
+        });
       }
 
       try {
-        const count = await touchPresence(app.db.cache, payload.clientId)
+        const count = await touchPresence(app.db.cache, payload.clientId);
 
-        reply.header('cache-control', 'no-store')
+        reply.header('cache-control', 'no-store');
 
         if (count !== lastPublishedCount) {
-          lastPublishedCount = count
-          hub.publish(createPresenceSnapshot(count))
+          lastPublishedCount = count;
+          hub.publish(createPresenceSnapshot(count));
         }
 
         return {
@@ -159,17 +160,17 @@ export function registerPresenceRoutes(app: FastifyInstance): void {
           data: {
             count,
           },
-        }
+        };
       } catch (error) {
-        app.log.error({ error }, 'failed to record presence heartbeat')
+        app.log.error({ error }, 'failed to record presence heartbeat');
 
         return reply.code(503).send({
           ok: false,
           message: 'Presence service is temporarily unavailable.',
-        })
+        });
       }
     },
-  )
+  );
 
   app.get(
     '/api/presence/stream',
@@ -190,62 +191,63 @@ export function registerPresenceRoutes(app: FastifyInstance): void {
       },
     },
     (request, reply) => {
-      reply.hijack()
+      reply.hijack();
 
       void (async () => {
         try {
-          const rawReply = reply.raw
-          const currentCount = await readPresenceCount(app.db.cache)
-          const initialSnapshot = createPresenceSnapshot(currentCount)
+          const rawReply = reply.raw;
+          const currentCount = await readPresenceCount(app.db.cache);
+          const initialSnapshot = createPresenceSnapshot(currentCount);
 
-          rawReply.statusCode = 200
-          rawReply.setHeader('content-type', 'text/event-stream; charset=utf-8')
-          rawReply.setHeader('cache-control', 'no-cache, no-store, must-revalidate')
-          rawReply.setHeader('connection', 'keep-alive')
-          rawReply.setHeader('x-accel-buffering', 'no')
-          rawReply.flushHeaders?.()
-          rawReply.write(formatPresenceEvent(initialSnapshot))
+          rawReply.statusCode = 200;
+          rawReply.setHeader('content-type', 'text/event-stream; charset=utf-8');
+          rawReply.setHeader('cache-control', 'no-cache, no-store, must-revalidate');
+          rawReply.setHeader('connection', 'keep-alive');
+          rawReply.setHeader('x-accel-buffering', 'no');
+          rawReply.flushHeaders?.();
+          rawReply.write(formatPresenceEvent(initialSnapshot));
 
           const sendSnapshot = (snapshot: { count: number; at: string }) => {
-            rawReply.write(formatPresenceEvent(snapshot))
-          }
+            rawReply.write(formatPresenceEvent(snapshot));
+          };
 
           const stopHeartbeat = setInterval(() => {
-            rawReply.write(formatPresenceComment())
-          }, PRESENCE_STREAM_HEARTBEAT_MS)
+            rawReply.write(formatPresenceComment());
+          }, PRESENCE_STREAM_HEARTBEAT_MS);
 
-          const unsubscribe = hub.subscribe(sendSnapshot)
+          const unsubscribe = hub.subscribe(sendSnapshot);
 
           const cleanup = () => {
-            clearInterval(stopHeartbeat)
-            unsubscribe()
-            request.raw.off('close', cleanup)
-          }
+            clearInterval(stopHeartbeat);
+            unsubscribe();
+            request.raw.off('close', cleanup);
+          };
 
-          request.raw.on('close', cleanup)
+          request.raw.on('close', cleanup);
         } catch (error) {
-          app.log.error({ error }, 'failed to start presence event stream')
+          app.log.error({ error }, 'failed to start presence event stream');
 
           if (!reply.raw.headersSent) {
-            reply.raw.statusCode = 503
-            reply.raw.setHeader('content-type', 'application/json; charset=utf-8')
+            reply.raw.statusCode = 503;
+            reply.raw.setHeader('content-type', 'application/json; charset=utf-8');
             reply.raw.end(
               JSON.stringify({
                 ok: false,
                 message: 'Presence service is temporarily unavailable.',
               }),
-            )
-            return
+            );
+            return;
           }
 
           reply.raw.write(
-            formatPresenceEvent(
-              createPresenceSnapshot(lastPublishedCount ?? 0),
-            ).replace(PRESENCE_EVENT_NAME, 'presence.error'),
-          )
-          reply.raw.end()
+            formatPresenceEvent(createPresenceSnapshot(lastPublishedCount ?? 0)).replace(
+              PRESENCE_EVENT_NAME,
+              'presence.error',
+            ),
+          );
+          reply.raw.end();
         }
-      })()
+      })();
     },
-  )
+  );
 }
