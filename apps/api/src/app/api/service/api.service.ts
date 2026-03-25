@@ -13,6 +13,7 @@ import { registerHealthRoutes } from '@/presentation/health/routes/health.contro
 import { registerInternalJobRoutes } from '@/presentation/jobs/routes';
 import { registerPresenceRoutes } from '@/presentation/presence/routes/presence.controller';
 import { registerPublicRoutes } from '@/presentation/public/routes/public.controller';
+import { registerSiteRoutes } from '@/presentation/sites/routes/site.controller';
 import { registerAdminUserRoutes } from '@/presentation/user/routes/admin-user.controller';
 import { getLoggerOptions } from '@/shared/runtime/service/app-logger.service';
 
@@ -37,6 +38,7 @@ export function createApp(options: AppBootstrapOptions = {}) {
     registerAdminUserRoutes(app);
     registerInternalJobRoutes(app);
     registerPublicRoutes(app);
+    registerSiteRoutes(app);
   });
 
   return app;
