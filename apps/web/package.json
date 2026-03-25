@@ -3,16 +3,26 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "dev": "astro dev",
+    "astro": "astro",
     "build": "astro build",
+    "dev": "astro dev",
+    "format": "prettier --config ./prettier.config.ts --write \"package.json\" \"*.ts\" \"src/**/*.{ts,js,astro,svelte,css}\" \"tests/**/*.{ts,js}\"",
+    "format:check": "prettier --config ./prettier.config.ts --check \"package.json\" \"*.ts\" \"src/**/*.{ts,js,astro,svelte,css}\" \"tests/**/*.{ts,js}\"",
+    "lint": "pnpm run lint:eslint && pnpm run stylelint",
+    "lint:eslint": "eslint --config ./eslint.config.ts \"src/**/*.{ts,js,astro,svelte}\" \"tests/**/*.{ts,js}\" \"*.ts\"",
+    "lint:eslint:fix": "eslint --config ./eslint.config.ts \"src/**/*.{ts,js,astro,svelte}\" \"tests/**/*.{ts,js}\" \"*.ts\" --fix",
+    "lint:fix": "pnpm run lint:eslint:fix && pnpm run stylelint:fix",
     "preview": "astro preview",
     "start": "node dist/server/index.mjs",
+    "stylelint": "stylelint --config ./stylelint.config.ts \"src/**/*.{css,astro,svelte}\"",
+    "stylelint:fix": "stylelint --config ./stylelint.config.ts --fix \"src/**/*.{css,astro,svelte}\"",
     "test": "pnpm test:unit",
-    "test:unit": "vitest run tests/unit",
     "test:e2e": "playwright test",
-    "astro": "astro"
+    "test:unit": "vitest run tests/unit",
+    "typecheck": "astro check"
   },
   "dependencies": {
+    "@astrojs/check": "^0.9.8",
     "@astrojs/mdx": "^5.0.0",
     "@astrojs/node": "^10.0.0",
     "@astrojs/partytown": "^2.1.5",
@@ -20,9 +30,11 @@
     "@astrojs/svelte": "^8.0.0",
     "@tabler/icons-svelte": "^3.40.0",
     "@tailwindcss/vite": "^4.2.1",
+    "@zhblogs/configs": "workspace:*",
     "astro": "^6.0.2",
     "svelte": "^5.53.10",
-    "tailwindcss": "^4.2.1"
+    "tailwindcss": "^4.2.1",
+    "typescript": "^5.9.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",

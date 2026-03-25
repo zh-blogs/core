@@ -5,10 +5,15 @@
   "scripts": {
     "build": "pnpm -F @zhblogs/utils run build && tsdown",
     "dev": "drizzle-kit studio",
-    "generate": "drizzle-kit generate",
-    "migrate": "drizzle-kit migrate",
     "drizzle": "drizzle-kit",
-    "test": "vitest run"
+    "format": "prettier --config ./prettier.config.ts --write \"package.json\" \"*.ts\" \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "format:check": "prettier --config ./prettier.config.ts --check \"package.json\" \"*.ts\" \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "generate": "drizzle-kit generate",
+    "lint": "eslint --config ./eslint.config.ts \"src/**/*.ts\" \"tests/**/*.ts\" \"*.ts\"",
+    "lint:fix": "eslint --config ./eslint.config.ts \"src/**/*.ts\" \"tests/**/*.ts\" \"*.ts\" --fix",
+    "migrate": "drizzle-kit migrate",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "exports": {
     ".": {

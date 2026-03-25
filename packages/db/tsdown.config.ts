@@ -1,4 +1,4 @@
-import { defineConfig } from 'tsdown'
+import { defineConfig } from 'tsdown';
 
 export default defineConfig({
   clean: true,
@@ -16,4 +16,4 @@ export default defineConfig({
   outDir: './dist',
   sourcemap: true,
   shims: false,
-})
+});

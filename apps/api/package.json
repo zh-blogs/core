@@ -3,13 +3,17 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "dev": "cross-env NODE_ENV=development tsx watch index.ts",
-    "build": "cross-env NODE_ENV=production tsdown",
-    "preview": "cross-env NODE_ENV=production node dist/index.mjs",
-    "start": "cross-env NODE_ENV=production node dist/index.mjs",
+    "build": "tsdown",
+    "dev": "tsx watch index.ts",
+    "format": "prettier --config ./prettier.config.ts --write \"package.json\" \"*.ts\" \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "format:check": "prettier --config ./prettier.config.ts --check \"package.json\" \"*.ts\" \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "lint": "eslint --config ./eslint.config.ts \"src/**/*.ts\" \"tests/**/*.ts\" \"*.ts\"",
+    "lint:fix": "eslint --config ./eslint.config.ts \"src/**/*.ts\" \"tests/**/*.ts\" \"*.ts\" --fix",
+    "preview": "node dist/index.mjs",
+    "start": "node dist/index.mjs",
     "test": "vitest run",
-    "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
+    "test:unit": "vitest run tests/unit",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

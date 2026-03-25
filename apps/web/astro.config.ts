@@ -1,56 +1,51 @@
-import { defineConfig } from "astro/config";
-import { buildMetadataIntegration } from "./src/shared/integrations/build-metadata";
-import tailwindcss from "@tailwindcss/vite";
-import mdx from "@astrojs/mdx";
-import node from "@astrojs/node";
-import sitemap from "@astrojs/sitemap";
-import partytown from "@astrojs/partytown";
-import svelte from "@astrojs/svelte";
+import mdx from '@astrojs/mdx';
+import node from '@astrojs/node';
+import partytown from '@astrojs/partytown';
+import sitemap from '@astrojs/sitemap';
+import svelte from '@astrojs/svelte';
+import tailwindcss from '@tailwindcss/vite';
+import { defineConfig } from 'astro/config';
+
+import { buildMetadataIntegration } from '@/integrations/build-metadata';
 
 // https://astro.build/config
 export default defineConfig({
   adapter: node({
-    mode: "standalone",
+    mode: 'standalone',
   }),
   server: {
     port: 9902,
   },
   build: {
-    serverEntry: "index.mjs",
+    serverEntry: 'index.mjs',
   },
   vite: {
     plugins: [tailwindcss()],
     ssr: {
-      noExternal: ["@tabler/icons-svelte"],
+      noExternal: ['@tabler/icons-svelte'],
     },
   },
   redirects: {
-    "/list": {
+    '/list': {
       status: 301,
-      destination: "/site",
+      destination: '/site',
     },
-    "/new": {
+    '/new': {
       status: 301,
-      destination: "/site/submit",
+      destination: '/site/submit',
     },
-    "/random": {
+    '/random': {
       status: 301,
-      destination: "/site/go-site",
+      destination: '/site/go-site',
     },
-    "/charts": {
+    '/charts': {
       status: 301,
-      destination: "/site/stats",
+      destination: '/site/stats',
     },
-    "/site/submit/create": {
+    '/site/submit/create': {
       status: 301,
-      destination: "/site/submit",
+      destination: '/site/submit',
     },
   },
-  integrations: [
-    buildMetadataIntegration(),
-    svelte(),
-    mdx(),
-    sitemap(),
-    partytown(),
-  ],
+  integrations: [buildMetadataIntegration(), svelte(), mdx(), sitemap(), partytown()],
 });

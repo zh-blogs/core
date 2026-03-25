@@ -1,5 +1,6 @@
-import { defineConfig, devices } from "@playwright/test";
-import { getWebBaseUrl, getWebPort } from "./tests/setup/env";
+import { defineConfig, devices } from '@playwright/test';
+
+import { getWebBaseUrl, getWebPort } from './tests/setup/env';
 
 /**
  * Read environment variables from file.
