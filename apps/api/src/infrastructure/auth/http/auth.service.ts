@@ -1,10 +1,14 @@
 import { Users } from '@zhblogs/db';
 
 import fastifyOauth2 from '@fastify/oauth2';
-import { eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import type { FastifyReply, FastifyRequest, preHandlerHookHandler } from 'fastify';
 import fp from 'fastify-plugin';
 
+import {
+  buildNextRoleMetadata,
+  createManagementService,
+} from '@/application/auth/usecase/auth-management.usecase';
 import {
   ACCESS_COOKIE_NAME,
   createSessionHelpers,
@@ -17,7 +21,12 @@ import {
 } from '@/application/auth/usecase/github-login.usecase';
 import { hasRequiredRole } from '@/domain/auth/service/auth-role.service';
 import { buildAuthUser, type UserRow } from '@/domain/auth/service/auth-user.service';
-import { AuthError, type AuthUser, type EffectiveUserRole } from '@/domain/auth/types/auth.types';
+import {
+  AuthError,
+  type AuthUser,
+  type EffectiveUserRole,
+  type ManagedUserSnapshot,
+} from '@/domain/auth/types/auth.types';
 
 export interface AuthService {
   guard: (requiredRole?: EffectiveUserRole) => preHandlerHookHandler;
@@ -26,6 +35,9 @@ export interface AuthService {
   completeGithubLogin: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
   refreshSession: (request: FastifyRequest, reply: FastifyReply) => Promise<AuthUser>;
   logout: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+  listManagedUsers: () => Promise<ManagedUserSnapshot[]>;
+  grantAdminRole: (actor: AuthUser, targetUserId: string) => Promise<ManagedUserSnapshot>;
+  revokeAdminRole: (actor: AuthUser, targetUserId: string) => Promise<ManagedUserSnapshot>;
   issueSessionForUserId: (
     userId: string,
     reply?: FastifyReply,
@@ -87,6 +99,30 @@ export const authPlugin = fp(
       return user ?? null;
     };
 
+    const listUsers = async (): Promise<UserRow[]> =>
+      app.db.read.select().from(Users).orderBy(desc(Users.created_time));
+
+    const updateUserRole = async (
+      target: UserRow,
+      nextRole: UserRow['role'],
+      actorId: string | null,
+    ): Promise<UserRow> => {
+      const [updatedUser] = await app.db.write
+        .update(Users)
+        .set({
+          role: nextRole,
+          metadata: buildNextRoleMetadata(target, actorId),
+        })
+        .where(eq(Users.id, target.id))
+        .returning();
+
+      if (!updatedUser) {
+        throw new AuthError('user_not_found', 'User not found', 404);
+      }
+
+      return updatedUser;
+    };
+
     const { clearSession, createTokensForUser, setSessionCookies, validateAuthenticatedUser } =
       createSessionHelpers({
         cache: app.db.cache,
@@ -108,6 +144,11 @@ export const authPlugin = fp(
       readUserById,
       createTokensForUser,
       setSessionCookies,
+    });
+    const managementService = createManagementService({
+      listUsers,
+      readUserById,
+      updateUserRole,
     });
 
     const issueSessionForUserId = async (
@@ -211,6 +252,10 @@ export const authPlugin = fp(
 
         await clearSession(reply, currentSessionId);
       },
+
+      listManagedUsers: managementService.listManagedUsers,
+      grantAdminRole: managementService.grantAdminRole,
+      revokeAdminRole: managementService.revokeAdminRole,
 
       issueSessionForUserId,
     };

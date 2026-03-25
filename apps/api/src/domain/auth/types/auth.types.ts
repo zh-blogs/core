@@ -50,6 +50,20 @@ export interface GithubIdentity {
   rawProfile: Record<string, unknown>;
 }
 
+export interface ManagedUserSnapshot {
+  id: string;
+  email: string;
+  nickname: string;
+  avatarUrl: string | null;
+  sourceRole: UserRoleKey;
+  role: EffectiveUserRole;
+  isActive: boolean;
+  adminGrantedBy: string | null;
+  adminGrantedTime: string | null;
+  createdTime: string | null;
+  lastLoginTime: string | null;
+}
+
 export class AuthError extends Error {
   readonly code: string;
   readonly statusCode: number;

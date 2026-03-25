@@ -11,6 +11,7 @@ import { authPlugin } from '@/infrastructure/auth/http/auth.service';
 import { registerAuthRoutes } from '@/presentation/auth/routes/auth.controller';
 import { registerHealthRoutes } from '@/presentation/health/routes/health.controller';
 import { registerPresenceRoutes } from '@/presentation/presence/routes/presence.controller';
+import { registerAdminUserRoutes } from '@/presentation/user/routes/admin-user.controller';
 import { getLoggerOptions } from '@/shared/runtime/service/app-logger.service';
 
 export function createApp(options: AppBootstrapOptions = {}) {
@@ -31,6 +32,7 @@ export function createApp(options: AppBootstrapOptions = {}) {
     registerHealthRoutes(app);
     registerPresenceRoutes(app);
     registerAuthRoutes(app);
+    registerAdminUserRoutes(app);
   });
 
   return app;

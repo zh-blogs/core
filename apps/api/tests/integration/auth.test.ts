@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { AuthUser } from '@/domain/auth/types/auth.types';
+import type { AuthUser, ManagedUserSnapshot } from '@/domain/auth/types/auth.types';
 
 import { TEST_AUTH_COOKIES } from '../config';
 import { createTestApp } from '../create-test-app';
@@ -100,6 +100,93 @@ describe('auth routes', () => {
     expect(logoutResponse.json()).toEqual({
       ok: true,
     });
+  });
+
+  it('protects sys-admin routes from lower roles', async () => {
+    app = createTestApp({
+      disableExternalServices: true,
+    });
+
+    await app.ready();
+
+    const adminUser: AuthUser = {
+      ...userFixture,
+      role: 'ADMIN',
+      sourceRole: 'ADMIN',
+    };
+
+    app.auth.getCurrentUser = vi.fn(async () => adminUser);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/admin/users',
+      cookies: {
+        [TEST_AUTH_COOKIES.access]: 'test-token',
+      },
+    });
+
+    expect(response.statusCode).toBe(403);
+  });
+
+  it('allows sys-admin role management routes', async () => {
+    app = createTestApp({
+      disableExternalServices: true,
+    });
+
+    await app.ready();
+
+    const sysAdminUser: AuthUser = {
+      ...userFixture,
+      role: 'SYS_ADMIN',
+      sourceRole: 'SYS_ADMIN',
+    };
+    const managedUser: ManagedUserSnapshot = {
+      ...sysAdminUser,
+      createdTime: '2026-03-19T00:00:00.000Z',
+      lastLoginTime: '2026-03-19T00:00:00.000Z',
+    };
+    const managedUsers: ManagedUserSnapshot[] = [managedUser];
+
+    app.auth.getCurrentUser = vi.fn(async () => sysAdminUser);
+    app.auth.listManagedUsers = vi.fn(async () => managedUsers);
+    app.auth.grantAdminRole = vi.fn(async () => managedUser);
+    const revokedUser: ManagedUserSnapshot = {
+      ...managedUser,
+      role: 'USER',
+      sourceRole: 'USER',
+    };
+
+    app.auth.revokeAdminRole = vi.fn(async () => revokedUser);
+
+    const listResponse = await app.inject({
+      method: 'GET',
+      url: '/api/admin/users',
+      cookies: {
+        [TEST_AUTH_COOKIES.access]: 'sys-admin-token',
+      },
+    });
+    const grantResponse = await app.inject({
+      method: 'POST',
+      url: `/api/admin/users/${userFixture.id}/grant-admin`,
+      cookies: {
+        [TEST_AUTH_COOKIES.access]: 'sys-admin-token',
+      },
+    });
+    const revokeResponse = await app.inject({
+      method: 'POST',
+      url: `/api/admin/users/${userFixture.id}/revoke-admin`,
+      cookies: {
+        [TEST_AUTH_COOKIES.access]: 'sys-admin-token',
+      },
+    });
+
+    expect(listResponse.statusCode).toBe(200);
+    expect(listResponse.json()).toEqual({
+      ok: true,
+      data: managedUsers,
+    });
+    expect(grantResponse.statusCode).toBe(200);
+    expect(revokeResponse.statusCode).toBe(200);
   });
 
   it('returns 503 for github auth start when oauth is not configured', async () => {

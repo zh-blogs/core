@@ -1,10 +1,18 @@
 import type { Users } from '@zhblogs/db';
 
-import type { AuthUser, AuthUserMetadata } from '../types/auth.types';
+import type { AuthUser, AuthUserMetadata, ManagedUserSnapshot } from '../types/auth.types';
 
 import { normalizeUserRole } from './auth-role.service';
 
 export type UserRow = typeof Users.$inferSelect;
+
+export const toIsoString = (value: Date | string | null | undefined): string | null => {
+  if (!value) {
+    return null;
+  }
+
+  return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
+};
 
 export const readMetadata = (
   metadata: Record<string, unknown> | null | undefined,
@@ -37,5 +45,15 @@ export const buildAuthUser = (record: UserRow): AuthUser => {
     authVersion: metadata.auth_version,
     adminGrantedBy: metadata.admin_granted_by,
     adminGrantedTime: metadata.admin_granted_time,
+  };
+};
+
+export const buildManagedUserSnapshot = (record: UserRow): ManagedUserSnapshot => {
+  const authUser = buildAuthUser(record);
+
+  return {
+    ...authUser,
+    createdTime: toIsoString(record.created_time),
+    lastLoginTime: toIsoString(record.last_login_time),
   };
 };
