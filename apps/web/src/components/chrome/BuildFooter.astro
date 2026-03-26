@@ -1,0 +1,189 @@
+---
+import { getApiBaseUrl } from '@/application/auth/auth.server';
+
+const buildInfo = __ZHBLOGS_BUILD_METADATA__;
+const buildYear = new Date(__ZHBLOGS_BUILD_METADATA__.buildTime).getFullYear();
+const icpText = '陇ICP备 2021003047号-5';
+const presenceApiBaseUrl = getApiBaseUrl();
+const buildSummaryText = `v${buildInfo.version} · ${buildInfo.shortCommitHash}`;
+const formattedBuildTime = new Date(buildInfo.buildTime).toLocaleString('zh-CN', {
+  hour12: false,
+});
+const formattedCommitTime = buildInfo.commitTime
+  ? new Date(buildInfo.commitTime).toLocaleString('zh-CN', { hour12: false })
+  : '未知';
+
+const statementLinks = [
+  { label: '免责声明', href: '/disclaimer' },
+  { label: '版权声明', href: '/copyright' },
+  { label: '隐私说明', href: '/privacy' },
+  { label: '社区公约', href: '/community' },
+];
+
+const friendLinks = [
+  { label: '开往', href: 'https://www.travellings.cn/', external: true },
+  { label: '博友圈', href: 'https://www.boyouquan.com/', external: true },
+  { label: 'BlogFinder', href: 'https://bf.zzxworld.com/', external: true },
+  {
+    label: '中文独立博客列表',
+    href: 'https://github.com/timqian/chinese-independent-blogs',
+    external: true,
+  },
+  { label: '优秀个人独立博客导航', href: 'http://www.jetli.com.cn/', external: true },
+];
+---
+
+<footer class="border-t border-(--color-line) bg-(--color-bg-soft)/45">
+  <div
+    class="mx-auto grid w-full max-w-368 gap-8 px-3.5 py-8 text-sm xs:px-4 sm:px-6 lg:grid-cols-3 lg:items-start lg:gap-10 lg:px-8 lg:py-10"
+  >
+    <div class="grid gap-3 text-sm leading-7 text-(--color-fg-2)">
+      <p>
+        <a
+          class="transition hover:text-red-700 dark:hover:text-red-400"
+          href="https://beian.miit.gov.cn/"
+          rel="noreferrer"
+          target="_blank"
+        >
+          {icpText}
+        </a>
+      </p>
+      <p>Copyright © 2022 - {buildYear} 集博栈 - zhblogs Project</p>
+      <div aria-live="polite" class="flex flex-wrap items-center gap-2">
+        <div class="group relative max-w-full">
+          <button
+            aria-haspopup="dialog"
+            class="inline-flex max-w-full items-center gap-2 rounded-[999px] border border-(--color-line) bg-(--color-bg-soft)/65 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-(--color-fg-3) transition hover:border-(--color-line-med) hover:text-(--color-fg-2) focus:outline-none focus-visible:border-(--color-line-med) focus-visible:text-(--color-fg-2)"
+            type="button"
+          >
+            <span class="inline-flex items-center gap-2">
+              <span class="h-1.5 w-1.5 rounded-full bg-(--color-line-med)"></span>
+              <span>构建信息</span>
+            </span>
+            <span class="truncate">{buildSummaryText}</span>
+          </button>
+          <div
+            class="pointer-events-none absolute bottom-full left-0 z-20 mb-3 w-[min(22rem,calc(100vw-2rem))] translate-y-2 rounded-md border border-(--color-line-med) bg-(--color-bg-raised) p-4 text-sm opacity-0 shadow-[0_14px_36px_rgba(15,23,42,0.08)] transition duration-200 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100 lg:left-auto lg:right-0"
+            role="dialog"
+          >
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="font-medium text-(--color-fg)">{buildInfo.packageName}</p>
+              </div>
+              <span
+                class="rounded-[4px] border border-(--color-line) px-2 py-1 font-mono text-[11px] text-(--color-fg-3)"
+              >
+                {buildInfo.branch}
+              </span>
+            </div>
+
+            <dl class="mt-4 grid gap-3 text-sm">
+              <div
+                class="flex items-start justify-between gap-4 border-b border-(--color-line) pb-3"
+              >
+                <dt class="text-(--color-fg-3)">版本</dt>
+                <dd class="font-mono text-(--color-fg)">v{buildInfo.version}</dd>
+              </div>
+              <div
+                class="flex items-start justify-between gap-4 border-b border-(--color-line) pb-3"
+              >
+                <dt class="text-(--color-fg-3)">提交</dt>
+                <dd class="text-right">
+                  {
+                    buildInfo.commitLink ? (
+                      <a
+                        class="font-mono text-(--color-fg) underline decoration-(--color-line-med) underline-offset-3 transition hover:text-red-700 dark:hover:text-red-400"
+                        href={buildInfo.commitLink}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        {buildInfo.shortCommitHash}
+                      </a>
+                    ) : (
+                      <span class="font-mono text-(--color-fg)">{buildInfo.shortCommitHash}</span>
+                    )
+                  }
+                </dd>
+              </div>
+              <div
+                class="flex items-start justify-between gap-4 border-b border-(--color-line) pb-3"
+              >
+                <dt class="text-(--color-fg-3)">构建时间</dt>
+                <dd class="max-w-[70%] text-right text-(--color-fg)">
+                  <time datetime={buildInfo.buildTime}>{formattedBuildTime}</time>
+                </dd>
+              </div>
+              <div class="flex items-start justify-between gap-4">
+                <dt class="text-(--color-fg-3)">提交时间</dt>
+                <dd class="max-w-[70%] text-right text-(--color-fg)">
+                  <time datetime={buildInfo.commitTime || undefined}>{formattedCommitTime}</time>
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+        <span
+          class="inline-flex items-center gap-2 rounded-[999px] border border-emerald-700/18 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-emerald-700 dark:border-emerald-400/20 dark:text-emerald-400"
+        >
+          <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+          <span>在线人数</span>
+          <span data-online-count data-api-base-url={presenceApiBaseUrl}>--</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-4 lg:px-6">
+      <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-(--color-fg-3)">站点声明</p>
+      <ul class="grid gap-3">
+        {
+          statementLinks.map((item) => (
+            <li>
+              <a
+                class="inline-flex text-sm leading-7 text-(--color-fg-2) transition hover:text-red-700 dark:hover:text-red-400"
+                href={item.href}
+              >
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+
+    <div class="flex flex-col gap-4">
+      <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-(--color-fg-3)">友情链接</p>
+      <ul class="grid gap-3">
+        {
+          friendLinks.map((item) => (
+            <li>
+              <a
+                class="inline-flex text-sm leading-7 text-(--color-fg-2) transition hover:text-red-700 dark:hover:text-red-400"
+                href={item.href}
+                rel={item.external ? 'noreferrer' : undefined}
+                target={item.external ? '_blank' : undefined}
+              >
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </div>
+</footer>
+
+<script>
+  import { initBuildFooterPresence } from '@/application/presence/presence.browser';
+
+  if (document.readyState === 'loading') {
+    document.addEventListener(
+      'DOMContentLoaded',
+      () => {
+        initBuildFooterPresence();
+      },
+      { once: true },
+    );
+  } else {
+    initBuildFooterPresence();
+  }
+</script>
