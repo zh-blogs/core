@@ -3,16 +3,18 @@ import type { Icon } from '@tabler/icons-svelte';
 import IconArrowRight from '@tabler/icons-svelte/icons/arrow-right';
 import IconDice from '@tabler/icons-svelte/icons/dice';
 
+import type { PublicSiteEntry } from '@/application/site/site-public.server';
+
 import BlogCard from '../site/BlogCard.astro';
 
 const DiceIcon = IconDice as Icon;
 const ArrowIcon = IconArrowRight as Icon;
 
 interface Props {
-  randomBlogs: Icon[];
+  randomBlogs: PublicSiteEntry[];
 }
 
-const { randomBlogs } = Astro.props;
+const { randomBlogs } = Astro.props as Props;
 ---
 
 <section class="border-b border-(--color-line) pb-10">

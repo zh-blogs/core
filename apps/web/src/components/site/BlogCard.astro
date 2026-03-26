@@ -9,7 +9,27 @@ import IconStarFilled from '@tabler/icons-svelte/icons/star-filled';
 import type { PublicSiteEntry } from '@/application/site/site-public.server';
 
 interface Props {
-  entry: PublicSiteEntry;
+  entry: Pick<
+    PublicSiteEntry,
+    | 'slug'
+    | 'name'
+    | 'domain'
+    | 'href'
+    | 'shortCode'
+    | 'primaryTag'
+    | 'summary'
+    | 'subTags'
+    | 'joinedAt'
+    | 'joinedLabel'
+    | 'updatedLabel'
+    | 'articleCount'
+    | 'visitCount'
+    | 'tone'
+    | 'status'
+    | 'rssUrl'
+    | 'sitemapUrl'
+    | 'featured'
+  >;
 }
 
 type ResourceLink = {
@@ -19,7 +39,7 @@ type ResourceLink = {
   Icon: Icon;
 };
 
-const { entry } = Astro.props;
+const { entry } = Astro.props as Props;
 const ArrowIcon = IconArrowRight as Icon;
 const ExternalLinkIcon = IconExternalLink as Icon;
 const FeaturedIcon = IconStarFilled as Icon;
