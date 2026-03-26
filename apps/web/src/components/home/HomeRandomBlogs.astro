@@ -1,0 +1,41 @@
+---
+import type { Icon } from '@tabler/icons-svelte';
+import IconArrowRight from '@tabler/icons-svelte/icons/arrow-right';
+import IconDice from '@tabler/icons-svelte/icons/dice';
+
+import BlogCard from '../site/BlogCard.astro';
+
+const DiceIcon = IconDice as Icon;
+const ArrowIcon = IconArrowRight as Icon;
+
+interface Props {
+  randomBlogs: Icon[];
+}
+
+const { randomBlogs } = Astro.props;
+---
+
+<section class="border-b border-(--color-line) pb-10">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div class="space-y-2">
+      <p
+        class="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-red-700 dark:text-red-400"
+      >
+        <DiceIcon size={14} stroke={1.9} class="block" />
+        随机访问
+      </p>
+      <h2 class="text-2xl leading-tight tracking-[-0.03em]">猜你喜欢</h2>
+    </div>
+    <a
+      class="inline-flex items-center gap-2 text-sm text-(--color-fg-2) transition hover:text-red-700 dark:hover:text-red-400"
+      href="/site"
+    >
+      <span>完整列表</span>
+      <ArrowIcon size={14} stroke={1.9} class="block" />
+    </a>
+  </div>
+
+  <div class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    {randomBlogs.map((entry) => <BlogCard entry={entry} />)}
+  </div>
+</section>

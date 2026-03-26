@@ -1,45 +1,93 @@
 ---
-import BaseLayout from "../layouts/BaseLayout.astro";
+import { getCollection } from 'astro:content';
+
+import { readCommunityRoles } from '@/application/community/community.server';
+import { readAnnouncements, readHomeSummary } from '@/application/home/home.server';
+import { readPublicSites, shuffleSites } from '@/application/site/site-public.server';
+import HomeCommunityDocs from '@/components/home/HomeCommunityDocs.astro';
+import HomeHero from '@/components/home/HomeHero.astro';
+import HomeProjectBlogs from '@/components/home/HomeProjectBlogs.astro';
+import HomeRandomBlogs from '@/components/home/HomeRandomBlogs.astro';
+import PublicHeader from '@/components/public-header/PublicHeader.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { groupDocsByCategory } from '@/shared/data/doc-categories';
+
+export const prerender = false;
+
+const formatDate = (value: Date | string | null): string => {
+  const target = value instanceof Date ? value : value ? new Date(value) : null;
+
+  if (!target) {
+    return '';
+  }
+
+  return target.toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+};
+
+const previewAnnouncement = {
+  tag: '项目公告',
+  title: '春季目录整理进行中',
+  summary:
+    '欢迎补充近期更新的个人博客、RSS 地址与站点地图信息，新提交内容会进入审查并陆续同步到公开列表。',
+  publishTime: '2026-03-19T10:00:00+08:00',
+};
+
+const projectBlogs = (await getCollection('blogs')).sort(
+  (left, right) => right.data.create_time.getTime() - left.data.create_time.getTime(),
+);
+const docs = (await getCollection('docs')).sort(
+  (left, right) => right.data.create_time.getTime() - left.data.create_time.getTime(),
+);
+const docGroups = groupDocsByCategory(docs);
+const publicSites = await readPublicSites();
+const communityRoles = await readCommunityRoles();
+
+const fallbackSummary = {
+  totalSites: publicSites.length,
+  featuredSites: publicSites.filter((entry) => entry.featured).length,
+  todayUpdates: publicSites.filter(
+    (entry) => entry.updatedLabel?.includes('今天') || entry.updatedLabel?.includes('1 天前'),
+  ).length,
+};
+
+const summary = await readHomeSummary(fallbackSummary);
+const announcements = await readAnnouncements();
+const leadAnnouncement = announcements[0] ?? previewAnnouncement;
+const leadAnnouncementDate = leadAnnouncement.publishTime
+  ? formatDate(leadAnnouncement.publishTime)
+  : '';
+const randomBlogs = shuffleSites(publicSites).slice(0, 6);
+const recentProjectBlogs = projectBlogs.slice(0, 3).map((entry) => ({
+  id: entry.id,
+  title: entry.data.title,
+  description: entry.data.description,
+  tags: entry.data.tags,
+  dateLabel: formatDate(entry.data.create_time),
+}));
 ---
 
-<BaseLayout title="ZhBlogs Web">
-  <main class="mx-auto flex w-full max-w-6xl flex-1 items-center px-6 py-16">
-    <section class="surface-panel w-full overflow-hidden p-8 md:p-12">
-      <div class="grid gap-10 md:grid-cols-[minmax(0,1.3fr)_minmax(20rem,0.9fr)] md:items-end">
-        <div class="animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <p class="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sm font-medium text-sky-700">
-            <span class="inline-block h-2 w-2 rounded-full bg-sky-500"></span>
-            Astro + Tailwind foundation
-          </p>
-          <h1 class="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 md:text-6xl">
-            Web module is ready for the next layer of product work.
-          </h1>
-          <p class="mt-5 max-w-2xl text-base leading-8 text-slate-600 md:text-lg">
-            当前结构已经把 Astro、Tailwind v4 和构建信息页脚收口到一套基础骨架里，
-            后续你可以在这个基础上继续拆分业务页面、内容页和交互组件。
-          </p>
-        </div>
+<BaseLayout title="集博栈">
+  <PublicHeader currentPath={Astro.url.pathname} />
 
-        <div class="animate-in fade-in slide-in-from-bottom-6 duration-700 delay-150">
-          <div class="rounded-3xl border border-slate-200 bg-slate-950 p-6 text-sm text-slate-200 shadow-2xl shadow-slate-900/15">
-            <p class="font-mono text-xs uppercase tracking-[0.3em] text-slate-400">status</p>
-            <div class="mt-4 space-y-3 font-mono text-sm">
-              <p class="flex items-center justify-between gap-4">
-                <span class="text-slate-400">rendering</span>
-                <span class="text-emerald-300">astro</span>
-              </p>
-              <p class="flex items-center justify-between gap-4">
-                <span class="text-slate-400">styling</span>
-                <span class="text-cyan-300">tailwind v4</span>
-              </p>
-              <p class="flex items-center justify-between gap-4">
-                <span class="text-slate-400">footer</span>
-                <span class="text-amber-300">build metadata</span>
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+  <main class="flex-1">
+    <div
+      class="mx-auto flex w-full max-w-368 flex-col gap-10 px-3.5 py-6 xs:px-4 sm:px-6 lg:gap-12 lg:px-8 lg:py-8"
+    >
+      <HomeHero
+        leadAnnouncement={leadAnnouncement}
+        leadAnnouncementDate={leadAnnouncementDate}
+        summary={summary}
+      />
+
+      <HomeRandomBlogs randomBlogs={randomBlogs} />
+
+      <HomeProjectBlogs blogs={recentProjectBlogs} />
+
+      <HomeCommunityDocs communityRoles={communityRoles} docGroups={docGroups} />
+    </div>
   </main>
 </BaseLayout>

@@ -1,0 +1,169 @@
+---
+import type { Icon } from '@tabler/icons-svelte';
+import IconArrowRight from '@tabler/icons-svelte/icons/arrow-right';
+import IconBinaryTree from '@tabler/icons-svelte/icons/binary-tree';
+import IconBook2 from '@tabler/icons-svelte/icons/book-2';
+import IconCirclePlus from '@tabler/icons-svelte/icons/circle-plus';
+import IconFileText from '@tabler/icons-svelte/icons/file-text';
+
+const ArrowIcon = IconArrowRight as Icon;
+const CirclePlusIcon = IconCirclePlus as Icon;
+const BookIcon = IconBook2 as Icon;
+
+const roleIcons = {
+  project: IconCirclePlus as Icon,
+  tech: IconBinaryTree as Icon,
+  docs: IconBook2 as Icon,
+  data: IconFileText as Icon,
+  outreach: IconCirclePlus as Icon,
+};
+
+const docCategoryIcons = {
+  development: IconBinaryTree as Icon,
+  contribution: IconCirclePlus as Icon,
+  standards: IconBook2 as Icon,
+};
+
+interface Props {
+  communityRoles: Array<{
+    id: string;
+    title: string;
+    summary: string;
+    activeContributorCount?: number;
+    href: string;
+  }>;
+  docGroups: Array<{
+    id: 'development' | 'contribution' | 'standards';
+    href: string;
+    title: string;
+    summary: string;
+  }>;
+}
+
+const { communityRoles, docGroups } = Astro.props;
+const displayRoles = [
+  ...communityRoles.map((role) => ({
+    ...role,
+    summary:
+      role.id === 'project' && role.activeContributorCount !== undefined
+        ? `${role.summary}，当前加入并积极参与项目贡献 ${role.activeContributorCount} 人。`
+        : role.summary,
+  })),
+  {
+    id: 'other',
+    title: '其他方向',
+    summary: '其余认为项目还需要改进的地方。',
+    href: '/contribute',
+  },
+];
+---
+
+<section class="grid gap-8 pb-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+  <div class="flex flex-col gap-5">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div class="space-y-2">
+        <p
+          class="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-red-700 dark:text-red-400"
+        >
+          <CirclePlusIcon size={14} stroke={1.9} class="block" />
+          加入我们
+        </p>
+        <h2 class="text-2xl leading-tight tracking-[-0.03em]">按协作方向参与</h2>
+      </div>
+      <a
+        class="inline-flex items-center gap-2 text-sm text-(--color-fg-2) transition hover:text-red-700 dark:hover:text-red-400"
+        href="/contribute"
+      >
+        <span>了解更多</span>
+        <ArrowIcon size={14} stroke={1.9} class="block" />
+      </a>
+    </div>
+
+    <ul class="border-y border-(--color-line)">
+      {
+        displayRoles.map((role) => {
+          const Icon = roleIcons[role.id as keyof typeof roleIcons] ?? IconFileText;
+
+          return (
+            <li class="border-b border-(--color-line) last:border-b-0">
+              <a
+                class="group flex items-start justify-between gap-4 py-4 transition hover:text-red-700 dark:hover:text-red-400"
+                href={role.href}
+              >
+                <span class="flex min-w-0 items-start gap-4">
+                  <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-(--color-line-med) text-red-700 dark:text-red-400">
+                    <Icon size={17} stroke={1.9} class="block" />
+                  </span>
+                  <span class="min-w-0">
+                    <span class="mt-2 block text-lg leading-tight text-(--color-fg) transition group-hover:text-red-700 dark:group-hover:text-red-400">
+                      {role.title}
+                    </span>
+                    <span class="mt-2 block text-sm leading-7 text-(--color-fg-2)">
+                      {role.summary}
+                    </span>
+                  </span>
+                </span>
+              </a>
+            </li>
+          );
+        })
+      }
+    </ul>
+  </div>
+
+  <div class="flex flex-col gap-5">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div class="space-y-2">
+        <p
+          class="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-red-700 dark:text-red-400"
+        >
+          <BookIcon size={14} stroke={1.9} class="block" />
+          项目文档
+        </p>
+        <h2 class="text-2xl leading-tight tracking-[-0.03em]">按类别进入</h2>
+      </div>
+      <a
+        class="inline-flex items-center gap-2 text-sm text-(--color-fg-2) transition hover:text-red-700 dark:hover:text-red-400"
+        href="/docs"
+      >
+        <span>查看全部</span>
+        <ArrowIcon size={14} stroke={1.9} class="block" />
+      </a>
+    </div>
+
+    <ul class="border-y border-(--color-line)">
+      {
+        docGroups.map((group) => {
+          const Icon = docCategoryIcons[group.id];
+
+          return (
+            <li class="border-b border-(--color-line) last:border-b-0">
+              <a
+                class="group flex items-start justify-between gap-4 py-4 transition hover:text-red-700 dark:hover:text-red-400"
+                href={group.href}
+              >
+                <span class="flex min-w-0 items-start gap-4">
+                  <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-(--color-line-med) text-red-700 dark:text-red-400">
+                    <Icon size={17} stroke={1.9} class="block" />
+                  </span>
+                  <span class="min-w-0">
+                    <span class="mt-2 block text-lg leading-tight text-(--color-fg) transition group-hover:text-red-700 dark:group-hover:text-red-400">
+                      {group.title}
+                    </span>
+                    <span class="mt-2 block text-sm leading-7 text-(--color-fg-2)">
+                      {group.summary}
+                    </span>
+                  </span>
+                </span>
+                <span class="mt-1 inline-flex shrink-0 items-center gap-2 text-sm text-(--color-fg-2) transition group-hover:text-red-700 dark:group-hover:text-red-400">
+                  <span>进入分类</span>
+                  <ArrowIcon size={14} stroke={1.9} class="block" />
+                </span>
+              </a>
+            </li>
+          );
+        })
+      }
+    </ul>
+  </div>
+</section>

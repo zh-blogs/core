@@ -50,10 +50,11 @@ const friendLinks = [
       </p>
       <p>Copyright © 2022 - {buildYear} 集博栈 - zhblogs Project</p>
       <div aria-live="polite" class="flex flex-wrap items-center gap-2">
-        <div class="group relative max-w-full">
+        <div class="group relative max-w-full" data-build-info-root>
           <button
             aria-haspopup="dialog"
             class="inline-flex max-w-full items-center gap-2 rounded-[999px] border border-(--color-line) bg-(--color-bg-soft)/65 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-(--color-fg-3) transition hover:border-(--color-line-med) hover:text-(--color-fg-2) focus:outline-none focus-visible:border-(--color-line-med) focus-visible:text-(--color-fg-2)"
+            data-build-info-trigger
             type="button"
           >
             <span class="inline-flex items-center gap-2">
@@ -63,7 +64,9 @@ const friendLinks = [
             <span class="truncate">{buildSummaryText}</span>
           </button>
           <div
-            class="pointer-events-none absolute bottom-full left-0 z-20 mb-3 w-[min(22rem,calc(100vw-2rem))] translate-y-2 rounded-md border border-(--color-line-med) bg-(--color-bg-raised) p-4 text-sm opacity-0 shadow-[0_14px_36px_rgba(15,23,42,0.08)] transition duration-200 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100 lg:left-auto lg:right-0"
+            class="pointer-events-none absolute bottom-[calc(100%+0.75rem)] left-0 z-20 max-h-[calc(100vh-2rem)] w-[min(22rem,calc(100vw-2rem))] overflow-auto rounded-md border border-(--color-line-med) bg-(--color-bg-raised) p-4 text-sm opacity-0 shadow-[0_14px_36px_rgba(15,23,42,0.08)] transition duration-200 data-[popover-side=above]:translate-y-2 data-[popover-side=below]:-translate-y-2 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100 lg:left-auto lg:right-0"
+            data-build-info-panel
+            data-popover-side="above"
             role="dialog"
           >
             <div class="flex items-start justify-between gap-4">
@@ -174,16 +177,16 @@ const friendLinks = [
 
 <script>
   import { initBuildFooterPresence } from '@/application/presence/presence.browser';
+  import { initBuildFooterPopover } from '@/shared/browser/build-footer.browser';
+
+  const init = () => {
+    initBuildFooterPresence();
+    initBuildFooterPopover();
+  };
 
   if (document.readyState === 'loading') {
-    document.addEventListener(
-      'DOMContentLoaded',
-      () => {
-        initBuildFooterPresence();
-      },
-      { once: true },
-    );
+    document.addEventListener('DOMContentLoaded', init, { once: true });
   } else {
-    initBuildFooterPresence();
+    init();
   }
 </script>

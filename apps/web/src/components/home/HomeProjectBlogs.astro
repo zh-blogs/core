@@ -1,0 +1,73 @@
+---
+import type { Icon } from '@tabler/icons-svelte';
+import IconArrowRight from '@tabler/icons-svelte/icons/arrow-right';
+import IconFileText from '@tabler/icons-svelte/icons/file-text';
+
+const FileIcon = IconFileText as Icon;
+const ArrowIcon = IconArrowRight as Icon;
+
+interface BlogCardItem {
+  id: string;
+  title: string;
+  description: string;
+  tags: string[];
+  dateLabel: string;
+}
+
+interface Props {
+  blogs: BlogCardItem[];
+}
+
+const { blogs } = Astro.props;
+---
+
+<section class="border-b border-(--color-line) pb-10">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div class="space-y-2">
+      <p
+        class="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-red-700 dark:text-red-400"
+      >
+        <FileIcon size={14} stroke={1.9} class="block" />
+        项目博客
+      </p>
+      <h2 class="text-2xl leading-tight tracking-[-0.03em]">近期动态</h2>
+    </div>
+    <a
+      class="inline-flex items-center gap-2 text-sm text-(--color-fg-2) transition hover:text-red-700 dark:hover:text-red-400"
+      href="/blog"
+    >
+      <span>查看全部</span>
+      <ArrowIcon size={14} stroke={1.9} class="block" />
+    </a>
+  </div>
+
+  <div class="mt-5 grid gap-3 lg:grid-cols-3">
+    {
+      blogs.map((entry) => (
+        <a
+          class="group rounded-md border border-(--color-line) p-4 transition hover:border-red-700/25 hover:bg-(--color-bg-raised) dark:hover:border-red-400/25"
+          href={`/blog/${entry.id}`}
+        >
+          <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-(--color-fg-3)">
+            {entry.dateLabel}
+          </p>
+          <h3 class="mt-3 text-lg leading-snug text-(--color-fg) transition group-hover:text-red-700 dark:group-hover:text-red-400">
+            {entry.title}
+          </h3>
+          <div class="mt-1.5 flex h-14 items-center overflow-hidden">
+            <p class="overflow-hidden text-sm leading-7 text-(--color-fg-2) [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
+              {entry.description}
+            </p>
+          </div>
+          <div class="mt-2 flex flex-wrap gap-2">
+            {entry.tags.slice(0, 3).map((tag) => (
+              <span class="rounded-sm border border-(--color-line) px-2 py-1 font-mono text-[11px] uppercase tracking-[0.16em] text-(--color-fg-3)">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </a>
+      ))
+    }
+  </div>
+</section>
