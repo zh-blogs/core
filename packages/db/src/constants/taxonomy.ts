@@ -22,10 +22,6 @@ export const TECHNOLOGY_TYPES = {
     label: '技术框架',
     description: '用于自定义博客构建的框架，如 Next.js、Nuxt',
   },
-  LANGUAGE: {
-    label: '编程语言',
-    description: '用于实现博客系统的主要编程语言',
-  },
 } as const;
 
 export const TECHNOLOGY_TYPE_KEYS = Object.keys(TECHNOLOGY_TYPES) as Array<
