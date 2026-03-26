@@ -34,7 +34,9 @@ const { primaryLinks, projectLinks, activePrimaryHref, activeProjectHref, projec
         <a
           class:list={[
             'group/nav-link relative inline-flex items-center gap-2 px-3 py-2 transition',
-            active ? 'text-red-700 dark:text-red-400' : 'hover:text-(--color-fg)',
+            active
+              ? 'text-red-700 dark:text-red-400'
+              : 'hover:text-red-700 dark:hover:text-red-400',
           ]}
           href={item.href}
         >
@@ -57,7 +59,9 @@ const { primaryLinks, projectLinks, activePrimaryHref, activeProjectHref, projec
       aria-expanded="false"
       class:list={[
         'group/nav-link relative inline-flex items-center gap-2 px-3 py-2 transition',
-        projectActive ? 'text-red-700 dark:text-red-400' : 'hover:text-(--color-fg)',
+        projectActive
+          ? 'text-red-700 dark:text-red-400'
+          : 'hover:text-red-700 dark:hover:text-red-400',
       ]}
       data-menu-toggle
       type="button"
@@ -93,7 +97,7 @@ const { primaryLinks, projectLinks, activePrimaryHref, activeProjectHref, projec
                   'inline-flex w-full items-center justify-between gap-3 rounded-sm px-3 py-2 text-sm transition',
                   active
                     ? 'bg-(--color-bg-raised) text-red-700 dark:text-red-400'
-                    : 'text-(--color-fg-2) hover:bg-(--color-bg-raised) hover:text-(--color-fg)',
+                    : 'text-(--color-fg-2) hover:bg-(--color-bg-raised) hover:text-red-700 dark:hover:text-red-400',
                 ]}
                 href={item.href}
               >
