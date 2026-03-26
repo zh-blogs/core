@@ -7,7 +7,7 @@ import { pageLooksLikeLinkPage } from '@/domain/sites/service/site-auto-fill-ext
 const HTML_FETCH_TIMEOUT_MS = 8000;
 const CANDIDATE_FETCH_TIMEOUT_MS = 5000;
 // TODO: The sitelinks need to be corrected.
-const USER_AGENT = 'zhblogs - SubmissionBot/1.0 (+https://zhblogs.net; public submission autofill)';
+const USER_AGENT = `Mozilla/5.0 (compatible; zhblogs-SiteAutoFillValidator/1.0; +https://www.zhblogs.net/; public submission autofill)`;
 
 const RSS_BODY_PATTERN = /<rss[\s>]/i;
 const ATOM_BODY_PATTERN = /<feed[\s>]/i;

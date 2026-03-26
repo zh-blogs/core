@@ -209,6 +209,52 @@ describe('site submission routes', () => {
     });
   });
 
+  it('rejects create submissions when feed urls are equivalent after normalization', async () => {
+    app = createTestApp({
+      disableExternalServices: true,
+    });
+
+    await app.ready();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/sites',
+      payload: {
+        submitter_name: 'Alice',
+        submitter_email: 'alice@example.com',
+        submit_reason: 'Request inclusion for my site.',
+        notify_by_email: false,
+        site: {
+          name: 'Example Blog',
+          url: 'https://example.com',
+          sign: 'A blog about software',
+          main_tag_id: mainTagId,
+          feed: [
+            {
+              name: '主订阅',
+              url: 'https://Example.com/feed.xml',
+            },
+            {
+              name: '备用订阅',
+              url: 'https://example.com/feed.xml/',
+            },
+          ],
+          default_feed_url: 'https://example.com/feed.xml/',
+        },
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({
+      ok: false,
+      error: {
+        code: 'INVALID_BODY',
+        message: 'Request body contains empty or malformed fields.',
+        fields: ['site.feed'],
+      },
+    });
+  });
+
   it('returns 503 when create audit persistence fails', async () => {
     app = createTestApp({
       disableExternalServices: true,

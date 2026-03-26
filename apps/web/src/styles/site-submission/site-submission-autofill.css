@@ -1,0 +1,6 @@
+input.autofill-missing,
+textarea.autofill-missing,
+.autofill-missing {
+  border-color: color-mix(in srgb, var(--color-warn) 72%, var(--color-line-med)) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-warn) 28%, transparent) !important;
+}

@@ -9,6 +9,7 @@
   let {
     options = [],
     selectedId = $bindable(''),
+    selectedLabel = '',
     inputId = '',
     placeholder = '搜索并选择',
     emptyLabel = '暂无匹配结果',
@@ -19,6 +20,7 @@
   }: {
     options?: SingleSelectOption[];
     selectedId?: string;
+    selectedLabel?: string;
     inputId?: string;
     placeholder?: string;
     emptyLabel?: string;
@@ -57,6 +59,8 @@
   };
 
   let selectedOption = $derived(options.find((option) => option.id === selectedId) ?? null);
+  let resolvedSelectedLabel = $derived(normalize(selectedLabel));
+  let selectedDisplayName = $derived(selectedOption?.name ?? resolvedSelectedLabel);
   let normalizedQuery = $derived(normalize(query).toLocaleLowerCase('zh-CN'));
   let queryToken = $derived(normalizeToken(query));
   let filteredOptions = $derived.by(() =>
@@ -110,9 +114,12 @@
 
   function handleCustom() {
     const value = normalize(query);
+    selectedId = '';
     onRequestCustom?.({ query: value });
     close();
   }
+
+  let canRequestCustom = $derived(normalize(query).length > 0);
 
   onMount(() => {
     const handlePointerDown = (event: MouseEvent) => {
@@ -164,11 +171,11 @@
     }}
   >
     <div class="flex flex-wrap items-center gap-2">
-      {#if selectedOption}
+      {#if selectedDisplayName}
         <span
           class="inline-flex items-center gap-2 rounded-[999px] border border-(--color-line-med) px-3 py-1 text-xs text-(--color-fg)"
         >
-          {selectedOption.name}
+          {selectedDisplayName}
         </span>
       {/if}
       <input
@@ -177,7 +184,7 @@
         bind:value={query}
         class="min-w-36 flex-1 bg-transparent py-1 text-sm text-(--color-fg) outline-none placeholder:text-(--color-fg-3)"
         {disabled}
-        placeholder={selectedOption ? `当前：${selectedOption.name}` : placeholder}
+        placeholder={selectedDisplayName ? `当前：${selectedDisplayName}` : placeholder}
         onfocus={open}
         oninput={open}
       />
@@ -211,17 +218,31 @@
               </button>
             {/each}
           </div>
+          {#if canRequestCustom}
+            <div class="mt-2 border-t border-(--color-line) pt-2">
+              <button
+                class="flex w-full items-center justify-between rounded-sm px-3 py-2 text-left text-sm text-(--color-fg) transition hover:bg-[color-mix(in_srgb,var(--color-bg)_82%,transparent)]"
+                type="button"
+                onclick={handleCustom}
+              >
+                <span>{customActionLabel}</span>
+                <span class="font-mono text-[11px] text-(--color-fg-3)">{normalize(query)}</span>
+              </button>
+            </div>
+          {/if}
         {:else}
           <div class="space-y-2 px-1 py-1">
             <p class="px-2 py-1 text-sm text-(--color-fg-3)">{emptyLabel}</p>
-            <button
-              class="flex w-full items-center justify-between rounded-sm px-3 py-2 text-left text-sm text-(--color-fg) transition hover:bg-[color-mix(in_srgb,var(--color-bg)_82%,transparent)]"
-              type="button"
-              onclick={handleCustom}
-            >
-              <span>{customActionLabel}</span>
-              <span class="font-mono text-[11px] text-(--color-fg-3)">{normalize(query)}</span>
-            </button>
+            {#if canRequestCustom}
+              <button
+                class="flex w-full items-center justify-between rounded-sm px-3 py-2 text-left text-sm text-(--color-fg) transition hover:bg-[color-mix(in_srgb,var(--color-bg)_82%,transparent)]"
+                type="button"
+                onclick={handleCustom}
+              >
+                <span>{customActionLabel}</span>
+                <span class="font-mono text-[11px] text-(--color-fg-3)">{normalize(query)}</span>
+              </button>
+            {/if}
           </div>
         {/if}
       </div>

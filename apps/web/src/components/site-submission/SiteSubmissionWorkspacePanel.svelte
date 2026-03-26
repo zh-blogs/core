@@ -1,0 +1,201 @@
+<script lang="ts">
+  import type { CustomProgramDraft } from '@/application/site-submission/site-submission.browser-form';
+  import type { AutoFillFieldKey } from '@/application/site-submission/site-submission.browser-workspace';
+  import {
+    type CreateSubmissionFormState,
+    type DeleteSubmissionFormState,
+    type FieldErrors,
+    type QuerySubmissionFormState,
+    type SiteResolveRequest,
+    type SiteResolveResult,
+    type SiteSearchItem,
+    type SiteSubmissionOptionsResult,
+    type SubmissionPage,
+    type SubmissionResult,
+    type SubmissionStatusResult,
+    trimText,
+    type UpdateSubmissionFormState,
+  } from '@/application/site-submission/site-submission.service';
+
+  import WorkspaceCreateForm from './WorkspaceCreateForm.svelte';
+  import WorkspaceDeleteForm from './WorkspaceDeleteForm.svelte';
+  import WorkspaceHeader from './WorkspaceHeader.svelte';
+  import WorkspaceQueryForm from './WorkspaceQueryForm.svelte';
+  import WorkspaceSiteResolver from './WorkspaceSiteResolver.svelte';
+  import WorkspaceUpdateForm from './WorkspaceUpdateForm.svelte';
+
+  export let activePage: SubmissionPage;
+  export let autoFillPending = false;
+  export let autoFillTarget: 'create' | 'update' | null = null;
+  export let createForm: CreateSubmissionFormState;
+  export let createErrors: FieldErrors = {};
+  export let createPending = false;
+  export let createProgramSelectedId = '';
+  export let createSuccess: SubmissionResult | null = null;
+  export let deleteForm: DeleteSubmissionFormState;
+  export let deleteErrors: FieldErrors = {};
+  export let deletePending = false;
+  export let deleteSuccess: SubmissionResult | null = null;
+  export let fieldNeedsRefinement: (kind: 'create' | 'update', value: string) => boolean;
+  export let inputClass = '';
+  export let isAutoFillMissing: (kind: 'create' | 'update', field: AutoFillFieldKey) => boolean;
+  export let options: SiteSubmissionOptionsResult;
+  export let optionsPending = false;
+  export let programOptions: Array<{ id: string; name: string }> = [];
+  export let queryError: string | null = null;
+  export let queryErrors: FieldErrors = {};
+  export let queryForm: QuerySubmissionFormState;
+  export let queryPending = false;
+  export let querySuccess: SubmissionStatusResult | null = null;
+  export let resolvePending = false;
+  export let searchError: string | null = null;
+  export let searchPending = false;
+  export let searchQuery = '';
+  export let searchResults: SiteSearchItem[] = [];
+  export let selectClass = '';
+  export let selectChevronStyle = '';
+  export let selectedSite: SiteResolveResult | null = null;
+  export let statusToneClass: (status: string) => string;
+  export let textAreaClass = '';
+  export let updateErrors: FieldErrors = {};
+  export let updateForm: UpdateSubmissionFormState;
+  export let updatePending = false;
+  export let updateProgramSelectedId = '';
+  export let updateSuccess: SubmissionResult | null = null;
+  export let withInputStateClass: (base: string, warned: boolean, missing: boolean) => string;
+
+  export let addFeed: (kind: 'create' | 'update') => void;
+  export let applyAddressInference: (kind: 'create' | 'update') => void;
+  export let clearAutoFillMissing: (kind: 'create' | 'update', field: AutoFillFieldKey) => void;
+  export let removeFeed: (kind: 'create' | 'update', id: string) => void;
+  export let applyProgramCustomDraft: (
+    kind: 'create' | 'update',
+    draft: CustomProgramDraft,
+  ) => void;
+  export let resolveSite: (identifier: string | SiteResolveRequest) => Promise<void>;
+  export let runAutoFill: (kind: 'create' | 'update') => Promise<void>;
+  export let runSearch: () => Promise<void>;
+  export let selectDefaultFeed: (kind: 'create' | 'update', url: string) => void;
+  export let selectProgramOption: (kind: 'create' | 'update', id: string) => void;
+  export let submitCreate: () => Promise<void>;
+  export let submitDelete: () => Promise<void>;
+  export let submitQuery: () => Promise<void>;
+  export let submitUpdate: () => Promise<void>;
+  export let updateCreateUrl: (value: string) => void;
+  export let updateFeedName: (kind: 'create' | 'update', id: string, value: string) => void;
+  export let updateFeedUrl: (kind: 'create' | 'update', id: string, value: string) => void;
+  export let updateUpdateUrl: (value: string) => void;
+</script>
+
+<section
+  class="order-2 rounded-md border border-(--color-line-med) p-5 sm:py-8 sm:px-10 lg:order-1"
+>
+  <WorkspaceHeader {activePage} />
+
+  {#if activePage === 'create'}
+    <WorkspaceCreateForm
+      {autoFillPending}
+      {autoFillTarget}
+      {submitCreate}
+      {createForm}
+      {createErrors}
+      {createSuccess}
+      {createPending}
+      {inputClass}
+      {textAreaClass}
+      {selectClass}
+      {selectChevronStyle}
+      {withInputStateClass}
+      {isAutoFillMissing}
+      {clearAutoFillMissing}
+      {fieldNeedsRefinement}
+      {updateCreateUrl}
+      {applyAddressInference}
+      {runAutoFill}
+      {addFeed}
+      {removeFeed}
+      {updateFeedName}
+      {updateFeedUrl}
+      {selectDefaultFeed}
+      {optionsPending}
+      {options}
+      {programOptions}
+      {createProgramSelectedId}
+      selectProgramForCreate={(id) => selectProgramOption('create', id)}
+      applyProgramCustomDraftForCreate={(draft) => applyProgramCustomDraft('create', draft)}
+      {trimText}
+    />
+  {:else if activePage === 'update' || activePage === 'delete'}
+    <div class="mt-6 space-y-6">
+      <WorkspaceSiteResolver
+        {inputClass}
+        bind:searchQuery
+        {searchPending}
+        {resolvePending}
+        {searchError}
+        {searchResults}
+        {selectedSite}
+        {runSearch}
+        {resolveSite}
+      />
+
+      {#if activePage === 'update' && selectedSite}
+        <WorkspaceUpdateForm
+          {autoFillPending}
+          {autoFillTarget}
+          {submitUpdate}
+          {updateForm}
+          {updateErrors}
+          {updateSuccess}
+          {updatePending}
+          {inputClass}
+          {textAreaClass}
+          {selectClass}
+          {selectChevronStyle}
+          {withInputStateClass}
+          {isAutoFillMissing}
+          {clearAutoFillMissing}
+          {fieldNeedsRefinement}
+          {updateUpdateUrl}
+          {applyAddressInference}
+          {runAutoFill}
+          {addFeed}
+          {removeFeed}
+          {updateFeedName}
+          {updateFeedUrl}
+          {selectDefaultFeed}
+          {optionsPending}
+          {options}
+          {programOptions}
+          {updateProgramSelectedId}
+          selectProgramForUpdate={(id) => selectProgramOption('update', id)}
+          applyProgramCustomDraftForUpdate={(draft) => applyProgramCustomDraft('update', draft)}
+          {trimText}
+        />
+      {/if}
+
+      {#if activePage === 'delete' && selectedSite}
+        <WorkspaceDeleteForm
+          {submitDelete}
+          {deleteForm}
+          {deleteErrors}
+          {deleteSuccess}
+          {deletePending}
+          {inputClass}
+          {textAreaClass}
+        />
+      {/if}
+    </div>
+  {:else}
+    <WorkspaceQueryForm
+      {inputClass}
+      {queryForm}
+      {queryErrors}
+      {queryError}
+      {queryPending}
+      {querySuccess}
+      {submitQuery}
+      {statusToneClass}
+    />
+  {/if}
+</section>

@@ -1,4 +1,9 @@
 export {
+  auditDetailResultSchema,
+  auditIdParamJsonSchema,
+  auditListResultSchema,
+} from './site-admin-response.dto';
+export {
   autoFillResultSchema,
   errorResponseSchema,
   optionsResultSchema,

@@ -1,0 +1,17 @@
+---
+import PublicHeader from '@/components/public-header/PublicHeader.astro';
+import SiteSubmissionWorkspace from '@/components/site-submission/SiteSubmissionWorkspace.svelte';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+export const prerender = false;
+---
+
+<BaseLayout title="站点提交 | 集博栈">
+  <PublicHeader currentPath={Astro.url.pathname} />
+
+  <main class="flex-1">
+    <div class="mx-auto w-full max-w-368 px-3.5 py-6 xs:px-4 sm:px-6 lg:px-8 lg:py-8">
+      <SiteSubmissionWorkspace client:load activePage="create" />
+    </div>
+  </main>
+</BaseLayout>

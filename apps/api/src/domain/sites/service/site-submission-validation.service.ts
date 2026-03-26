@@ -82,6 +82,40 @@ export function normalizeFeedUrl(value: string | null | undefined) {
   return normalized ? normalized : null;
 }
 
+function createComparableFeedUrlKey(value: string | null | undefined) {
+  const normalized = normalizeFeedUrl(value);
+
+  if (!normalized) {
+    return null;
+  }
+
+  try {
+    const target = new URL(normalized);
+
+    if (target.protocol !== 'http:' && target.protocol !== 'https:') {
+      return null;
+    }
+
+    target.hostname = target.hostname.toLowerCase();
+    target.hash = '';
+
+    if (
+      (target.protocol === 'http:' && target.port === '80') ||
+      (target.protocol === 'https:' && target.port === '443')
+    ) {
+      target.port = '';
+    }
+
+    if (target.pathname !== '/') {
+      target.pathname = target.pathname.replace(/\/+$/u, '') || '/';
+    }
+
+    return target.toString();
+  } catch {
+    return normalized;
+  }
+}
+
 export function normalizeSubmittedFeeds(feed: MultiFeed[] | null | undefined): MultiFeed[] {
   return (feed ?? [])
     .map((item) => ({
@@ -99,15 +133,15 @@ export function mergeSubmittedFeeds(
   const currentTypeByUrl = new Map(
     normalizeSubmittedFeeds(currentFeed)
       .filter((item) => item.type)
-      .map((item) => [item.url, item.type]),
+      .map((item) => [createComparableFeedUrlKey(item.url) ?? item.url, item.type]),
   );
 
   return normalizeSubmittedFeeds(nextFeed).map((item) => ({
     ...item,
     ...(item.type
       ? { type: item.type }
-      : currentTypeByUrl.get(item.url)
-        ? { type: currentTypeByUrl.get(item.url) }
+      : currentTypeByUrl.get(createComparableFeedUrlKey(item.url) ?? item.url)
+        ? { type: currentTypeByUrl.get(createComparableFeedUrlKey(item.url) ?? item.url) }
         : {}),
   }));
 }
@@ -132,12 +166,14 @@ export function validateFeedSelection(
   const seen = new Set<string>();
 
   for (const item of normalizedFeed) {
-    if (seen.has(item.url)) {
+    const comparableUrl = createComparableFeedUrlKey(item.url) ?? item.url;
+
+    if (seen.has(comparableUrl)) {
       fields.push(`${fieldPrefix}feed`);
       return fields;
     }
 
-    seen.add(item.url);
+    seen.add(comparableUrl);
   }
 
   if (normalizedFeed.length > 1) {
@@ -153,7 +189,14 @@ export function validateFeedSelection(
     return [...new Set(fields)];
   }
 
-  if (!normalizedFeed.some((item) => item.url === normalizedDefaultFeedUrl)) {
+  const comparableDefaultFeedUrl = createComparableFeedUrlKey(normalizedDefaultFeedUrl);
+
+  if (
+    !comparableDefaultFeedUrl ||
+    !normalizedFeed.some(
+      (item) => (createComparableFeedUrlKey(item.url) ?? item.url) === comparableDefaultFeedUrl,
+    )
+  ) {
     fields.push(`${fieldPrefix}default_feed_url`);
   }
 

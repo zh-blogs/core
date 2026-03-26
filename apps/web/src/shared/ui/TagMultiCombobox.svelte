@@ -106,9 +106,7 @@
   let customConflict = $derived(
     hasCustomConflict(normalizedQuery, selectedOptions, customValues, options),
   );
-  let canAddCustom = $derived(
-    normalizedQuery.length > 0 && filteredOptions.length === 0 && !customConflict,
-  );
+  let canAddCustom = $derived(normalizedQuery.length > 0 && !customConflict);
 
   onMount(() => {
     const handlePointerDown = (event: MouseEvent) => {
@@ -133,7 +131,7 @@
 
 <div class="relative" bind:this={root}>
   <div
-    class={`min-h-11 rounded-[5px] border bg-(--color-bg-raised) px-3 py-1.5 text-sm transition ${
+    class={`min-h-11 rounded-md border bg-(--color-bg-raised) px-3 py-1.5 text-sm transition ${
       disabled
         ? 'cursor-not-allowed border-(--color-line) opacity-70'
         : 'cursor-text border-(--color-line-med) focus-within:border-red-700/35 dark:focus-within:border-red-400/35'
@@ -227,7 +225,7 @@
 
   {#if isOpen && !disabled}
     <div
-      class="absolute inset-x-0 top-[calc(100%+0.5rem)] z-20 overflow-hidden rounded-[5px] border border-(--color-line-med) bg-(--color-bg-raised) shadow-[0_18px_40px_rgba(28,25,23,0.14)] dark:shadow-[0_18px_40px_rgba(0,0,0,0.34)]"
+      class="absolute inset-x-0 top-[calc(100%+0.5rem)] z-20 overflow-hidden rounded-md border border-(--color-line-med) bg-(--color-bg-raised) shadow-[0_18px_40px_rgba(28,25,23,0.14)] dark:shadow-[0_18px_40px_rgba(0,0,0,0.34)]"
     >
       <div class="max-h-72 overflow-y-auto p-2">
         {#if filteredOptions.length > 0}
@@ -252,6 +250,24 @@
               </button>
             {/each}
           </div>
+          {#if canAddCustom}
+            <div class="mt-2 border-t border-(--color-line) pt-2">
+              <button
+                class="flex w-full items-center justify-between rounded-sm px-3 py-2 text-left text-sm text-(--color-fg) transition hover:bg-[color-mix(in_srgb,var(--color-bg)_82%,transparent)]"
+                type="button"
+                onclick={() => {
+                  if (useCustomDialog) {
+                    requestCustom(normalizedQuery);
+                  } else {
+                    addCustom(normalizedQuery);
+                  }
+                }}
+              >
+                <span>{customActionLabel}</span>
+                <span class="font-mono text-[11px] text-(--color-fg-3)">{normalizedQuery}</span>
+              </button>
+            </div>
+          {/if}
         {:else if canAddCustom}
           <button
             class="flex w-full items-center justify-between rounded-sm px-3 py-2 text-left text-sm text-(--color-fg) transition hover:bg-[color-mix(in_srgb,var(--color-bg)_82%,transparent)]"
