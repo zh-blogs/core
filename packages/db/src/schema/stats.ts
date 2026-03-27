@@ -213,14 +213,21 @@ export const SiteAccessEventTypeStats = pgView('site_access_event_type_stats', {
 
 /** 站点警示标签统计视图 */
 export const SiteWarningTagStats = pgView('site_warning_tag_stats', {
-  /** 警示标签类型 */
-  tag: varchar('tag', { length: 64 }),
+  /** 警示标签定义 ID */
+  tag_id: uuid('tag_id'),
+  /** 警示标签机器键 */
+  machine_key: varchar('machine_key', { length: 64 }),
+  /** 警示标签展示名称 */
+  tag_name: varchar('tag_name', { length: 64 }),
   /** 带有该标签的站点数量 */
   site_count: integer('site_count'),
 }).as(sql`
   select
-    swt.tag as tag,
+    td.id as tag_id,
+    td.machine_key as machine_key,
+    td.name as tag_name,
     count(distinct swt.site_id)::int as site_count
   from site_warning_tags swt
-  group by swt.tag
+  inner join tag_definitions td on td.id = swt.tag_id
+  group by td.id, td.machine_key, td.name
 `);

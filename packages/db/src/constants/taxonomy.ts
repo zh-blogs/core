@@ -7,6 +7,10 @@ export const TAG_TYPES = {
     label: '副标签',
     description: '用于补充站点细分主题的标签',
   },
+  WARNING: {
+    label: '警示标签',
+    description: '用于站点风险提示、访问限制与内容问题的标签',
+  },
 } as const;
 
 export const TAG_TYPE_KEYS = Object.keys(TAG_TYPES) as Array<keyof typeof TAG_TYPES>;

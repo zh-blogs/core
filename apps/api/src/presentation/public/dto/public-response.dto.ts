@@ -77,6 +77,18 @@ const publicSiteItemSchema = {
       type: 'array',
       items: { type: 'string' },
     },
+    warningTags: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          machineKey: { type: 'string' },
+          name: { type: 'string' },
+          description: { type: ['string', 'null'] },
+        },
+        required: ['machineKey', 'name', 'description'],
+      },
+    },
   },
   required: [
     'id',
@@ -97,6 +109,7 @@ const publicSiteItemSchema = {
     'visitCount',
     'primaryTag',
     'subTags',
+    'warningTags',
   ],
 } as const;
 

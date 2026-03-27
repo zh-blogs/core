@@ -141,7 +141,12 @@ export async function loadSubmissionOptions(app: FastifyInstance) {
         tag_type: TagDefinitions.tag_type,
       })
       .from(TagDefinitions)
-      .where(eq(TagDefinitions.is_enabled, true)),
+      .where(
+        and(
+          eq(TagDefinitions.is_enabled, true),
+          or(eq(TagDefinitions.tag_type, 'MAIN'), eq(TagDefinitions.tag_type, 'SUB')),
+        ),
+      ),
     app.db.read
       .select({
         id: Programs.id,

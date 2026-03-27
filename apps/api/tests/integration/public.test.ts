@@ -4,6 +4,7 @@ import {
   SiteFeedArticleStats,
   Sites,
   SiteTags,
+  SiteWarningTags,
   TagDefinitions,
 } from '@zhblogs/db';
 
@@ -213,6 +214,20 @@ describe('public routes', () => {
           },
         ],
       },
+      {
+        table: SiteWarningTags,
+        rows: [
+          {
+            siteId: 'site-1',
+            source: 'MANUAL',
+            note: '近期存在访问限制',
+            id: 'warning-tag-1',
+            machineKey: 'EXTERNAL_LIMIT',
+            name: '外部限制',
+            description: '网站受地区限制、防火墙或外部网络策略影响',
+          },
+        ],
+      },
     ];
 
     app.db.read.select = vi.fn(() => ({
@@ -236,6 +251,20 @@ describe('public routes', () => {
 
               return {
                 where: vi.fn(async () => next?.rows ?? []),
+              };
+            }),
+          };
+        }
+
+        if (table === SiteWarningTags) {
+          return {
+            innerJoin: vi.fn((joinedTable: unknown) => {
+              expect(joinedTable).toBe(TagDefinitions);
+
+              return {
+                where: vi.fn(() => ({
+                  orderBy: vi.fn(async () => next?.rows ?? []),
+                })),
               };
             }),
           };
@@ -276,6 +305,13 @@ describe('public routes', () => {
             visitCount: 320,
             primaryTag: '技术',
             subTags: ['架构', '运维'],
+            warningTags: [
+              {
+                machineKey: 'EXTERNAL_LIMIT',
+                name: '外部限制',
+                description: '网站受地区限制、防火墙或外部网络策略影响',
+              },
+            ],
           },
         ],
       },

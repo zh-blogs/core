@@ -1,8 +1,9 @@
-import { index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { index, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import { v7 } from 'uuid';
 
 import { ArticleFeedbackAudits, SiteAudits } from './audits';
-import { siteStatusTagEnum, siteWarningTagSourceEnum } from './enums';
+import { TagDefinitions } from './catalogs';
+import { siteWarningTagSourceEnum } from './enums';
 import { Sites } from './sites';
 import { Users } from './users';
 
@@ -21,8 +22,13 @@ export const SiteWarningTags = pgTable(
         onDelete: 'cascade',
         onUpdate: 'cascade',
       }),
-    /** 警示标签类型 */
-    tag: siteStatusTagEnum().notNull(),
+    /** 警示标签定义 */
+    tag_id: uuid()
+      .notNull()
+      .references(() => TagDefinitions.id, {
+        onDelete: 'restrict',
+        onUpdate: 'cascade',
+      }),
     /** 标签来源 */
     source: siteWarningTagSourceEnum().notNull(),
     /** 来源站点审核记录，仅在 source=SITE_FEEDBACK 时写入 */
@@ -52,15 +58,20 @@ export const SiteWarningTags = pgTable(
   },
   (table) => [
     index('site_warning_tags_site_id_index').on(table.site_id),
-    index('site_warning_tags_site_id_tag_index').on(table.site_id, table.tag),
+    index('site_warning_tags_site_id_tag_id_index').on(table.site_id, table.tag_id),
     index('site_warning_tags_site_id_source_index').on(table.site_id, table.source),
     index('site_warning_tags_source_site_audit_id_index').on(table.source_site_audit_id),
     index('site_warning_tags_source_article_feedback_audit_id_index').on(
       table.source_article_feedback_audit_id,
     ),
-    index('site_warning_tags_tag_index').on(table.tag),
+    index('site_warning_tags_tag_id_index').on(table.tag_id),
     index('site_warning_tags_source_index').on(table.source),
     index('site_warning_tags_created_by_index').on(table.created_by),
     index('site_warning_tags_created_time_index').on(table.created_time.desc()),
+    uniqueIndex('site_warning_tags_site_id_tag_id_source_unique').on(
+      table.site_id,
+      table.tag_id,
+      table.source,
+    ),
   ],
 );

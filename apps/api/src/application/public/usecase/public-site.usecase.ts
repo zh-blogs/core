@@ -9,9 +9,17 @@ import {
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
+import { listSiteWarningTagsBySiteIds } from '@/application/sites/usecase/site-warning-tag.usecase';
+
 type PublicSiteTagState = {
   primaryTag: string | null;
   subTags: string[];
+};
+
+type PublicSiteWarningTag = {
+  machineKey: string;
+  name: string;
+  description: string | null;
 };
 
 export type PublicSiteItem = {
@@ -33,6 +41,7 @@ export type PublicSiteItem = {
   visitCount: number;
   primaryTag: string | null;
   subTags: string[];
+  warningTags: PublicSiteWarningTag[];
 };
 
 function collectSiteTags(
@@ -90,7 +99,7 @@ export async function loadPublicSites(app: FastifyInstance): Promise<PublicSiteI
   }
 
   const siteIds = siteRows.map((site) => site.id);
-  const [statsRows, accessRows, tagRows] = await Promise.all([
+  const [statsRows, accessRows, tagRows, warningRows] = await Promise.all([
     app.db.read
       .select({
         site_id: SiteFeedArticleStats.site_id,
@@ -116,6 +125,7 @@ export async function loadPublicSites(app: FastifyInstance): Promise<PublicSiteI
       .from(SiteTags)
       .innerJoin(TagDefinitions, eq(SiteTags.tag_id, TagDefinitions.id))
       .where(and(inArray(SiteTags.site_id, siteIds), eq(TagDefinitions.is_enabled, true))),
+    listSiteWarningTagsBySiteIds(app, siteIds),
   ]);
 
   const statsBySiteId = new Map(
@@ -129,6 +139,19 @@ export async function loadPublicSites(app: FastifyInstance): Promise<PublicSiteI
   );
   const accessCountBySiteId = new Map(accessRows.map((row) => [row.site_id, row.total ?? 0]));
   const tagStateBySiteId = collectSiteTags(tagRows);
+  const warningTagsBySiteId = new Map<string, PublicSiteWarningTag[]>();
+
+  for (const row of warningRows) {
+    const current = warningTagsBySiteId.get(row.siteId) ?? [];
+
+    current.push({
+      machineKey: row.machineKey,
+      name: row.name,
+      description: row.description,
+    });
+
+    warningTagsBySiteId.set(row.siteId, current);
+  }
 
   return siteRows.map((site) => {
     const stats = statsBySiteId.get(site.id);
@@ -153,6 +176,7 @@ export async function loadPublicSites(app: FastifyInstance): Promise<PublicSiteI
       visitCount: accessCountBySiteId.get(site.id) ?? 0,
       primaryTag: tags?.primaryTag ?? null,
       subTags: tags?.subTags ?? [],
+      warningTags: warningTagsBySiteId.get(site.id) ?? [],
     };
   });
 }

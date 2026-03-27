@@ -22,6 +22,11 @@ interface ApiPublicSiteItem {
   visitCount: number;
   primaryTag: string | null;
   subTags: string[];
+  warningTags: Array<{
+    machineKey: string;
+    name: string;
+    description: string | null;
+  }>;
 }
 
 interface PublicSitesPayload {
@@ -44,6 +49,11 @@ export interface PublicSiteEntry {
   profile: string;
   highlights: string[];
   subTags: string[];
+  warningTags: Array<{
+    machineKey: string;
+    name: string;
+    description: string | null;
+  }>;
   joinedAt: string;
   joinedLabel: string;
   updatedLabel?: string;
@@ -257,6 +267,15 @@ function createHighlights(
     highlights.push(`已提供 ${resources.join('、')} 入口`);
   }
 
+  if (item.warningTags.length > 0) {
+    highlights.push(
+      `警示：${item.warningTags
+        .map((tag) => tag.name)
+        .slice(0, 2)
+        .join(' / ')}`,
+    );
+  }
+
   return highlights.slice(0, 3);
 }
 
@@ -279,6 +298,7 @@ function mapPublicSite(item: ApiPublicSiteItem): PublicSiteEntry {
       `这个站点已收录到公开目录，当前显示为${formatSiteStatusLabel(item.status)}，可继续从下方标签与订阅入口了解它。`,
     highlights: createHighlights(item, primaryTag, updatedLabel),
     subTags: item.subTags,
+    warningTags: item.warningTags,
     joinedAt: item.joinTime,
     joinedLabel: formatYearMonth(item.joinTime),
     updatedLabel,

@@ -11,7 +11,6 @@ import { DEPLOYMENT_MODULE_KEYS, DEPLOYMENT_STATUS_KEYS } from '../constants/dep
 import {
   SITE_CHECK_REGION_KEYS,
   SITE_CHECK_RESULT_KEYS,
-  SITE_STATUS_TAG_KEYS,
   SITE_STATUS_TYPE_KEYS,
   SITE_WARNING_TAG_SOURCE_KEYS,
 } from '../constants/monitoring';
@@ -124,10 +123,6 @@ export const siteCheckResultEnum = pgEnum(
 export const siteStatusTypeEnum = pgEnum(
   'site_status_type_enum',
   SITE_STATUS_TYPE_KEYS as [string, ...string[]],
-);
-export const siteStatusTagEnum = pgEnum(
-  'site_status_tag_enum',
-  SITE_STATUS_TAG_KEYS as [string, ...string[]],
 );
 export const siteWarningTagSourceEnum = pgEnum(
   'site_warning_tag_source_enum',

@@ -1,0 +1,240 @@
+---
+import { IconArrowLeft, IconArrowUpRight, IconRss, IconSitemap } from '@tabler/icons-svelte-runes';
+
+import PublicHeader from '@/components/public-header/PublicHeader.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { featuredBlogs } from '@/shared/data/blogs';
+
+export function getStaticPaths() {
+  return featuredBlogs.map((entry) => ({
+    params: { slug: entry.slug },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const ArrowLeftIcon = IconArrowLeft;
+const ArrowUpRightIcon = IconArrowUpRight;
+const RssIcon = IconRss;
+const SitemapIcon = IconSitemap;
+const hasRss = Boolean(entry.rssUrl);
+const accentClass = {
+  amber: 'text-[color:var(--color-warn)]',
+  blue: 'text-[color:var(--color-info)]',
+  emerald: 'text-[color:var(--color-ok)]',
+  red: 'text-[color:var(--color-fail)]',
+  stone: 'text-[color:var(--color-fg-2)]',
+}[entry.tone];
+
+const accentBorderClass = {
+  amber: 'border-[color:color-mix(in_srgb,var(--color-warn)_24%,var(--color-line))]',
+  blue: 'border-[color:color-mix(in_srgb,var(--color-info)_24%,var(--color-line))]',
+  emerald: 'border-[color:color-mix(in_srgb,var(--color-ok)_24%,var(--color-line))]',
+  red: 'border-[color:color-mix(in_srgb,var(--color-fail)_24%,var(--color-line))]',
+  stone: 'border-[color:color-mix(in_srgb,var(--color-fg-2)_24%,var(--color-line))]',
+}[entry.tone];
+---
+
+<BaseLayout title={`${entry.name} | 集博栈`}>
+  <PublicHeader currentPath="/site" />
+  <main class="page-shell">
+    <div class="page-stack">
+      <section class="page-section">
+        <a
+          class="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-[color:var(--color-fg-3)] transition-colors duration-150 ease-[cubic-bezier(.22,.6,.36,1)] hover:text-[color:var(--color-fg)]"
+          href="/"
+        >
+          <ArrowLeftIcon size={14} stroke={1.9} class="block" />
+          返回博客列表
+        </a>
+
+        <div class="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_18rem] lg:items-start">
+          <div>
+            <div class="flex flex-wrap items-center gap-2">
+              <span
+                class:list={[
+                  'inline-flex items-center rounded-[3px] border px-2 py-[5px] font-mono text-[10px] uppercase tracking-[0.14em]',
+                  accentBorderClass,
+                  accentClass,
+                ]}
+              >
+                {entry.primaryTag}
+              </span>
+              {
+                entry.featured ? (
+                  <span
+                    class:list={['font-mono text-[11px] uppercase tracking-[0.16em]', accentClass]}
+                  >
+                    精选
+                  </span>
+                ) : null
+              }
+              {
+                entry.warningTags.map((tag) => (
+                  <span
+                    class="inline-flex items-center rounded-[3px] border border-[color:color-mix(in_srgb,var(--color-fail)_18%,var(--color-line))] bg-[color:color-mix(in_srgb,var(--color-fail)_4%,transparent)] px-2 py-[5px] font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-fail)]"
+                    title={tag.description ?? `${tag.name} 警示标签`}
+                  >
+                    {tag.name}
+                  </span>
+                ))
+              }
+            </div>
+
+            <h1
+              class="mt-4 text-[clamp(34px,7vw,62px)] leading-[0.95] tracking-[-0.04em] text-[color:var(--color-fg)]"
+            >
+              {entry.name}
+            </h1>
+
+            <a
+              class="mt-4 inline-flex items-center gap-2 font-mono text-[12px] text-[color:var(--color-fg-3)] transition-colors duration-150 ease-[cubic-bezier(.22,.6,.36,1)] hover:text-[color:var(--color-fg)]"
+              href={entry.href}
+              rel="noreferrer"
+              target="_blank"
+            >
+              {entry.domain}
+              <ArrowUpRightIcon size={14} stroke={1.9} class="block" />
+            </a>
+
+            <p class="mt-6 max-w-3xl text-[17px] leading-[1.9] text-[color:var(--color-fg-2)]">
+              {entry.profile}
+            </p>
+          </div>
+
+          <aside
+            class="border-t border-[color:var(--color-line)] pt-4 lg:border-t-0 lg:border-l lg:pl-6 lg:pt-0"
+          >
+            <dl class="grid gap-4">
+              <div>
+                <dt
+                  class="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-fg-3)]"
+                >
+                  加入时间
+                </dt>
+                <dd class="mt-2 text-[16px] font-medium text-[color:var(--color-fg)]">
+                  <time datetime={entry.joinedAt}>{entry.joinedLabel}</time>
+                </dd>
+              </div>
+
+              <div>
+                <dt
+                  class="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-fg-3)]"
+                >
+                  访问
+                </dt>
+                <dd class="mt-2 text-[16px] font-medium text-[color:var(--color-fg)]">
+                  {entry.visitCount}
+                </dd>
+              </div>
+
+              {
+                hasRss && entry.articleCount ? (
+                  <div>
+                    <dt class="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-fg-3)]">
+                      文章
+                    </dt>
+                    <dd class="mt-2 text-[16px] font-medium text-[color:var(--color-fg)]">
+                      {entry.articleCount}
+                    </dd>
+                  </div>
+                ) : null
+              }
+
+              {
+                hasRss && entry.updatedLabel ? (
+                  <div>
+                    <dt class="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-fg-3)]">
+                      最近更新
+                    </dt>
+                    <dd class:list={['mt-2 text-[16px] font-medium', accentClass]}>
+                      {entry.updatedLabel}
+                    </dd>
+                  </div>
+                ) : null
+              }
+            </dl>
+
+            {
+              entry.rssUrl || entry.sitemapUrl ? (
+                <div class="mt-6 flex flex-wrap gap-2">
+                  {entry.rssUrl ? (
+                    <a
+                      class="inline-flex size-8 items-center justify-center rounded-[3px] border border-[color:var(--color-line)] text-[color:var(--color-fg-3)] transition-[background-color,border-color,color] duration-150 ease-[cubic-bezier(.22,.6,.36,1)] hover:bg-[color:var(--color-bg-raised)] hover:text-[color:var(--color-fg)]"
+                      href={entry.rssUrl}
+                      rel="noreferrer"
+                      target="_blank"
+                      aria-label={`${entry.name} RSS 订阅`}
+                    >
+                      <RssIcon size={15} stroke={1.8} class="block" />
+                    </a>
+                  ) : null}
+                  {entry.sitemapUrl ? (
+                    <a
+                      class="inline-flex size-8 items-center justify-center rounded-[3px] border border-[color:var(--color-line)] text-[color:var(--color-fg-3)] transition-[background-color,border-color,color] duration-150 ease-[cubic-bezier(.22,.6,.36,1)] hover:bg-[color:var(--color-bg-raised)] hover:text-[color:var(--color-fg)]"
+                      href={entry.sitemapUrl}
+                      rel="noreferrer"
+                      target="_blank"
+                      aria-label={`${entry.name} 站点地图`}
+                    >
+                      <SitemapIcon size={15} stroke={1.8} class="block" />
+                    </a>
+                  ) : null}
+                </div>
+              ) : null
+            }
+
+            {
+              entry.warningTags.length > 0 ? (
+                <div class="mt-6 rounded-[5px] border border-[color:color-mix(in_srgb,var(--color-fail)_16%,var(--color-line))] bg-[color:color-mix(in_srgb,var(--color-fail)_3%,transparent)] p-4">
+                  <p class="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-fail)]">
+                    警示标签
+                  </p>
+                  <ul class="mt-3 grid gap-2">
+                    {entry.warningTags.map((tag) => (
+                      <li>
+                        <p class="text-[14px] font-medium text-[color:var(--color-fg)]">
+                          {tag.name}
+                        </p>
+                        {tag.description ? (
+                          <p class="mt-1 text-[13px] leading-[1.7] text-[color:var(--color-fg-2)]">
+                            {tag.description}
+                          </p>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null
+            }
+          </aside>
+        </div>
+      </section>
+
+      <section class="page-section">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">推荐理由</p>
+            <h2 class="section-title">为什么推荐它</h2>
+          </div>
+          <p class="section-copy">
+            详情页承接目录卡片没有展开的信息，用更长的介绍和清晰的主题线索帮助用户判断是否值得深入阅读。
+          </p>
+        </div>
+
+        <div class="grid gap-3 md:grid-cols-3">
+          {
+            entry.highlights.map((item) => (
+              <article class="rounded-[5px] border border-[color:var(--color-line)] p-4">
+                <p class="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-fg-3)]">
+                  摘要
+                </p>
+                <p class="mt-3 text-[15px] leading-[1.75] text-[color:var(--color-fg)]">{item}</p>
+              </article>
+            ))
+          }
+        </div>
+      </section>
+    </div>
+  </main>
+</BaseLayout>

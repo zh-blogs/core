@@ -1,5 +1,7 @@
+import { sql } from 'drizzle-orm';
 import {
   boolean,
+  check,
   index,
   pgTable,
   timestamp,
@@ -21,6 +23,8 @@ export const TagDefinitions = pgTable(
       .primaryKey(),
     /** 标签展示名称 */
     name: varchar({ length: 64 }).notNull(),
+    /** 稳定机器键，仅用于需要程序化识别的标签类型 */
+    machine_key: varchar({ length: 64 }),
     /** 标签类型 */
     tag_type: tagTypeEnum().notNull(),
     /** 标签描述 */
@@ -37,7 +41,17 @@ export const TagDefinitions = pgTable(
   },
   (table) => [
     uniqueIndex('tag_definitions_name_type_index').on(table.name, table.tag_type),
+    uniqueIndex('tag_definitions_type_machine_key_index').on(table.tag_type, table.machine_key),
     index('tag_definitions_type_enabled_index').on(table.tag_type, table.is_enabled),
+    check('tag_definitions_name_not_blank_check', sql`btrim(${table.name}) <> ''`),
+    check(
+      'tag_definitions_machine_key_not_blank_check',
+      sql`${table.machine_key} is null or btrim(${table.machine_key}) <> ''`,
+    ),
+    check(
+      'tag_definitions_warning_machine_key_required_check',
+      sql`${table.tag_type} <> 'WARNING' or btrim(coalesce(${table.machine_key}, '')) <> ''`,
+    ),
   ],
 );
 

@@ -5,6 +5,7 @@ import {
   siteClaimStatusSchema,
   siteInsertSchema,
   siteUpdateSchema,
+  tagDefinitionInsertSchema,
   taskScheduleInsertSchema,
 } from '../src/zod/index.ts';
 
@@ -144,5 +145,24 @@ describe('db zod site url validation', () => {
     expect(siteClaimStatusSchema.safeParse('PENDING_VERIFICATION').success).toBe(true);
     expect(siteClaimStatusSchema.safeParse('PENDING_REVIEW').success).toBe(true);
     expect(siteClaimStatusSchema.safeParse('PENDING').success).toBe(false);
+  });
+
+  it('requires machine_key for warning tag definitions', () => {
+    expect(
+      tagDefinitionInsertSchema.safeParse({
+        name: '外部限制',
+        tag_type: 'WARNING',
+        is_enabled: true,
+      }).success,
+    ).toBe(false);
+
+    expect(
+      tagDefinitionInsertSchema.safeParse({
+        name: '外部限制',
+        tag_type: 'WARNING',
+        machine_key: 'EXTERNAL_LIMIT',
+        is_enabled: true,
+      }).success,
+    ).toBe(true);
   });
 });

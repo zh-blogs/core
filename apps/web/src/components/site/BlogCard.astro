@@ -20,6 +20,7 @@ interface Props {
     | 'primaryTag'
     | 'summary'
     | 'subTags'
+    | 'warningTags'
     | 'joinedAt'
     | 'joinedLabel'
     | 'updatedLabel'
@@ -176,6 +177,21 @@ const baseTagClass =
                 <li>
                   <span class:list={[baseTagClass, 'border-(--color-line) text-(--color-fg-3)']}>
                     {tag}
+                  </span>
+                </li>
+              ))
+            }
+            {
+              entry.warningTags.map((tag) => (
+                <li>
+                  <span
+                    class:list={[
+                      baseTagClass,
+                      'border-[color-mix(in_srgb,var(--color-fail)_18%,var(--color-line))] bg-[color:color-mix(in_srgb,var(--color-fail)_4%,transparent)] text-[color:var(--color-fail)]',
+                    ]}
+                    title={tag.description ?? `${tag.name} 警示标签`}
+                  >
+                    {tag.name}
                   </span>
                 </li>
               ))

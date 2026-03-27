@@ -14,7 +14,6 @@ import { DEPLOYMENT_MODULE_KEYS, DEPLOYMENT_STATUS_KEYS } from '../constants/dep
 import {
   SITE_CHECK_REGION_KEYS,
   SITE_CHECK_RESULT_KEYS,
-  SITE_STATUS_TAG_KEYS,
   SITE_STATUS_TYPE_KEYS,
   SITE_WARNING_TAG_SOURCE_KEYS,
 } from '../constants/monitoring';
@@ -135,7 +134,6 @@ export const userOauthProviderSchema = toEnumSchema(USER_OAUTH_PROVIDER_KEYS);
 export const siteCheckRegionSchema = toEnumSchema(SITE_CHECK_REGION_KEYS);
 export const siteCheckResultSchema = toEnumSchema(SITE_CHECK_RESULT_KEYS);
 export const siteStatusTypeSchema = toEnumSchema(SITE_STATUS_TYPE_KEYS);
-export const siteStatusTagSchema = toEnumSchema(SITE_STATUS_TAG_KEYS);
 export const siteWarningTagSourceSchema = toEnumSchema(SITE_WARNING_TAG_SOURCE_KEYS);
 export const deploymentStatusSchema = toEnumSchema(DEPLOYMENT_STATUS_KEYS);
 export const deploymentModuleSchema = toEnumSchema(DEPLOYMENT_MODULE_KEYS);
@@ -199,6 +197,30 @@ const addDefaultFeedValidation = <TSchema extends z.ZodType<DefaultFeedValidatio
         code: 'custom',
         message: 'default_feed_url must match one feed url',
         path: ['default_feed_url'],
+      });
+    }
+  });
+
+type WarningTagDefinitionPayload = {
+  tag_type?: string | null;
+  machine_key?: string | null;
+};
+
+const addWarningTagMachineKeyValidation = <TSchema extends z.ZodType<WarningTagDefinitionPayload>>(
+  schema: TSchema,
+): TSchema =>
+  schema.superRefine((value, ctx) => {
+    if (value.tag_type !== 'WARNING') {
+      return;
+    }
+
+    const machineKey = value.machine_key?.trim();
+
+    if (!machineKey) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'machine_key is required when tag_type is WARNING',
+        path: ['machine_key'],
       });
     }
   });
@@ -454,8 +476,12 @@ export const jobExecutionUpdateSchema = createUpdateSchema(JobExecutions, {
 });
 
 export const tagDefinitionSelectSchema = createSelectSchema(TagDefinitions);
-export const tagDefinitionInsertSchema = createInsertSchema(TagDefinitions);
-export const tagDefinitionUpdateSchema = createUpdateSchema(TagDefinitions);
+export const tagDefinitionInsertSchema = addWarningTagMachineKeyValidation(
+  createInsertSchema(TagDefinitions),
+);
+export const tagDefinitionUpdateSchema = addWarningTagMachineKeyValidation(
+  createUpdateSchema(TagDefinitions),
+);
 
 export const technologyCatalogSelectSchema = createSelectSchema(TechnologyCatalogs);
 export const technologyCatalogInsertSchema = createInsertSchema(TechnologyCatalogs);
@@ -564,7 +590,6 @@ export type UserOauthProvider = z.infer<typeof userOauthProviderSchema>;
 export type SiteCheckRegion = z.infer<typeof siteCheckRegionSchema>;
 export type SiteCheckResult = z.infer<typeof siteCheckResultSchema>;
 export type SiteStatusType = z.infer<typeof siteStatusTypeSchema>;
-export type SiteStatusTag = z.infer<typeof siteStatusTagSchema>;
 export type SiteWarningTagSource = z.infer<typeof siteWarningTagSourceSchema>;
 export type DeploymentStatus = z.infer<typeof deploymentStatusSchema>;
 export type DeploymentModule = z.infer<typeof deploymentModuleSchema>;

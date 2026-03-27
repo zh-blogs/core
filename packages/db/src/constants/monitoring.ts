@@ -77,14 +77,14 @@ export const SITE_STATUS_TYPE_KEYS = Object.keys(SITE_STATUS_TYPES) as Array<
 
 export type SiteStatusTypeKey = (typeof SITE_STATUS_TYPE_KEYS)[number];
 
-export const SITE_STATUS_TAGS = {
+export const SITE_WARNING_TAGS = {
   EXTERNAL_LIMIT: {
     label: '外部限制',
-    description: '网站受地区限制、防火墙或外部网络策略影响',
+    description: '外部地区无法正常访问',
   },
   INTERNAL_LIMIT: {
     label: '内部限制',
-    description: '网站需要登录、密码保护或具备其他访问门槛',
+    description: '内部地区无法正常访问',
   },
   FEW_ARTICLES: {
     label: '文章较少',
@@ -104,11 +104,7 @@ export const SITE_STATUS_TAGS = {
   },
 } as const;
 
-export const SITE_STATUS_TAG_KEYS = Object.keys(SITE_STATUS_TAGS) as Array<
-  keyof typeof SITE_STATUS_TAGS
->;
-
-export type SiteStatusTagKey = (typeof SITE_STATUS_TAG_KEYS)[number];
+export type SiteWarningTagMachineKey = keyof typeof SITE_WARNING_TAGS;
 
 export const SITE_WARNING_TAG_SOURCES = {
   ARTICLE_FEEDBACK: {
