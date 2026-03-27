@@ -1,14 +1,15 @@
 ---
-import type { Icon } from '@tabler/icons-svelte';
-import IconBook2 from '@tabler/icons-svelte/icons/book-2';
-import IconChartBar from '@tabler/icons-svelte/icons/chart-bar';
-import IconCirclePlus from '@tabler/icons-svelte/icons/circle-plus';
-import IconDice from '@tabler/icons-svelte/icons/dice';
-import IconFileText from '@tabler/icons-svelte/icons/file-text';
-import IconInfoCircle from '@tabler/icons-svelte/icons/info-circle';
-import IconListDetails from '@tabler/icons-svelte/icons/list-details';
-import IconListTree from '@tabler/icons-svelte/icons/list-tree';
-import IconRss from '@tabler/icons-svelte/icons/rss';
+import {
+  IconBook2,
+  IconChartBar,
+  IconCirclePlus,
+  IconDice,
+  IconFileText,
+  IconInfoCircle,
+  IconListDetails,
+  IconListTree,
+  IconRss,
+} from '@tabler/icons-svelte-runes';
 
 import DesktopActions from './DesktopActions.astro';
 import DesktopNav from './DesktopNav.astro';
@@ -25,22 +26,22 @@ const primaryLinks = [
   {
     label: '博客列表',
     href: '/site',
-    icon: IconListDetails as Icon,
+    icon: IconListDetails,
   },
   {
     label: '订阅一览',
     href: '/site/stats#subscription',
-    icon: IconRss as Icon,
+    icon: IconRss,
   },
   {
     label: '随机前往',
     href: '/site/go-site',
-    icon: IconDice as Icon,
+    icon: IconDice,
   },
   {
     label: '统计信息',
     href: '/site/stats',
-    icon: IconChartBar as Icon,
+    icon: IconChartBar,
   },
 ];
 
@@ -48,22 +49,22 @@ const projectLinks = [
   {
     label: '文档',
     href: '/docs',
-    icon: IconBook2 as Icon,
+    icon: IconBook2,
   },
   {
     label: '博客',
     href: '/blog',
-    icon: IconFileText as Icon,
+    icon: IconFileText,
   },
   {
     label: '贡献',
     href: '/contribute',
-    icon: IconCirclePlus as Icon,
+    icon: IconCirclePlus,
   },
   {
     label: '关于',
     href: '/about',
-    icon: IconInfoCircle as Icon,
+    icon: IconInfoCircle,
   },
 ];
 

@@ -28,7 +28,7 @@
     "@astrojs/partytown": "^2.1.5",
     "@astrojs/sitemap": "^3.7.1",
     "@astrojs/svelte": "^8.0.0",
-    "@tabler/icons-svelte": "^3.40.0",
+    "@tabler/icons-svelte-runes": "^3.40.0",
     "@tailwindcss/vite": "^4.2.1",
     "@zhblogs/configs": "workspace:*",
     "astro": "^6.0.2",

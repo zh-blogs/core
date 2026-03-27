@@ -1,27 +1,27 @@
 ---
-import type { Icon } from '@tabler/icons-svelte';
-import IconArrowRight from '@tabler/icons-svelte/icons/arrow-right';
-import IconBinaryTree from '@tabler/icons-svelte/icons/binary-tree';
-import IconBook2 from '@tabler/icons-svelte/icons/book-2';
-import IconCirclePlus from '@tabler/icons-svelte/icons/circle-plus';
-import IconFileText from '@tabler/icons-svelte/icons/file-text';
+import {
+  IconArrowRight as ArrowIcon,
+  IconBinaryTree,
+  IconBook2,
+  IconCirclePlus,
+  IconFileText,
+} from '@tabler/icons-svelte-runes';
 
-const ArrowIcon = IconArrowRight as Icon;
-const CirclePlusIcon = IconCirclePlus as Icon;
-const BookIcon = IconBook2 as Icon;
+const CirclePlusIcon = IconCirclePlus;
+const BookIcon = IconBook2;
 
 const roleIcons = {
-  project: IconCirclePlus as Icon,
-  tech: IconBinaryTree as Icon,
-  docs: IconBook2 as Icon,
-  data: IconFileText as Icon,
-  outreach: IconCirclePlus as Icon,
+  project: IconCirclePlus,
+  tech: IconBinaryTree,
+  docs: IconBook2,
+  data: IconFileText,
+  outreach: IconCirclePlus,
 };
 
 const docCategoryIcons = {
-  development: IconBinaryTree as Icon,
-  contribution: IconCirclePlus as Icon,
-  standards: IconBook2 as Icon,
+  development: IconBinaryTree,
+  contribution: IconCirclePlus,
+  standards: IconBook2,
 };
 
 interface Props {

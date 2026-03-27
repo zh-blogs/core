@@ -1,15 +1,13 @@
 ---
-import type { Icon } from '@tabler/icons-svelte';
-import IconArrowRight from '@tabler/icons-svelte/icons/arrow-right';
-import IconChevronDown from '@tabler/icons-svelte/icons/chevron-down';
-
-const ChevronIcon = IconChevronDown as Icon;
-const ArrowIcon = IconArrowRight as Icon;
+import {
+  IconArrowRight as ArrowIcon,
+  IconChevronDown as ChevronIcon,
+} from '@tabler/icons-svelte-runes';
 
 type HeaderLink = {
   label: string;
   href: string;
-  icon: Icon;
+  icon: typeof ArrowIcon;
 };
 
 interface Props {

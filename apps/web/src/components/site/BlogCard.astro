@@ -1,10 +1,11 @@
 ---
-import type { Icon } from '@tabler/icons-svelte';
-import IconArrowRight from '@tabler/icons-svelte/icons/arrow-right';
-import IconExternalLink from '@tabler/icons-svelte/icons/external-link';
-import IconRss from '@tabler/icons-svelte/icons/rss';
-import IconSitemap from '@tabler/icons-svelte/icons/sitemap';
-import IconStarFilled from '@tabler/icons-svelte/icons/star-filled';
+import {
+  IconArrowRight,
+  IconExternalLink,
+  IconRss,
+  IconSitemap,
+  IconStarFilled,
+} from '@tabler/icons-svelte-runes';
 
 import type { PublicSiteEntry } from '@/application/site/site-public.server';
 
@@ -36,15 +37,15 @@ type ResourceLink = {
   href: string;
   label: string;
   title: string;
-  Icon: Icon;
+  Icon: typeof IconArrowRight;
 };
 
 const { entry } = Astro.props as Props;
-const ArrowIcon = IconArrowRight as Icon;
-const ExternalLinkIcon = IconExternalLink as Icon;
-const FeaturedIcon = IconStarFilled as Icon;
-const RssIcon = IconRss as Icon;
-const SitemapIcon = IconSitemap as Icon;
+const ArrowIcon = IconArrowRight;
+const ExternalLinkIcon = IconExternalLink;
+const FeaturedIcon = IconStarFilled;
+const RssIcon = IconRss;
+const SitemapIcon = IconSitemap;
 const detailHref = `/site/${entry.slug}`;
 const toneClass = {
   amber: '[--card-accent:var(--color-warn)] [--card-accent-dot:var(--color-warn-dot)]',
