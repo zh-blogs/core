@@ -178,4 +178,66 @@ describe('site warning tag usecase', () => {
       },
     ]);
   });
+
+  it('batches site id queries when the public list grows large', async () => {
+    const app = createMockApp();
+    let selectCallCount = 0;
+
+    app.db.read.select.mockImplementation(() => {
+      selectCallCount += 1;
+
+      return {
+        from(table: unknown) {
+          expect(table).toBe(SiteWarningTags);
+
+          return {
+            innerJoin: vi.fn((joinedTable: unknown) => {
+              expect(joinedTable).toBe(TagDefinitions);
+
+              return {
+                where: vi.fn(() => ({
+                  orderBy: vi.fn(async () => [
+                    {
+                      siteId: `site-batch-${selectCallCount}`,
+                      source: 'MANUAL',
+                      note: `batch ${selectCallCount}`,
+                      createdTime: new Date(`2026-03-27T00:00:0${selectCallCount}Z`),
+                      id: `warning-tag-${selectCallCount}`,
+                      machineKey: 'EXTERNAL_LIMIT',
+                      name: '外部限制',
+                      description: '网站受地区限制、防火墙或外部网络策略影响',
+                    },
+                  ]),
+                })),
+              };
+            }),
+          };
+        },
+      };
+    });
+
+    const siteIds = Array.from({ length: 501 }, (_, index) => `site-${index + 1}`);
+
+    await expect(listSiteWarningTagsBySiteIds(app, siteIds)).resolves.toEqual([
+      {
+        siteId: 'site-batch-1',
+        source: 'MANUAL',
+        note: 'batch 1',
+        id: 'warning-tag-1',
+        machineKey: 'EXTERNAL_LIMIT',
+        name: '外部限制',
+        description: '网站受地区限制、防火墙或外部网络策略影响',
+      },
+      {
+        siteId: 'site-batch-2',
+        source: 'MANUAL',
+        note: 'batch 2',
+        id: 'warning-tag-2',
+        machineKey: 'EXTERNAL_LIMIT',
+        name: '外部限制',
+        description: '网站受地区限制、防火墙或外部网络策略影响',
+      },
+    ]);
+    expect(selectCallCount).toBe(2);
+  });
 });

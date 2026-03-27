@@ -8,6 +8,8 @@ import {
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
+const SITE_WARNING_TAG_QUERY_BATCH_SIZE = 500;
+
 export type SiteWarningTagDefinition = {
   id: string;
   machineKey: SiteWarningTagMachineKey;
@@ -126,30 +128,49 @@ export async function listSiteWarningTagsBySiteIds(
   app: FastifyInstance,
   siteIds: string[],
 ): Promise<SiteWarningTagEntry[]> {
-  if (siteIds.length === 0) {
+  const normalizedSiteIds = [...new Set(siteIds.filter((siteId) => siteId.length > 0))];
+
+  if (normalizedSiteIds.length === 0) {
     return [];
   }
 
-  const rows = await app.db.read
-    .select({
-      siteId: SiteWarningTags.site_id,
-      source: SiteWarningTags.source,
-      note: SiteWarningTags.note,
-      id: TagDefinitions.id,
-      machineKey: TagDefinitions.machine_key,
-      name: TagDefinitions.name,
-      description: TagDefinitions.description,
-    })
-    .from(SiteWarningTags)
-    .innerJoin(TagDefinitions, eq(SiteWarningTags.tag_id, TagDefinitions.id))
-    .where(
-      and(
-        inArray(SiteWarningTags.site_id, siteIds),
-        eq(TagDefinitions.tag_type, 'WARNING'),
-        eq(TagDefinitions.is_enabled, true),
+  const rows = (
+    await Promise.all(
+      chunkSiteIds(normalizedSiteIds, SITE_WARNING_TAG_QUERY_BATCH_SIZE).map((siteIdBatch) =>
+        app.db.read
+          .select({
+            siteId: SiteWarningTags.site_id,
+            source: SiteWarningTags.source,
+            note: SiteWarningTags.note,
+            createdTime: SiteWarningTags.created_time,
+            id: TagDefinitions.id,
+            machineKey: TagDefinitions.machine_key,
+            name: TagDefinitions.name,
+            description: TagDefinitions.description,
+          })
+          .from(SiteWarningTags)
+          .innerJoin(TagDefinitions, eq(SiteWarningTags.tag_id, TagDefinitions.id))
+          .where(
+            and(
+              inArray(SiteWarningTags.site_id, siteIdBatch),
+              eq(TagDefinitions.tag_type, 'WARNING'),
+              eq(TagDefinitions.is_enabled, true),
+            ),
+          )
+          .orderBy(asc(TagDefinitions.name), asc(SiteWarningTags.created_time)),
       ),
     )
-    .orderBy(asc(TagDefinitions.name), asc(SiteWarningTags.created_time));
+  )
+    .flat()
+    .sort((left, right) => {
+      const nameCompare = left.name.localeCompare(right.name, 'zh-CN');
+
+      if (nameCompare !== 0) {
+        return nameCompare;
+      }
+
+      return left.createdTime.getTime() - right.createdTime.getTime();
+    });
 
   return rows
     .filter((row) => row.machineKey)
@@ -162,4 +183,14 @@ export async function listSiteWarningTagsBySiteIds(
       name: row.name,
       description: row.description ?? null,
     }));
+}
+
+function chunkSiteIds(siteIds: string[], batchSize: number): string[][] {
+  const chunks: string[][] = [];
+
+  for (let index = 0; index < siteIds.length; index += batchSize) {
+    chunks.push(siteIds.slice(index, index + batchSize));
+  }
+
+  return chunks;
 }
