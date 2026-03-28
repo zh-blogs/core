@@ -210,12 +210,12 @@ export const initBuildFooterPresence = () => {
 
   const countNode = document.querySelector('[data-online-count]');
 
-  if (!countNode || !(countNode instanceof HTMLElement) || !countNode.dataset.apiBaseUrl) {
+  if (!countNode || !(countNode instanceof HTMLElement)) {
     return null;
   }
 
   const controller = createBuildFooterPresenceController({
-    apiBaseUrl: countNode.dataset.apiBaseUrl,
+    apiBaseUrl: countNode.dataset.apiBaseUrl ?? '',
     countNode,
     storage: window.localStorage,
     fetchImpl: window.fetch.bind(window),

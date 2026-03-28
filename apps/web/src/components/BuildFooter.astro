@@ -1,9 +1,6 @@
 ---
-import { getApiBaseUrl } from '@/application/auth/auth.server';
-
 const buildYear = new Date(__ZHBLOGS_BUILD_METADATA__.buildTime).getFullYear();
 const icpText = '陇ICP备 2021003047号-5';
-const presenceApiBaseUrl = getApiBaseUrl();
 
 const statementLinks = [
   { label: '免责声明', href: '/disclaimer' },
@@ -47,7 +44,7 @@ const friendLinks = [
         >
           <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
           <span>在线人数</span>
-          <span data-online-count data-api-base-url={presenceApiBaseUrl}>--</span>
+          <span data-online-count data-api-base-url="">--</span>
         </span>
       </div>
     </div>

@@ -21,8 +21,8 @@ export default defineConfig({
   },
   vite: {
     plugins: [tailwindcss()],
-    ssr: {
-      noExternal: ['@tabler/icons-svelte-runes'],
+    resolve: {
+      noExternal: [/icons-svelte-runes/],
     },
   },
   redirects: {
