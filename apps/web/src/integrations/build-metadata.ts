@@ -1,8 +1,9 @@
-import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-import type { AstroIntegration, AstroIntegrationLogger } from "astro";
+import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import type { AstroIntegration, AstroIntegrationLogger } from 'astro';
 
 interface BuildMetadata {
   packageName: string;
@@ -24,35 +25,35 @@ interface GitMetadata {
 }
 
 const integrationDir = dirname(fileURLToPath(import.meta.url));
-const webRoot = resolve(integrationDir, "../..");
+const webRoot = resolve(integrationDir, '../..');
 
 const runGit = (args: string[]): string =>
-  execFileSync("git", args, {
+  execFileSync('git', args, {
     cwd: webRoot,
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
   }).trim();
 
 const getCommitLink = (remoteUrl: string, commitHash: string): string => {
-  if (remoteUrl.startsWith("git@github.com:")) {
-    const repo = remoteUrl.replace("git@github.com:", "").replace(/\.git$/, "");
+  if (remoteUrl.startsWith('git@github.com:')) {
+    const repo = remoteUrl.replace('git@github.com:', '').replace(/\.git$/, '');
     return `https://github.com/${repo}/commit/${commitHash}`;
   }
 
-  if (remoteUrl.startsWith("https://github.com/")) {
-    return `${remoteUrl.replace(/\.git$/, "")}/commit/${commitHash}`;
+  if (remoteUrl.startsWith('https://github.com/')) {
+    return `${remoteUrl.replace(/\.git$/, '')}/commit/${commitHash}`;
   }
 
-  return "";
+  return '';
 };
 
 const getGitMetadata = (logger: AstroIntegrationLogger): GitMetadata => {
   try {
-    const commitHash = runGit(["rev-parse", "HEAD"]);
-    const shortCommitHash = runGit(["rev-parse", "--short", "HEAD"]);
-    const branch = runGit(["rev-parse", "--abbrev-ref", "HEAD"]);
-    const commitTimeRaw = runGit(["log", "-1", "--pretty=format:%cI"]);
-    const remoteUrl = runGit(["config", "--get", "remote.origin.url"]);
+    const commitHash = runGit(['rev-parse', 'HEAD']);
+    const shortCommitHash = runGit(['rev-parse', '--short', 'HEAD']);
+    const branch = runGit(['rev-parse', '--abbrev-ref', 'HEAD']);
+    const commitTimeRaw = runGit(['log', '-1', '--pretty=format:%cI']);
+    const remoteUrl = runGit(['config', '--get', 'remote.origin.url']);
 
     return {
       branch,
@@ -66,33 +67,35 @@ const getGitMetadata = (logger: AstroIntegrationLogger): GitMetadata => {
     logger.warn(`Unable to collect git metadata: ${message}`);
 
     return {
-      branch: "unknown",
-      commitHash: "unknown",
-      shortCommitHash: "unknown",
-      commitTime: "",
-      commitLink: "",
+      branch: 'unknown',
+      commitHash: 'unknown',
+      shortCommitHash: 'unknown',
+      commitTime: '',
+      commitLink: '',
     };
   }
 };
 
-const getPackageMetadata = (logger: AstroIntegrationLogger): {
+const getPackageMetadata = (
+  logger: AstroIntegrationLogger,
+): {
   packageName: string;
   version: string;
 } => {
   try {
-    const packageJson = JSON.parse(readFileSync(resolve(webRoot, "package.json"), "utf8"));
+    const packageJson = JSON.parse(readFileSync(resolve(webRoot, 'package.json'), 'utf8'));
 
     return {
-      packageName: packageJson.name ?? "@zhblogs/web",
-      version: packageJson.version ?? "0.0.0",
+      packageName: packageJson.name ?? '@zhblogs/web',
+      version: packageJson.version ?? '0.0.0',
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     logger.warn(`Unable to read package.json: ${message}`);
 
     return {
-      packageName: "@zhblogs/web",
-      version: "0.0.0",
+      packageName: '@zhblogs/web',
+      version: '0.0.0',
     };
   }
 };
@@ -105,9 +108,9 @@ const getBuildMetadata = (logger: AstroIntegrationLogger): BuildMetadata => ({
 
 export function buildMetadataIntegration(): AstroIntegration {
   return {
-    name: "build-metadata",
+    name: 'build-metadata',
     hooks: {
-      "astro:config:setup": ({ logger, updateConfig }) => {
+      'astro:config:setup': ({ logger, updateConfig }) => {
         const buildMetadata = getBuildMetadata(logger);
 
         updateConfig({
@@ -118,7 +121,7 @@ export function buildMetadataIntegration(): AstroIntegration {
           },
         });
 
-        logger.info("Build metadata ready.");
+        logger.info('Build metadata ready.');
       },
     },
   };

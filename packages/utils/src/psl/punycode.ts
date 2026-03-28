@@ -1,9 +1,9 @@
-import { createRequire } from 'node:module'
+import { createRequire } from 'node:module';
 
-type PunycodeModule = typeof import('punycode')
+type PunycodeModule = typeof import('punycode');
 
-const require = createRequire(import.meta.url)
+const require = createRequire(import.meta.url);
 
-const punycode = require('punycode/') as PunycodeModule
+const punycode = require('punycode/') as PunycodeModule;
 
-export default punycode
+export default punycode;
