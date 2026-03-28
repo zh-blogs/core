@@ -8,6 +8,7 @@ import {
   ARTICLE_FEEDBACK_ACTION_KEYS,
   ARTICLE_FEEDBACK_REASON_KEYS,
   ARTICLE_VISIBILITY_KEYS,
+  SITE_FEEDBACK_REASON_KEYS,
 } from '../constants/article';
 import { AUDIT_STATUS_KEYS, SITE_AUDIT_ACTION_KEYS } from '../constants/audit';
 import { DEPLOYMENT_MODULE_KEYS, DEPLOYMENT_STATUS_KEYS } from '../constants/deployment';
@@ -59,6 +60,7 @@ import {
   SiteCheckStats,
   SiteClaims,
   SiteFeedArticleStats,
+  SiteFeedbackAudits,
   Sites,
   SiteTags,
   SiteWarningTags,
@@ -121,6 +123,7 @@ export const siteAuditActionSchema = toEnumSchema(SITE_AUDIT_ACTION_KEYS);
 export const auditStatusSchema = toEnumSchema(AUDIT_STATUS_KEYS);
 export const articleFeedbackActionSchema = toEnumSchema(ARTICLE_FEEDBACK_ACTION_KEYS);
 export const articleFeedbackReasonSchema = toEnumSchema(ARTICLE_FEEDBACK_REASON_KEYS);
+export const siteFeedbackReasonSchema = toEnumSchema(SITE_FEEDBACK_REASON_KEYS);
 export const taskTypeSchema = toEnumSchema(TASK_TYPE_KEYS);
 export const scheduleModeSchema = toEnumSchema(SCHEDULE_MODE_KEYS);
 export const jobTriggerSourceSchema = toEnumSchema(JOB_TRIGGER_SOURCE_KEYS);
@@ -426,6 +429,9 @@ export const siteAuditUpdateSchema = createUpdateSchema(SiteAudits, {
 export const articleFeedbackAuditSelectSchema = createSelectSchema(ArticleFeedbackAudits);
 export const articleFeedbackAuditInsertSchema = createInsertSchema(ArticleFeedbackAudits);
 export const articleFeedbackAuditUpdateSchema = createUpdateSchema(ArticleFeedbackAudits);
+export const siteFeedbackAuditSelectSchema = createSelectSchema(SiteFeedbackAudits);
+export const siteFeedbackAuditInsertSchema = createInsertSchema(SiteFeedbackAudits);
+export const siteFeedbackAuditUpdateSchema = createUpdateSchema(SiteFeedbackAudits);
 
 export const taskScheduleSelectSchema = createSelectSchema(TaskSchedules, {
   schedule_config: taskScheduleConfigSchema.nullable(),
@@ -578,6 +584,7 @@ export type SiteAuditAction = z.infer<typeof siteAuditActionSchema>;
 export type AuditStatus = z.infer<typeof auditStatusSchema>;
 export type ArticleFeedbackAction = z.infer<typeof articleFeedbackActionSchema>;
 export type ArticleFeedbackReason = z.infer<typeof articleFeedbackReasonSchema>;
+export type SiteFeedbackReason = z.infer<typeof siteFeedbackReasonSchema>;
 export type TaskType = z.infer<typeof taskTypeSchema>;
 export type ScheduleMode = z.infer<typeof scheduleModeSchema>;
 export type JobTriggerSource = z.infer<typeof jobTriggerSourceSchema>;

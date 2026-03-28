@@ -24,6 +24,7 @@ import {
   articleFeedbackReasonEnum,
   auditStatusEnum,
   siteAuditActionEnum,
+  siteFeedbackReasonEnum,
 } from './enums';
 import { FeedArticles } from './feed-articles';
 import type { MultiFeed } from './sites';
@@ -206,6 +207,59 @@ export const ArticleFeedbackAudits = pgTable(
     ),
     check(
       'article_feedback_audits_reporter_email_not_blank_check',
+      sql`btrim(${table.reporter_email}) <> ''`,
+    ),
+  ],
+);
+
+/** 站点问题反馈审核表，与站点信息修改审核流分离 */
+export const SiteFeedbackAudits = pgTable(
+  'site_feedback_audits',
+  {
+    id: uuid()
+      .$default(() => v7())
+      .primaryKey(),
+    site_id: uuid()
+      .notNull()
+      .references(() => Sites.id, {
+        onDelete: 'cascade',
+        onUpdate: 'cascade',
+      }),
+    reason_type: siteFeedbackReasonEnum().notNull().default('OTHER'),
+    status: auditStatusEnum().notNull().default('PENDING'),
+    feedback_content: text().notNull(),
+    reporter_name: varchar({ length: 64 }),
+    reporter_email: varchar({ length: 128 }),
+    notify_by_email: boolean().notNull().default(false),
+    reviewer_comment: text(),
+    reviewed_by: uuid().references(() => Users.id, {
+      onDelete: 'set null',
+      onUpdate: 'cascade',
+    }),
+    reviewed_time: timestamp({ withTimezone: true, precision: 6 }),
+    created_time: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
+    updated_time: timestamp({ withTimezone: true, precision: 6 })
+      .notNull()
+      .defaultNow()
+      .$onUpdateFn(() => new Date()),
+  },
+  (table) => [
+    index('site_feedback_audits_site_id_created_time_index').on(
+      table.site_id,
+      table.created_time.desc(),
+    ),
+    index('site_feedback_audits_status_created_time_index').on(
+      table.status,
+      table.created_time.desc(),
+    ),
+    index('site_feedback_audits_reason_status_index').on(table.reason_type, table.status),
+    index('site_feedback_audits_reviewed_by_index').on(table.reviewed_by),
+    check(
+      'site_feedback_audits_reporter_name_not_blank_check',
+      sql`btrim(${table.reporter_name}) <> ''`,
+    ),
+    check(
+      'site_feedback_audits_reporter_email_not_blank_check',
       sql`btrim(${table.reporter_email}) <> ''`,
     ),
   ],

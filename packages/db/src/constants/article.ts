@@ -76,3 +76,40 @@ export const ARTICLE_FEEDBACK_REASON_KEYS = Object.keys(ARTICLE_FEEDBACK_REASONS
 >;
 
 export type ArticleFeedbackReasonKey = (typeof ARTICLE_FEEDBACK_REASON_KEYS)[number];
+
+export const SITE_FEEDBACK_REASONS = {
+  SITE_INFO_ERROR: {
+    label: '站点信息错误',
+    description: '站点名称、简介、标签、链接或其他公开资料存在明显错误',
+  },
+  ACCESS_ISSUE: {
+    label: '访问异常',
+    description: '站点无法正常访问、跳转异常或存在明显可用性问题',
+  },
+  FEED_ISSUE: {
+    label: '订阅异常',
+    description: 'RSS 或订阅链接无效、错误或抓取结果异常',
+  },
+  CONTENT_RISK: {
+    label: '内容风险',
+    description: '站点存在不适宜公开目录展示的内容风险',
+  },
+  COPYRIGHT: {
+    label: '版权问题',
+    description: '站点内容可能涉及侵权、未授权转载或版权争议',
+  },
+  SPAM: {
+    label: '垃圾内容',
+    description: '站点疑似广告、引流、恶意推广或垃圾信息',
+  },
+  OTHER: {
+    label: '其他问题',
+    description: '不属于预定义分类的其他站点反馈问题',
+  },
+} as const;
+
+export const SITE_FEEDBACK_REASON_KEYS = Object.keys(SITE_FEEDBACK_REASONS) as Array<
+  keyof typeof SITE_FEEDBACK_REASONS
+>;
+
+export type SiteFeedbackReasonKey = (typeof SITE_FEEDBACK_REASON_KEYS)[number];

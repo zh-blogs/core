@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import {
   siteAuditInsertSchema,
   siteClaimStatusSchema,
+  siteFeedbackAuditInsertSchema,
+  siteFeedbackReasonSchema,
   siteInsertSchema,
   siteUpdateSchema,
   tagDefinitionInsertSchema,
@@ -162,6 +164,22 @@ describe('db zod site url validation', () => {
         tag_type: 'WARNING',
         machine_key: 'EXTERNAL_LIMIT',
         is_enabled: true,
+      }).success,
+    ).toBe(true);
+  });
+
+  it('accepts site feedback reasons and validates site feedback payloads', () => {
+    expect(siteFeedbackReasonSchema.safeParse('SITE_INFO_ERROR').success).toBe(true);
+    expect(siteFeedbackReasonSchema.safeParse('NOT_EXISTS').success).toBe(false);
+
+    expect(
+      siteFeedbackAuditInsertSchema.safeParse({
+        site_id: crypto.randomUUID(),
+        reason_type: 'ACCESS_ISSUE',
+        feedback_content: '站点已经连续多日无法访问。',
+        reporter_name: 'Alice',
+        reporter_email: 'alice@example.com',
+        notify_by_email: true,
       }).success,
     ).toBe(true);
   });

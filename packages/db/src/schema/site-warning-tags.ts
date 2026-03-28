@@ -31,7 +31,7 @@ export const SiteWarningTags = pgTable(
       }),
     /** 标签来源 */
     source: siteWarningTagSourceEnum().notNull(),
-    /** 来源站点审核记录，仅在 source=SITE_FEEDBACK 时写入 */
+    /** 来源站点审核记录，仅在旧审核来源链路下写入 */
     source_site_audit_id: uuid().references(() => SiteAudits.id, {
       onDelete: 'set null',
       onUpdate: 'cascade',

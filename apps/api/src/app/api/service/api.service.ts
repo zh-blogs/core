@@ -15,6 +15,7 @@ import { registerPresenceRoutes } from '@/presentation/presence/routes/presence.
 import { registerPublicRoutes } from '@/presentation/public/routes/public.controller';
 import { registerSiteRoutes } from '@/presentation/sites/routes/site.controller';
 import { registerAdminUserRoutes } from '@/presentation/user/routes/admin-user.controller';
+import { registerSiteDirectoryPreferenceRoutes } from '@/presentation/user/routes/site-directory.controller';
 import { getLoggerOptions } from '@/shared/runtime/service/app-logger.service';
 
 export function createApp(options: AppBootstrapOptions = {}) {
@@ -36,6 +37,7 @@ export function createApp(options: AppBootstrapOptions = {}) {
     registerPresenceRoutes(app);
     registerAuthRoutes(app);
     registerAdminUserRoutes(app);
+    registerSiteDirectoryPreferenceRoutes(app);
     registerInternalJobRoutes(app);
     registerPublicRoutes(app);
     registerSiteRoutes(app);

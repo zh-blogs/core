@@ -5,6 +5,7 @@ import {
   ARTICLE_FEEDBACK_ACTION_KEYS,
   ARTICLE_FEEDBACK_REASON_KEYS,
   ARTICLE_VISIBILITY_KEYS,
+  SITE_FEEDBACK_REASON_KEYS,
 } from '../constants/article';
 import { AUDIT_STATUS_KEYS, SITE_AUDIT_ACTION_KEYS } from '../constants/audit';
 import { DEPLOYMENT_MODULE_KEYS, DEPLOYMENT_STATUS_KEYS } from '../constants/deployment';
@@ -83,6 +84,10 @@ export const articleFeedbackActionEnum = pgEnum(
 export const articleFeedbackReasonEnum = pgEnum(
   'article_feedback_reason_enum',
   ARTICLE_FEEDBACK_REASON_KEYS as [string, ...string[]],
+);
+export const siteFeedbackReasonEnum = pgEnum(
+  'site_feedback_reason_enum',
+  SITE_FEEDBACK_REASON_KEYS as [string, ...string[]],
 );
 export const taskTypeEnum = pgEnum('task_type_enum', TASK_TYPE_KEYS as [string, ...string[]]);
 export const scheduleModeEnum = pgEnum(
