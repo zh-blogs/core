@@ -7,7 +7,7 @@ import { readPublicSites, shuffleSites } from '@/application/site/site-public.se
 import HomeCommunityDocs from '@/components/home/HomeCommunityDocs.astro';
 import HomeHero from '@/components/home/HomeHero.astro';
 import HomeProjectBlogs from '@/components/home/HomeProjectBlogs.astro';
-import HomeRandomBlogs from '@/components/home/HomeRandomBlogs.astro';
+import HomeRandomBlogs from '@/components/home/HomeRandomBlogs.svelte';
 import PublicHeader from '@/components/public-header/PublicHeader.astro';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { groupDocsByCategory } from '@/shared/data/doc-categories';
@@ -83,7 +83,7 @@ const recentProjectBlogs = projectBlogs.slice(0, 3).map((entry) => ({
         summary={summary}
       />
 
-      <HomeRandomBlogs randomBlogs={randomBlogs} />
+      <HomeRandomBlogs client:load randomBlogs={randomBlogs} />
 
       <HomeProjectBlogs blogs={recentProjectBlogs} />
 

@@ -1,7 +1,15 @@
 import { fetchApiJson } from '../api/api.server';
 
-export type BlogCardTone = 'amber' | 'blue' | 'emerald' | 'red' | 'stone';
-export type BlogCardStatus = 'fresh' | 'quiet' | 'steady';
+import {
+  createShortCode,
+  extractDomain,
+  formatCompactCount,
+  formatYearMonth,
+  resolveCardStatus,
+  resolveTone,
+  resolveUpdatedLabel,
+  type SiteCardEntry,
+} from './site-card.shared';
 
 interface ApiPublicSiteItem {
   id: string;
@@ -36,37 +44,14 @@ interface PublicSitesPayload {
   };
 }
 
-export interface PublicSiteEntry {
+export interface PublicSiteEntry extends SiteCardEntry {
   id: string;
   bid: string | null;
-  slug: string;
-  name: string;
-  domain: string;
-  href: string;
-  shortCode: string;
-  primaryTag: string;
-  summary: string;
   profile: string;
   highlights: string[];
-  subTags: string[];
-  warningTags: Array<{
-    machineKey: string;
-    name: string;
-    description: string | null;
-  }>;
-  joinedAt: string;
-  joinedLabel: string;
-  updatedLabel?: string;
-  articleCount?: string;
   articleCountValue: number;
-  visitCount: string;
   visitCountValue: number;
-  tone: BlogCardTone;
-  status: BlogCardStatus;
-  rssUrl?: string;
-  sitemapUrl?: string;
   linkPage?: string;
-  featured?: boolean;
   accessScope: string;
   siteStatus: string;
   latestPublishedTime: string | null;
@@ -74,138 +59,7 @@ export interface PublicSiteEntry {
 }
 
 function createSiteSlug(item: Pick<ApiPublicSiteItem, 'bid' | 'name' | 'id'>): string {
-  if (item.bid) {
-    return item.bid;
-  }
-
-  const normalized = item.name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-
-  return normalized || `site-${item.id.slice(0, 8)}`;
-}
-
-function extractDomain(url: string): string {
-  try {
-    const target = new URL(url);
-    return `${target.host}${target.pathname === '/' ? '' : target.pathname}`;
-  } catch {
-    return url;
-  }
-}
-
-function createShortCode(name: string): string {
-  const compact = name.replace(/\s+/g, '');
-  const chineseChars = [...compact].filter((char) => /[\u4e00-\u9fa5]/.test(char));
-
-  if (chineseChars.length >= 2) {
-    return `${chineseChars[0]}${chineseChars[1]}`;
-  }
-
-  const letters = name
-    .split(/[\s/|·_.-]+/)
-    .map((token) => token.trim().charAt(0))
-    .filter(Boolean)
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
-
-  return letters || compact.slice(0, 2).toUpperCase() || 'SB';
-}
-
-function formatYearMonth(value: string): string {
-  const target = new Date(value);
-
-  return Number.isNaN(target.getTime())
-    ? value
-    : `${target.getFullYear()}.${String(target.getMonth() + 1).padStart(2, '0')}`;
-}
-
-function formatCompactCount(value: number): string {
-  if (value >= 1000) {
-    return `${(value / 1000).toFixed(value >= 10000 ? 0 : 1).replace(/\.0$/, '')}k`;
-  }
-
-  return String(value);
-}
-
-function resolveUpdatedLabel(value: string | null): string | undefined {
-  if (!value) {
-    return undefined;
-  }
-
-  const target = new Date(value);
-
-  if (Number.isNaN(target.getTime())) {
-    return undefined;
-  }
-
-  const diffDays = Math.max(0, Math.floor((Date.now() - target.getTime()) / 86_400_000));
-
-  if (diffDays === 0) {
-    return '今天更新';
-  }
-
-  if (diffDays < 7) {
-    return `${diffDays} 天前更新`;
-  }
-
-  if (diffDays < 30) {
-    return `${Math.floor(diffDays / 7)} 周前更新`;
-  }
-
-  if (diffDays < 365) {
-    return `${Math.floor(diffDays / 30)} 个月前更新`;
-  }
-
-  return undefined;
-}
-
-function resolveTone(primaryTag: string, featured: boolean): BlogCardTone {
-  if (featured) {
-    return 'red';
-  }
-
-  if (/(技术|编程|开发|后端|前端|架构)/.test(primaryTag)) {
-    return 'blue';
-  }
-
-  if (/(设计|产品|人文|阅读|写作)/.test(primaryTag)) {
-    return 'amber';
-  }
-
-  if (/(生活|摄影|旅行|社区|外联)/.test(primaryTag)) {
-    return 'emerald';
-  }
-
-  return 'stone';
-}
-
-function resolveCardStatus(siteStatus: string, latestPublishedTime: string | null): BlogCardStatus {
-  if (siteStatus !== 'OK') {
-    return 'quiet';
-  }
-
-  if (!latestPublishedTime) {
-    return 'steady';
-  }
-
-  const diffDays = Math.max(
-    0,
-    Math.floor((Date.now() - new Date(latestPublishedTime).getTime()) / 86_400_000),
-  );
-
-  if (diffDays <= 3) {
-    return 'fresh';
-  }
-
-  if (diffDays <= 14) {
-    return 'steady';
-  }
-
-  return 'quiet';
+  return item.id;
 }
 
 export function formatAccessScopeLabel(value: string): string {
@@ -342,5 +196,5 @@ export async function readPublicSites(): Promise<PublicSiteEntry[]> {
 export async function readPublicSiteBySlug(slug: string): Promise<PublicSiteEntry | null> {
   const items = await readPublicSites();
 
-  return items.find((item) => item.slug === slug) ?? null;
+  return items.find((item) => item.id === slug) ?? null;
 }

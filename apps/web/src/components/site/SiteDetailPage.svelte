@@ -1,0 +1,198 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+
+  import { resolveTone } from '@/application/site/site-card.shared';
+  import type {
+    PagedResult,
+    SiteArticleItem,
+    SiteCheckItem,
+    SiteDetail,
+  } from '@/application/site/site-directory.models';
+  import {
+    buildHeartbeatChecks,
+    buildSiteResourceLinks,
+    cloneSiteDetailPagedResult,
+    resolveHeartbeatSlotCount,
+    resolveSiteStatusToneClass,
+  } from '@/components/site/site-detail.shared';
+  import SiteDetailHeroSection from '@/components/site/SiteDetailHeroSection.svelte';
+  import SiteDetailSidebar from '@/components/site/SiteDetailSidebar.svelte';
+  import SiteDetailTabs from '@/components/site/SiteDetailTabs.svelte';
+  import SiteFeedbackDialog from '@/components/site/SiteFeedbackDialog.svelte';
+
+  let {
+    detail,
+    initialArticles,
+    initialChecks,
+  }: {
+    detail: SiteDetail;
+    initialArticles: PagedResult<SiteArticleItem>;
+    initialChecks: PagedResult<SiteCheckItem>;
+  } = $props();
+
+  function createInitialArticlesValue(): PagedResult<SiteArticleItem> {
+    return cloneSiteDetailPagedResult(initialArticles);
+  }
+
+  function createInitialChecksValue(): PagedResult<SiteCheckItem> {
+    return cloneSiteDetailPagedResult(initialChecks);
+  }
+
+  let activeTab = $state<'articles' | 'checks' | 'history'>('articles');
+  let articles = $state(createInitialArticlesValue());
+  let checks = $state(createInitialChecksValue());
+  let loadingTab = $state<'articles' | 'checks' | null>(null);
+  let copiedKey = $state('');
+  let feedbackOpen = $state(false);
+  let feedbackSubmitting = $state(false);
+  let feedbackError = $state('');
+  let viewportWidth = $state(1440);
+
+  const tagTone = $derived(resolveTone(detail.primaryTag ?? '未分类', detail.featured));
+  const statusToneClass = $derived(resolveSiteStatusToneClass(detail.status));
+  const heartbeatSlotCount = $derived(resolveHeartbeatSlotCount(viewportWidth));
+  const heartbeatChecks = $derived(buildHeartbeatChecks(checks.items, heartbeatSlotCount));
+  const resourceLinks = $derived(buildSiteResourceLinks(detail));
+
+  onMount(() => {
+    const updateViewportWidth = () => {
+      viewportWidth = window.innerWidth;
+    };
+
+    updateViewportWidth();
+    window.addEventListener('resize', updateViewportWidth);
+
+    return () => {
+      window.removeEventListener('resize', updateViewportWidth);
+    };
+  });
+
+  async function copyValue(key: string, value: string | null) {
+    if (!value) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(value);
+      copiedKey = key;
+
+      window.setTimeout(() => {
+        if (copiedKey === key) {
+          copiedKey = '';
+        }
+      }, 1600);
+    } catch {
+      copiedKey = '';
+    }
+  }
+
+  async function loadTabPage(tab: 'articles' | 'checks', page: number) {
+    loadingTab = tab;
+
+    try {
+      const response = await fetch(
+        tab === 'articles'
+          ? `/api/site-directory/${detail.slug}/articles?page=${page}&pageSize=${articles.pagination.pageSize}`
+          : `/api/site-directory/${detail.slug}/checks?page=${page}&pageSize=${checks.pagination.pageSize}`,
+        {
+          headers: { accept: 'application/json' },
+        },
+      );
+
+      if (!response.ok) {
+        return;
+      }
+
+      if (tab === 'articles') {
+        const payload = (await response.json()) as {
+          ok: boolean;
+          data: PagedResult<SiteArticleItem>;
+        };
+        articles = payload.data;
+      } else {
+        const payload = (await response.json()) as {
+          ok: boolean;
+          data: PagedResult<SiteCheckItem>;
+        };
+        checks = payload.data;
+      }
+    } finally {
+      loadingTab = null;
+    }
+  }
+
+  async function submitFeedback(payload: {
+    reasonType: string;
+    feedbackContent: string;
+    reporterName?: string | null;
+    reporterEmail?: string | null;
+    notifyByEmail?: boolean;
+  }) {
+    feedbackSubmitting = true;
+    feedbackError = '';
+
+    try {
+      const response = await fetch(`/api/site-directory/${detail.slug}/feedback`, {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        feedbackError = '提交失败，请稍后重试。';
+        return;
+      }
+
+      feedbackOpen = false;
+    } catch {
+      feedbackError = '提交失败，请稍后重试。';
+    } finally {
+      feedbackSubmitting = false;
+    }
+  }
+</script>
+
+<div class="page-stack">
+  <section class="page-section pt-2">
+    <div class="grid gap-10 xl:grid-cols-[minmax(0,1.12fr)_22rem]">
+      <div class="flex flex-col gap-5">
+        <SiteDetailHeroSection
+          {detail}
+          {tagTone}
+          {statusToneClass}
+          {heartbeatChecks}
+          onOpenFeedback={() => {
+            feedbackError = '';
+            feedbackOpen = true;
+          }}
+        />
+        <SiteDetailTabs
+          {activeTab}
+          {articles}
+          {checks}
+          {loadingTab}
+          onTabChange={(tab) => {
+            activeTab = tab;
+          }}
+          onLoadPage={loadTabPage}
+        />
+      </div>
+      <SiteDetailSidebar {detail} {resourceLinks} {copiedKey} onCopy={copyValue} />
+    </div>
+  </section>
+</div>
+
+<SiteFeedbackDialog
+  open={feedbackOpen}
+  siteName={detail.name}
+  submitting={feedbackSubmitting}
+  errorMessage={feedbackError}
+  onCancel={() => {
+    feedbackError = '';
+    feedbackOpen = false;
+  }}
+  onSubmit={submitFeedback}
+/>

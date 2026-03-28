@@ -1,0 +1,74 @@
+---
+export const prerender = false;
+
+import {
+  fetchSiteDirectoryMeta,
+  resolveInitialSiteDirectoryData,
+} from '@/application/site/site-directory.server';
+import PublicHeader from '@/components/public-header/PublicHeader.astro';
+import SiteDirectoryPage from '@/components/site/SiteDirectoryPage.svelte';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+const meta = await fetchSiteDirectoryMeta();
+const fallbackMeta = meta ?? {
+  stats: {
+    totalSites: 0,
+    normalSites: 0,
+    abnormalSites: 0,
+    rssSites: 0,
+  },
+  filters: {
+    mainTags: [],
+    subTags: [],
+    warningTags: [],
+    programs: [],
+  },
+  defaults: {
+    pageSize: 24,
+    random: true,
+    statusMode: 'normal' as const,
+  },
+};
+
+const { result, preference, canUsePreference } = await resolveInitialSiteDirectoryData(
+  Astro.request,
+  Astro.url,
+  fallbackMeta.defaults,
+);
+
+const fallbackResult = result ?? {
+  items: [],
+  pagination: {
+    page: 1,
+    pageSize: fallbackMeta.defaults.pageSize,
+    totalItems: 0,
+    totalPages: 1,
+  },
+  query: {
+    q: '',
+    main: [],
+    sub: [],
+    warning: [],
+    program: [],
+    statusMode: fallbackMeta.defaults.statusMode,
+    random: fallbackMeta.defaults.random,
+    sort: null,
+    order: 'desc' as const,
+    randomSeed: '',
+  },
+};
+---
+
+<BaseLayout title="站点目录 | 集博栈">
+  <PublicHeader currentPath={Astro.url.pathname} />
+
+  <main class="page-shell">
+    <SiteDirectoryPage
+      client:load
+      initialMeta={fallbackMeta}
+      initialResult={fallbackResult}
+      initialPreference={preference}
+      canUsePreference={canUsePreference}
+    />
+  </main>
+</BaseLayout>
