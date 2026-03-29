@@ -8,6 +8,7 @@
     IconStarFilled,
   } from '@tabler/icons-svelte-runes';
 
+  import { trackSiteAccess } from '@/application/site/site-access.client';
   import type { SiteCardEntry } from '@/application/site/site-card.shared';
   import SiteTagRow from '@/components/site/SiteTagRow.svelte';
 
@@ -24,6 +25,7 @@
     label: string;
     title: string;
     kind: 'rss' | 'sitemap';
+    targetKind: 'FEED' | 'SITEMAP';
   };
 
   const detailHref = $derived(`/site/${entry.slug}`);
@@ -50,6 +52,7 @@
         label: `${entry.name} RSS 订阅`,
         title: 'RSS 订阅',
         kind: 'rss',
+        targetKind: 'FEED',
       });
     }
 
@@ -59,6 +62,7 @@
         label: `${entry.name} 站点地图`,
         title: '站点地图',
         kind: 'sitemap',
+        targetKind: 'SITEMAP',
       });
     }
 
@@ -102,7 +106,18 @@
       </span>
 
       <div class="min-w-0 flex-1">
-        <a class="group block max-w-full" href={entry.href} rel="noreferrer" target="_blank">
+        <a
+          class="group block max-w-full"
+          href={entry.href}
+          rel="noreferrer"
+          target="_blank"
+          onclick={() => {
+            trackSiteAccess(entry.id, {
+              source: 'SITE_CARD',
+              targetKind: 'SITE',
+            });
+          }}
+        >
           <div class="flex flex-wrap items-start gap-x-1 gap-y-0.5">
             <h2
               class="overflow-hidden text-[15px] leading-[1.3] font-medium text-(--color-fg) transition-colors duration-150 ease-out-smooth [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] group-hover:text-(--card-accent)"
@@ -190,6 +205,12 @@
                     target="_blank"
                     aria-label={link.label}
                     title={link.title}
+                    onclick={() => {
+                      trackSiteAccess(entry.id, {
+                        source: 'SITE_CARD',
+                        targetKind: link.targetKind,
+                      });
+                    }}
                   >
                     {#if link.kind === 'rss'}
                       <IconRss size={14} stroke={1.8} class="block" />

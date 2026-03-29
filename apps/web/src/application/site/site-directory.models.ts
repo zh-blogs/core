@@ -69,6 +69,26 @@ export interface SiteDirectoryResult {
   };
 }
 
+export type SiteGoFailureReason =
+  | 'UNKNOWN_PARAM'
+  | 'INVALID_PARAMS'
+  | 'INVALID_RECOMMEND'
+  | 'INVALID_TYPE'
+  | 'DUPLICATE_PARAM'
+  | 'NO_MATCH';
+
+export interface SiteGoFilters {
+  recommend: boolean;
+  type: string;
+}
+
+export interface SiteGoResult {
+  site: SiteDirectoryItem | null;
+  availableTypes: string[];
+  filters: SiteGoFilters;
+  failureReason: SiteGoFailureReason | null;
+}
+
 export interface SiteDetail extends SiteDirectoryItem {
   reason: string | null;
   feeds: Array<{

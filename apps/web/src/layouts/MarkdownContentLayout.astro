@@ -1,0 +1,99 @@
+---
+import { formatZhDate } from '@/application/content/content.date';
+
+import ContentBody from '../components/content-page/ContentBody.astro';
+import ContentToc from '../components/content-page/ContentToc.astro';
+import EntryHeader from '../components/content-page/EntryHeader.astro';
+import PublicHeader from '../components/public-header/PublicHeader.astro';
+
+import BaseLayout from './BaseLayout.astro';
+
+interface MarkdownFrontmatter {
+  title?: string;
+  description?: string;
+  create_time?: string | Date;
+  update_time?: string | Date;
+}
+
+interface Props {
+  title?: string;
+  description?: string;
+  create_time?: string | Date;
+  update_time?: string | Date;
+  headings?: Array<{
+    depth: number;
+    slug: string;
+    text: string;
+  }>;
+  frontmatter?: MarkdownFrontmatter;
+}
+
+const frontmatter = Astro.props.frontmatter || {};
+const title = Astro.props.title || frontmatter.title || '未命名页面';
+const description = Astro.props.description || frontmatter.description;
+const createTime = Astro.props.create_time || frontmatter.create_time;
+const updateTime = Astro.props.update_time || frontmatter.update_time;
+const formattedCreateTime = formatZhDate(createTime);
+const formattedUpdateTime = formatZhDate(updateTime);
+const hasCreateTime = formattedCreateTime !== '';
+const hasUpdateTime = formattedUpdateTime !== '';
+const isSameTimestamp =
+  hasCreateTime && hasUpdateTime && formattedCreateTime === formattedUpdateTime;
+const primaryDateLabel = isSameTimestamp
+  ? '创建/更新'
+  : hasCreateTime
+    ? '创建时间'
+    : hasUpdateTime
+      ? '最后更新'
+      : '发布时间';
+const primaryDateValue = isSameTimestamp
+  ? createTime || updateTime
+  : hasCreateTime
+    ? createTime
+    : updateTime;
+const showSecondaryUpdate = hasCreateTime && hasUpdateTime && !isSameTimestamp;
+const headings = Astro.props.headings || [];
+---
+
+<BaseLayout
+  title={`${title} | 集博栈`}
+  description={description}
+  publishedTime={createTime}
+  modifiedTime={updateTime}
+>
+  <PublicHeader currentPath={Astro.url.pathname} />
+
+  <main class="flex-1">
+    <div
+      class="mx-auto flex w-full max-w-368 flex-col gap-8 px-3.5 py-6 xs:px-4 sm:px-6 lg:px-8 lg:py-8"
+    >
+      <section class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_16rem]" data-content-shell>
+        <article class="space-y-8" data-content-article>
+          <EntryHeader
+            title={title}
+            description={description}
+            dateLabel={primaryDateLabel}
+            dateValue={primaryDateValue}
+          >
+            {
+              showSecondaryUpdate ? (
+                <p
+                  slot="meta"
+                  class="font-mono text-[11px] uppercase tracking-[0.16em] text-(--color-fg-3)"
+                >
+                  最后更新 · {formattedUpdateTime}
+                </p>
+              ) : null
+            }
+          </EntryHeader>
+
+          <ContentBody>
+            <slot />
+          </ContentBody>
+        </article>
+
+        <ContentToc headings={headings} />
+      </section>
+    </div>
+  </main>
+</BaseLayout>

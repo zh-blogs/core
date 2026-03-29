@@ -20,8 +20,14 @@ const { entry } = Astro.props;
 const { Content, headings } = await render(entry);
 ---
 
-<BaseLayout title={`${entry.data.title} | 集博栈`}>
-  <PublicHeader currentPath="/blog" />
+<BaseLayout
+  title={`${entry.data.title} | 集博栈`}
+  description={entry.data.description}
+  canonicalPath={`/blog/${entry.id}`}
+  ogType="article"
+  publishedTime={entry.data.create_time}
+>
+  <PublicHeader currentPath="/blog" activeProjectKey="blog" />
 
   <main class="flex-1">
     <div

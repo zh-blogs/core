@@ -43,10 +43,11 @@ const desktopMetaRowClass =
   'flex items-center justify-start gap-2 overflow-x-auto whitespace-nowrap lg:justify-end';
 const desktopMetaValuesClass =
   'flex min-w-0 flex-1 items-center justify-start gap-2 whitespace-nowrap lg:justify-end';
+const blogIndexDescription = '查看集博栈项目博客的最近更新，了解目录建设、协作实践与站点维护过程。';
 ---
 
-<BaseLayout title="项目博客 | 集博栈">
-  <PublicHeader currentPath={Astro.url.pathname} />
+<BaseLayout title="项目博客 | 集博栈" description={blogIndexDescription}>
+  <PublicHeader currentPath={Astro.url.pathname} activeProjectKey="blog" />
 
   <main class="flex-1">
     <div

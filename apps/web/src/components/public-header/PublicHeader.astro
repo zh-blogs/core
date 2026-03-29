@@ -11,6 +11,13 @@ import {
   IconRss,
 } from '@tabler/icons-svelte-runes';
 
+import {
+  type PublicHeaderLink,
+  type PublicPrimaryNavKey,
+  type PublicProjectNavKey,
+  resolvePublicHeaderActiveState,
+} from '@/components/public-header/public-header.shared';
+
 import DesktopActions from './DesktopActions.astro';
 import DesktopNav from './DesktopNav.astro';
 import MobileHeaderControls from './MobileHeaderControls.astro';
@@ -18,94 +25,74 @@ import MobilePanel from './MobilePanel.astro';
 
 interface Props {
   currentPath: string;
+  activePrimaryKey?: PublicPrimaryNavKey | null;
+  activeProjectKey?: PublicProjectNavKey | null;
 }
 
-const { currentPath } = Astro.props;
+const {
+  currentPath,
+  activePrimaryKey: inputPrimaryKey,
+  activeProjectKey: inputProjectKey,
+} = Astro.props;
 const isHome = currentPath === '/';
-const primaryLinks = [
+const primaryLinks: PublicHeaderLink[] = [
   {
+    navKey: 'directory',
     label: '博客列表',
     href: '/site',
     icon: IconListDetails,
   },
   {
+    navKey: 'subscription',
     label: '订阅一览',
     href: '/site/stats#subscription',
     icon: IconRss,
   },
   {
+    navKey: 'random',
     label: '随机前往',
-    href: '/site/go-site',
+    href: '/site/go',
     icon: IconDice,
   },
   {
+    navKey: 'stats',
     label: '统计信息',
     href: '/site/stats',
     icon: IconChartBar,
   },
 ];
 
-const projectLinks = [
+const projectLinks: PublicHeaderLink[] = [
   {
+    navKey: 'docs',
     label: '文档',
     href: '/docs',
     icon: IconBook2,
   },
   {
+    navKey: 'blog',
     label: '博客',
     href: '/blog',
     icon: IconFileText,
   },
   {
+    navKey: 'contribute',
     label: '贡献',
     href: '/contribute',
     icon: IconCirclePlus,
   },
   {
+    navKey: 'about',
     label: '关于',
     href: '/about',
     icon: IconInfoCircle,
   },
 ];
-
-const normalizePath = (value: string): string => {
-  if (value.length > 1 && value.endsWith('/')) {
-    return value.slice(0, -1);
-  }
-
-  return value;
-};
-
-const pickActiveHref = (links: Array<{ href: string }>): string | null => {
-  const normalizedCurrentPath = normalizePath(currentPath);
-
-  let bestHref: string | null = null;
-  let bestScore = -1;
-
-  for (const item of links) {
-    const hrefPath = normalizePath(item.href.split('#')[0] || item.href);
-    const hasHash = item.href.includes('#');
-
-    let score = -1;
-
-    if (normalizedCurrentPath === hrefPath) {
-      score = hasHash ? 19 : 20;
-    } else if (hrefPath !== '/' && normalizedCurrentPath.startsWith(`${hrefPath}/`)) {
-      score = hasHash ? 9 : 10;
-    }
-
-    if (score > bestScore) {
-      bestScore = score;
-      bestHref = item.href;
-    }
-  }
-
-  return bestScore >= 0 ? bestHref : null;
-};
-
-const activePrimaryHref = pickActiveHref(primaryLinks);
-const activeProjectHref = pickActiveHref(projectLinks);
-const projectActive = activeProjectHref !== null;
+const { activePrimaryKey, activeProjectKey, projectActive } = resolvePublicHeaderActiveState({
+  currentPath,
+  activePrimaryKey: inputPrimaryKey,
+  activeProjectKey: inputProjectKey,
+});
 ---
 
 <header
@@ -148,8 +135,8 @@ const projectActive = activeProjectHref !== null;
     <DesktopNav
       primaryLinks={primaryLinks}
       projectLinks={projectLinks}
-      activePrimaryHref={activePrimaryHref}
-      activeProjectHref={activeProjectHref}
+      {activePrimaryKey}
+      {activeProjectKey}
       projectActive={projectActive}
     />
 
@@ -160,8 +147,8 @@ const projectActive = activeProjectHref !== null;
   <MobilePanel
     primaryLinks={primaryLinks}
     projectLinks={projectLinks}
-    activePrimaryHref={activePrimaryHref}
-    activeProjectHref={activeProjectHref}
+    {activePrimaryKey}
+    {activeProjectKey}
     projectActive={projectActive}
   />
 </header>

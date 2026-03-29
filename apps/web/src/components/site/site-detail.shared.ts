@@ -4,6 +4,15 @@ import type {
   SiteDetail,
 } from '@/application/site/site-directory.models';
 
+export const DEFAULT_SITE_DETAIL_DESCRIPTION =
+  '该站点暂未提供站点简介，可继续查看文章聚合、状态检测与相关资源入口。';
+
+export function resolveSiteDetailDescription(sign: string | null | undefined): string {
+  const value = sign?.trim();
+
+  return value || DEFAULT_SITE_DETAIL_DESCRIPTION;
+}
+
 export function cloneSiteDetailPagedResult<TItem extends object>(
   source: PagedResult<TItem>,
 ): PagedResult<TItem> {

@@ -9,8 +9,10 @@ import {
   fetchSiteDetail,
 } from '@/application/site/site-directory.server';
 import PublicHeader from '@/components/public-header/PublicHeader.astro';
+import { resolveSiteDetailDescription } from '@/components/site/site-detail.shared';
 import SiteDetailPage from '@/components/site/SiteDetailPage.svelte';
 import BaseLayout from '@/layouts/BaseLayout.astro';
+import { buildSiteOgImagePath } from '@/shared/site-og';
 
 const slug = Astro.params.slug ?? '';
 const detail = slug ? await fetchSiteDetail(slug) : null;
@@ -60,16 +62,27 @@ const checks = detail
     };
 
 const ArrowLeftIcon = IconArrowLeft;
+const detailDescription = detail ? resolveSiteDetailDescription(detail.sign) : '未找到对应站点。';
+const detailOgImagePath = detail ? buildSiteOgImagePath(detail.slug) : undefined;
 ---
 
-<BaseLayout title={detail ? `${detail.name} | 集博栈` : '站点不存在 | 集博栈'}>
-  <PublicHeader currentPath="/site" />
+<BaseLayout
+  title={detail ? `${detail.name} | 集博栈` : '站点不存在 | 集博栈'}
+  description={detailDescription}
+  canonicalPath={`/site/${slug}`}
+  imagePath={detailOgImagePath}
+  imageAlt={detail ? `${detail.name} 的站点详情分享卡片` : undefined}
+  robots={detail ? undefined : 'noindex, nofollow'}
+  publishedTime={detail?.joinTime}
+  modifiedTime={detail?.updateTime}
+>
+  <PublicHeader currentPath={Astro.url.pathname} activePrimaryKey="directory" />
 
   <main class="page-shell">
     <div class="page-stack">
       <section class="page-section pt-2">
         <a
-          class="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-[color:var(--color-fg-3)] transition hover:text-[color:var(--color-fg)]"
+          class="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-(--color-fg-3) transition hover:text-(--color-fg)"
           href="/site"
         >
           <ArrowLeftIcon size={14} stroke={1.9} />
@@ -87,7 +100,7 @@ const ArrowLeftIcon = IconArrowLeft;
           />
         ) : (
           <section class="page-section">
-            <div class="rounded-[6px] border border-[color:var(--color-line)] bg-[color:var(--color-bg)] px-5 py-10 text-sm text-[color:var(--color-fg-2)]">
+            <div class="rounded-[6px] border border-(--color-line) bg-(--color-bg) px-5 py-10 text-sm text-(--color-fg-2)">
               未找到对应站点。
             </div>
           </section>

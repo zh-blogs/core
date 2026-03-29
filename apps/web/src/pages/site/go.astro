@@ -1,0 +1,34 @@
+---
+import {
+  resolveSiteGoFeedback,
+  resolveSiteGoResult,
+  SITE_GO_EXAMPLE_QUERIES,
+} from '@/application/site/site-go.server';
+import PublicHeader from '@/components/public-header/PublicHeader.astro';
+import SiteGoPage from '@/components/site/SiteGoPage.svelte';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+export const prerender = false;
+
+const result = await resolveSiteGoResult(Astro.url);
+const queryText = Astro.url.search || '';
+const currentHref = `/site/go${queryText}`;
+const feedback = resolveSiteGoFeedback(result.failureReason);
+const pageDescription = '随机前往集博栈目录中的公开站点。';
+---
+
+<BaseLayout title="随机前往 | 集博栈" description={pageDescription}>
+  <PublicHeader currentPath={Astro.url.pathname} activePrimaryKey="random" />
+
+  <main class="page-shell">
+    <div class="page-stack">
+      <SiteGoPage
+        client:load
+        {result}
+        {currentHref}
+        exampleQueries={SITE_GO_EXAMPLE_QUERIES}
+        {feedback}
+      />
+    </div>
+  </main>
+</BaseLayout>

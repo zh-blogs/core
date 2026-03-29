@@ -1,12 +1,14 @@
 <script lang="ts">
   import { IconExternalLink, IconMessageCircle } from '@tabler/icons-svelte-runes';
 
+  import { trackSiteAccess } from '@/application/site/site-access.client';
   import type { BlogCardTone } from '@/application/site/site-card.shared';
   import type { SiteCheckItem, SiteDetail } from '@/application/site/site-directory.models';
   import {
     formatSiteDetailDateTime,
     formatSiteDetailStatusLabel,
     resolveSiteCheckTone,
+    resolveSiteDetailDescription,
   } from '@/components/site/site-detail.shared';
   import SiteTagRow from '@/components/site/SiteTagRow.svelte';
 
@@ -51,12 +53,18 @@
     href={detail.url}
     rel="noreferrer"
     target="_blank"
+    onclick={() => {
+      trackSiteAccess(detail.id, {
+        source: 'SITE_DETAIL',
+        targetKind: 'SITE',
+      });
+    }}
   >
     <span>{detail.url}</span>
     <IconExternalLink size={15} stroke={1.8} />
   </a>
   <p class="mt-6 max-w-3xl text-[16px] leading-8 text-(--color-fg-2)">
-    {detail.sign || '暂无签名'}
+    {resolveSiteDetailDescription(detail.sign)}
   </p>
   <div class="mt-4">
     <SiteTagRow

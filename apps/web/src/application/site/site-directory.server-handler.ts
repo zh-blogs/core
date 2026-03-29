@@ -23,6 +23,18 @@ export async function handleSiteDirectoryListRequest(request: Request): Promise<
   );
 }
 
+export async function handleSiteRandomRequest(request: Request): Promise<Response> {
+  const url = new URL(request.url);
+  return proxyUpstreamText(
+    `/api/public/sites/random${url.search}`,
+    { method: 'GET' },
+    {
+      request,
+      fallbackMessage: 'Unable to reach site directory service right now.',
+    },
+  );
+}
+
 export async function handleSiteDetailRequest(slug: string, request?: Request): Promise<Response> {
   return proxyUpstreamText(
     `/api/public/sites/${slug}`,
@@ -77,6 +89,23 @@ export async function handleSiteFeedbackRequest(slug: string, request: Request):
     {
       request,
       fallbackMessage: 'Unable to reach site directory service right now.',
+    },
+  );
+}
+
+export async function handleSiteAccessRequest(id: string, request: Request): Promise<Response> {
+  return proxyUpstreamText(
+    `/api/public/sites/${id}/access-events`,
+    {
+      method: 'POST',
+      body: await request.text(),
+      headers: {
+        'content-type': request.headers.get('content-type') ?? 'application/json',
+      },
+    },
+    {
+      request,
+      fallbackMessage: 'Unable to record site access right now.',
     },
   );
 }

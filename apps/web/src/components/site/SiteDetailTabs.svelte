@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { trackSiteAccess } from '@/application/site/site-access.client';
   import type {
     PagedResult,
     SiteArticleItem,
@@ -7,6 +8,7 @@
   import { formatSiteDetailDateTime } from '@/components/site/site-detail.shared';
 
   let {
+    siteId,
     activeTab,
     articles,
     checks,
@@ -14,6 +16,7 @@
     onTabChange,
     onLoadPage,
   }: {
+    siteId: string;
     activeTab: 'articles' | 'checks' | 'history';
     articles: PagedResult<SiteArticleItem>;
     checks: PagedResult<SiteCheckItem>;
@@ -53,6 +56,12 @@
                     href={article.articleUrl}
                     rel="noreferrer"
                     target="_blank"
+                    onclick={() => {
+                      trackSiteAccess(siteId, {
+                        source: 'SITE_DETAIL',
+                        targetKind: 'ARTICLE',
+                      });
+                    }}
                   >
                     {article.title}
                   </a>

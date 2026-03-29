@@ -1,6 +1,7 @@
 <script lang="ts">
   import { IconCopy, IconExternalLink, IconRss, IconSitemap } from '@tabler/icons-svelte-runes';
 
+  import { trackSiteAccess } from '@/application/site/site-access.client';
   import type { SiteDetail } from '@/application/site/site-directory.models';
   import type { SiteResourceLink } from '@/components/site/site-detail.shared';
   import { formatSiteDetailDateTime } from '@/components/site/site-detail.shared';
@@ -16,6 +17,18 @@
     copiedKey?: string;
     onCopy?: (key: string, value: string | null) => void;
   } = $props();
+
+  function resolveTargetKind(kind: SiteResourceLink['kind']) {
+    if (kind === 'rss') {
+      return 'FEED' as const;
+    }
+
+    if (kind === 'sitemap') {
+      return 'SITEMAP' as const;
+    }
+
+    return 'LINK_PAGE' as const;
+  }
 </script>
 
 <aside class="min-w-0 xl:border-l xl:border-(--color-line) xl:pl-8 pt-2">
@@ -88,6 +101,12 @@
                   rel="noreferrer"
                   target="_blank"
                   aria-label={`打开 ${item.label}`}
+                  onclick={() => {
+                    trackSiteAccess(detail.id, {
+                      source: 'SITE_DETAIL',
+                      targetKind: resolveTargetKind(item.kind),
+                    });
+                  }}
                 >
                   {#if item.kind === 'rss'}
                     <IconRss size={16} stroke={1.8} />

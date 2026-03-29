@@ -5,21 +5,21 @@ import {
   IconInfoCircle as InfoIcon,
 } from '@tabler/icons-svelte-runes';
 
-type HeaderLink = {
-  label: string;
-  href: string;
-  icon: typeof ArrowIcon;
-};
+import type {
+  PublicHeaderLink,
+  PublicPrimaryNavKey,
+  PublicProjectNavKey,
+} from '@/components/public-header/public-header.shared';
 
 interface Props {
-  primaryLinks: HeaderLink[];
-  projectLinks: HeaderLink[];
-  activePrimaryHref: string | null;
-  activeProjectHref: string | null;
+  primaryLinks: PublicHeaderLink[];
+  projectLinks: PublicHeaderLink[];
+  activePrimaryKey: PublicPrimaryNavKey | null;
+  activeProjectKey: PublicProjectNavKey | null;
   projectActive: boolean;
 }
 
-const { primaryLinks, projectLinks, activePrimaryHref, activeProjectHref, projectActive } =
+const { primaryLinks, projectLinks, activePrimaryKey, activeProjectKey, projectActive } =
   Astro.props;
 ---
 
@@ -31,7 +31,7 @@ const { primaryLinks, projectLinks, activePrimaryHref, activeProjectHref, projec
     {
       primaryLinks.map((item) => {
         const Icon = item.icon;
-        const active = activePrimaryHref === item.href;
+        const active = activePrimaryKey === item.navKey;
 
         return (
           <a
@@ -80,7 +80,7 @@ const { primaryLinks, projectLinks, activePrimaryHref, activeProjectHref, projec
         {
           projectLinks.map((item) => {
             const Icon = item.icon;
-            const active = activeProjectHref === item.href;
+            const active = activeProjectKey === item.navKey;
 
             return (
               <a

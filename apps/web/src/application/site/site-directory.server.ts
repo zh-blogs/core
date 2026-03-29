@@ -7,6 +7,7 @@ import type {
   SiteDirectoryMeta,
   SiteDirectoryPreference,
   SiteDirectoryResult,
+  SiteGoResult,
 } from '@/application/site/site-directory.models';
 import {
   applyDirectoryPreference,
@@ -69,6 +70,11 @@ export async function fetchSiteDirectory(
     `/api/public/sites?${buildSiteDirectorySearchParams(query).toString()}`,
   );
 
+  return payload?.data ?? null;
+}
+
+export async function fetchSiteRandom(search = ''): Promise<SiteGoResult | null> {
+  const payload = await fetchEnvelope<SiteGoResult>(undefined, `/api/public/sites/random${search}`);
   return payload?.data ?? null;
 }
 

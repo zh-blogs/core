@@ -13,6 +13,7 @@ export default defineConfig({
   adapter: node({
     mode: 'standalone',
   }),
+  site: 'https://www.zhblogs.net',
   server: {
     port: 9902,
   },
@@ -36,7 +37,7 @@ export default defineConfig({
     },
     '/random': {
       status: 301,
-      destination: '/site/go-site',
+      destination: '/site/go',
     },
     '/charts': {
       status: 301,

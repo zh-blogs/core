@@ -1,0 +1,74 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+import PublicHeader from '../public-header/PublicHeader.astro';
+
+interface StatementSection {
+  title: string;
+  paragraphs?: string[];
+  items?: string[];
+}
+
+interface Props {
+  title: string;
+  eyebrow: string;
+  summary: string;
+  sections: StatementSection[];
+}
+
+const { title, eyebrow, summary, sections } = Astro.props;
+---
+
+<BaseLayout title={`${title} | 集博栈`} description={summary}>
+  <PublicHeader currentPath={Astro.url.pathname} />
+
+  <main class="flex-1">
+    <div
+      class="mx-auto flex w-full max-w-368 flex-col gap-8 px-3.5 py-6 xs:px-4 sm:px-6 lg:px-8 lg:py-8"
+    >
+      <section class="border-b border-(--color-line) pb-8">
+        <p
+          class="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-red-700 dark:text-red-400"
+        >
+          {eyebrow}
+        </p>
+        <h1 class="mt-4 text-[clamp(2.4rem,6vw,4rem)] leading-none tracking-[-0.04em]">
+          {title}
+        </h1>
+        <p class="mt-4 max-w-2xl text-[17px] leading-8 text-(--color-fg-2)">
+          {summary}
+        </p>
+      </section>
+
+      <section class="grid gap-4">
+        {
+          sections.map((section) => (
+            <article class="rounded-md border border-(--color-line-med) p-5">
+              <h2 class="text-xl leading-tight tracking-[-0.03em] text-(--color-fg)">
+                {section.title}
+              </h2>
+
+              {section.paragraphs?.length ? (
+                <div class="mt-4 grid gap-3 text-sm leading-7 text-(--color-fg-2)">
+                  {section.paragraphs.map((paragraph) => (
+                    <p>{paragraph}</p>
+                  ))}
+                </div>
+              ) : null}
+
+              {section.items?.length ? (
+                <ul class="mt-4 grid gap-2">
+                  {section.items.map((item) => (
+                    <li class="rounded-md border border-(--color-line) px-4 py-3 text-sm leading-7 text-(--color-fg-2)">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </article>
+          ))
+        }
+      </section>
+    </div>
+  </main>
+</BaseLayout>

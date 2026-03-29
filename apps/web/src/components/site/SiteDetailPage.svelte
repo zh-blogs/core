@@ -170,6 +170,7 @@
           }}
         />
         <SiteDetailTabs
+          siteId={detail.id}
           {activeTab}
           {articles}
           {checks}
