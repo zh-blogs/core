@@ -186,7 +186,7 @@ describe('public site directory list', () => {
           {
             id: 'site-1',
             bid: 'cloud-atlas',
-            slug: 'cloud-atlas',
+            slug: 'site-1',
             name: 'Cloud Atlas',
             url: 'https://cloud-atlas.example',
             sign: '记录基础设施与系统实验。',

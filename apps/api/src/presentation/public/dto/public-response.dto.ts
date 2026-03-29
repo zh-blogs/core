@@ -1,10 +1,12 @@
 import {
   directoryMetaResponseSchema,
   directoryResponseSchema,
+  publicSiteAccessResponseSchema,
   publicSiteArticleResponseSchema,
   publicSiteCheckResponseSchema,
   publicSiteDetailResponseSchema,
   publicSiteFeedbackResponseSchema,
+  publicSiteRandomResponseSchema,
   publicSitesResponseSchema,
   siteDirectoryPreferenceResponseSchema,
 } from '@/presentation/public/dto/public-site-response.dto';
@@ -69,10 +71,12 @@ export {
   directoryMetaResponseSchema,
   directoryResponseSchema,
   homeResponseSchema,
+  publicSiteAccessResponseSchema,
   publicSiteArticleResponseSchema,
   publicSiteCheckResponseSchema,
   publicSiteDetailResponseSchema,
   publicSiteFeedbackResponseSchema,
+  publicSiteRandomResponseSchema,
   publicSitesResponseSchema,
   siteDirectoryPreferenceResponseSchema,
 };

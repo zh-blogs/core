@@ -1,15 +1,18 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifySchema } from 'fastify';
+import { z } from 'zod';
 
 import {
   loadPublicHomeSummary,
   loadPublishedAnnouncements,
 } from '@/application/public/usecase/public-home.usecase';
+import { recordPublicSiteAccessEvent } from '@/application/public/usecase/public-site.access.usecase';
 import {
   loadPublicSiteArticles,
   loadPublicSiteChecks,
   loadPublicSiteDetail,
 } from '@/application/public/usecase/public-site.detail.usecase';
 import { submitPublicSiteFeedback } from '@/application/public/usecase/public-site.preference.usecase';
+import { loadPublicSiteRandom } from '@/application/public/usecase/public-site.random.usecase';
 import {
   loadPublicSiteDirectory,
   loadPublicSiteDirectoryMeta,
@@ -19,11 +22,30 @@ import {
   directoryMetaResponseSchema,
   directoryResponseSchema,
   homeResponseSchema,
+  publicSiteAccessResponseSchema,
   publicSiteArticleResponseSchema,
   publicSiteCheckResponseSchema,
   publicSiteDetailResponseSchema,
   publicSiteFeedbackResponseSchema,
+  publicSiteRandomResponseSchema,
 } from '@/presentation/public/dto/public-response.dto';
+import { errorResponseSchema } from '@/presentation/sites/dto';
+import { sendApiError } from '@/presentation/sites/routes/site-route.service';
+
+const publicSiteAccessParamSchema = z.object({
+  id: z.uuid(),
+});
+
+const publicSiteAccessBodySchema = z.object({
+  source: z.enum(['SITE_GO', 'SITE_DETAIL', 'SITE_CARD']),
+  targetKind: z.enum(['SITE', 'FEED', 'SITEMAP', 'LINK_PAGE', 'ARTICLE']),
+  path: z.string().trim().min(1).max(512),
+});
+
+type PublicRouteSchema = FastifySchema & {
+  tags?: string[];
+  summary?: string;
+};
 
 function toStringArray(value: unknown): string[] {
   if (Array.isArray(value)) {
@@ -170,6 +192,103 @@ export function registerPublicRoutes(app: FastifyInstance): void {
           pageSize: toPositiveInt(query.pageSize, 24),
           randomSeed: typeof query.randomSeed === 'string' ? query.randomSeed : undefined,
         }),
+      };
+    },
+  );
+
+  app.get(
+    '/api/public/sites/random',
+    {
+      schema: {
+        tags: ['public'],
+        summary: 'Strict random site selection for /site/go',
+        response: {
+          200: publicSiteRandomResponseSchema,
+        },
+      },
+      config: {
+        rateLimit: {
+          max: 120,
+          timeWindow: '1 minute',
+        },
+      },
+    },
+    async (request) => {
+      return {
+        ok: true,
+        data: await loadPublicSiteRandom(app, request.raw.url ?? request.url),
+      };
+    },
+  );
+
+  app.post<{ Params: { id: string } }>(
+    '/api/public/sites/:id/access-events',
+    {
+      schema: {
+        tags: ['public'],
+        summary: 'Record a public outbound site access event',
+        params: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+          },
+          required: ['id'],
+        },
+        body: {
+          type: 'object',
+          properties: {
+            source: { type: 'string' },
+            targetKind: { type: 'string' },
+            path: { type: 'string' },
+          },
+          required: ['source', 'targetKind', 'path'],
+        },
+        response: {
+          200: publicSiteAccessResponseSchema,
+          400: errorResponseSchema,
+          404: errorResponseSchema,
+        },
+      } as PublicRouteSchema,
+      config: {
+        rateLimit: {
+          max: 240,
+          timeWindow: '1 minute',
+        },
+      },
+    },
+    async (request, reply) => {
+      const parsedParams = publicSiteAccessParamSchema.safeParse(request.params);
+
+      if (!parsedParams.success) {
+        return sendApiError(reply, 400, 'INVALID_SITE_ID', 'id must be a valid UUID.');
+      }
+
+      const parsedBody = publicSiteAccessBodySchema.safeParse(request.body);
+
+      if (!parsedBody.success) {
+        return sendApiError(
+          reply,
+          400,
+          'INVALID_BODY',
+          'Request body is invalid for a public site access event.',
+        );
+      }
+
+      const result = await recordPublicSiteAccessEvent(app, {
+        id: parsedParams.data.id,
+        ...parsedBody.data,
+        referer: request.headers.referer ?? null,
+        origin: request.headers.origin ?? null,
+        userAgent: request.headers['user-agent'] ?? null,
+      });
+
+      if (!result) {
+        return sendApiError(reply, 404, 'SITE_NOT_FOUND', 'The target site does not exist.');
+      }
+
+      return {
+        ok: true,
+        data: result,
       };
     },
   );

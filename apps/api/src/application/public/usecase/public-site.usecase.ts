@@ -243,7 +243,9 @@ async function loadArchitectureFilterState(
   };
 }
 
-async function loadTagFilters(app: FastifyInstance): Promise<PublicSiteDirectoryMeta['filters']> {
+export async function loadTagFilters(
+  app: FastifyInstance,
+): Promise<PublicSiteDirectoryMeta['filters']> {
   const rows = await app.db.read
     .select({
       id: TagDefinitions.id,
@@ -273,7 +275,7 @@ async function loadTagFilters(app: FastifyInstance): Promise<PublicSiteDirectory
   };
 }
 
-async function loadDirectoryItems(app: FastifyInstance): Promise<PublicSiteDirectoryItem[]> {
+export async function loadDirectoryItems(app: FastifyInstance): Promise<PublicSiteDirectoryItem[]> {
   const siteRows = await loadPublicSiteBaseRows(app);
   return enrichPublicSites(app, siteRows);
 }

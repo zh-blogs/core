@@ -239,6 +239,49 @@ export const directoryResponseSchema = {
   required: ['ok', 'data'],
 } as const;
 
+export const publicSiteRandomResponseSchema = {
+  type: 'object',
+  properties: {
+    ok: { type: 'boolean' },
+    data: {
+      type: 'object',
+      properties: {
+        site: {
+          type: ['object', 'null'],
+          properties: publicSiteItemSchema.properties,
+          required: publicSiteItemSchema.required,
+        },
+        availableTypes: {
+          type: 'array',
+          items: { type: 'string' },
+        },
+        filters: {
+          type: 'object',
+          properties: {
+            recommend: { type: 'boolean' },
+            type: { type: 'string' },
+          },
+          required: ['recommend', 'type'],
+        },
+        failureReason: {
+          type: ['string', 'null'],
+          enum: [
+            'UNKNOWN_PARAM',
+            'INVALID_PARAMS',
+            'INVALID_RECOMMEND',
+            'INVALID_TYPE',
+            'DUPLICATE_PARAM',
+            'NO_MATCH',
+            null,
+          ],
+        },
+      },
+      required: ['site', 'availableTypes', 'filters', 'failureReason'],
+    },
+  },
+  required: ['ok', 'data'],
+} as const;
+
 export const publicSiteDetailResponseSchema = {
   type: 'object',
   properties: {
@@ -345,6 +388,21 @@ export const publicSiteFeedbackResponseSchema = {
         id: { type: 'string' },
       },
       required: ['id'],
+    },
+  },
+  required: ['ok', 'data'],
+} as const;
+
+export const publicSiteAccessResponseSchema = {
+  type: 'object',
+  properties: {
+    ok: { type: 'boolean' },
+    data: {
+      type: 'object',
+      properties: {
+        recorded: { type: 'boolean' },
+      },
+      required: ['recorded'],
     },
   },
   required: ['ok', 'data'],

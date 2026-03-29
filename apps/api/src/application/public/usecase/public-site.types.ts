@@ -91,6 +91,26 @@ export type PublicSiteDirectoryResult = {
   };
 };
 
+export type PublicSiteRandomFailureReason =
+  | 'UNKNOWN_PARAM'
+  | 'INVALID_PARAMS'
+  | 'INVALID_RECOMMEND'
+  | 'INVALID_TYPE'
+  | 'DUPLICATE_PARAM'
+  | 'NO_MATCH';
+
+export type PublicSiteRandomFilters = {
+  recommend: boolean;
+  type: string;
+};
+
+export type PublicSiteRandomResult = {
+  site: PublicSiteDirectoryItem | null;
+  availableTypes: string[];
+  filters: PublicSiteRandomFilters;
+  failureReason: PublicSiteRandomFailureReason | null;
+};
+
 export type PublicSiteDetail = PublicSiteDirectoryItem & {
   reason: string | null;
   feeds: Array<{
@@ -159,6 +179,27 @@ export type PublicSiteFeedbackInput = {
 export type SiteDirectoryPreference = {
   randomMode: 'stable' | 'off';
   randomSeed: string | null;
+};
+
+export type PublicSiteAccessSource = 'SITE_GO' | 'SITE_DETAIL' | 'SITE_CARD';
+
+export type PublicSiteAccessTargetKind = 'SITE' | 'FEED' | 'SITEMAP' | 'LINK_PAGE' | 'ARTICLE';
+
+export type PublicSiteAccessEventPayload = {
+  source: PublicSiteAccessSource;
+  targetKind: PublicSiteAccessTargetKind;
+  path: string;
+};
+
+export type PublicSiteAccessEventInput = PublicSiteAccessEventPayload & {
+  id: string;
+  referer: string | null;
+  origin: string | null;
+  userAgent: string | null;
+};
+
+export type PublicSiteAccessEventResult = {
+  recorded: boolean;
 };
 
 export type PublicSiteBaseRow = {
