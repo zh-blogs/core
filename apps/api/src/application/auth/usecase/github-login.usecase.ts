@@ -58,6 +58,17 @@ const appendStatusToPath = (pathname: string, status: string): string => {
   return `${target.pathname}${target.search}`;
 };
 
+const isManagementPath = (path: string): boolean =>
+  path === '/management' || path.startsWith('/management/');
+
+export const resolveGithubPostLoginPath = (nextPath: string | null, _user: AuthUser): string => {
+  if (nextPath && !isManagementPath(nextPath)) {
+    return nextPath;
+  }
+
+  return '/dashboard';
+};
+
 export const createCompleteGithubLogin = (deps: OauthDeps) => {
   return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
     const token = await deps.githubOAuth2.getAccessTokenFromAuthorizationCodeFlow(request);
@@ -273,8 +284,8 @@ export const createCompleteGithubLogin = (deps: OauthDeps) => {
     deps.setSessionCookies(reply, accessToken, refreshToken);
     deps.clearGithubIntentCookie(reply);
     deps.clearReturnToCookie(reply);
-    void reply.redirect(
-      returnToPath ?? `${deps.webBaseUrl}/${user.role === 'USER' ? 'dashboard' : 'management'}`,
-    );
+    const postLoginPath = resolveGithubPostLoginPath(returnToPath, user);
+    const redirectTarget = returnToPath ? postLoginPath : `${deps.webBaseUrl}${postLoginPath}`;
+    void reply.redirect(redirectTarget);
   };
 };

@@ -1,3 +1,4 @@
+import type { ManagementPermissionKey } from './auth.guard';
 import { forwardSetCookieHeaders, getApiBaseUrl } from './auth.server';
 
 type RedirectParams = Record<string, string | null | undefined>;
@@ -21,6 +22,22 @@ export const buildRedirectUrl = (
 ): string => {
   const location = buildRedirectLocation(pathname, params);
   return new URL(location, request.url).toString();
+};
+
+const isManagementPath = (path: string): boolean =>
+  path === '/management' || path.startsWith('/management/');
+
+type LoginUser = {
+  role: 'USER' | 'ADMIN' | 'SYS_ADMIN';
+  permissions: ManagementPermissionKey[];
+};
+
+export const resolvePostLoginRedirect = (nextPath: string | null, _user: LoginUser): string => {
+  if (nextPath && !isManagementPath(nextPath)) {
+    return nextPath;
+  }
+
+  return '/dashboard';
 };
 
 export const sanitizeNextPath = (

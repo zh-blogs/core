@@ -12,7 +12,7 @@ import {
   getLoginHref,
   readSessionUser,
 } from '@/application/auth/auth.server';
-import { buildRedirectUrl } from '@/application/auth/auth-route.server';
+import { buildRedirectUrl, resolvePostLoginRedirect } from '@/application/auth/auth-route.server';
 
 import { apiStubs } from '../setup/api-stubs';
 import { adminUserFixture } from '../setup/fixtures';
@@ -82,6 +82,32 @@ describe('server auth helpers', () => {
         next: '/management',
       }),
     ).toBe('http://127.0.0.1:9902/login?status=reset-sent&next=%2Fmanagement');
+  });
+
+  it('redirects users away from management paths after login', () => {
+    expect(resolvePostLoginRedirect('/management', { role: 'USER', permissions: [] })).toBe(
+      '/dashboard',
+    );
+    expect(resolvePostLoginRedirect('/management/users', { role: 'USER', permissions: [] })).toBe(
+      '/dashboard',
+    );
+    expect(resolvePostLoginRedirect('/dashboard', { role: 'USER', permissions: [] })).toBe(
+      '/dashboard',
+    );
+    expect(resolvePostLoginRedirect('/dashboard/account', { role: 'USER', permissions: [] })).toBe(
+      '/dashboard/account',
+    );
+    expect(resolvePostLoginRedirect(null, { role: 'USER', permissions: [] })).toBe('/dashboard');
+    expect(resolvePostLoginRedirect('/management', { role: 'ADMIN', permissions: [] })).toBe(
+      '/dashboard',
+    );
+    expect(
+      resolvePostLoginRedirect('/management', {
+        role: 'ADMIN',
+        permissions: ['site_audit.review'],
+      }),
+    ).toBe('/dashboard');
+    expect(resolvePostLoginRedirect(null, { role: 'ADMIN', permissions: [] })).toBe('/dashboard');
   });
 
   it('returns null when auth API says session is missing', async () => {
