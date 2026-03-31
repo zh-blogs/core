@@ -10,9 +10,12 @@ const userFixture: AuthUser = {
   email: 'user@example.com',
   nickname: 'User',
   avatarUrl: null,
-  sourceRole: 'USER',
   role: 'USER',
+  permissions: [],
   isActive: true,
+  isVerified: true,
+  hasPassword: true,
+  hasGithub: false,
   authVersion: 1,
   adminGrantedBy: null,
   adminGrantedTime: null,
@@ -102,7 +105,7 @@ describe('auth routes', () => {
     });
   });
 
-  it('protects sys-admin routes from lower roles', async () => {
+  it('protects user-management routes from admins without user.manage', async () => {
     app = createTestApp({
       disableExternalServices: true,
     });
@@ -112,14 +115,13 @@ describe('auth routes', () => {
     const adminUser: AuthUser = {
       ...userFixture,
       role: 'ADMIN',
-      sourceRole: 'ADMIN',
     };
 
     app.auth.getCurrentUser = vi.fn(async () => adminUser);
 
     const response = await app.inject({
       method: 'GET',
-      url: '/api/admin/users',
+      url: '/api/management/users',
       cookies: {
         [TEST_AUTH_COOKIES.access]: 'test-token',
       },
@@ -128,55 +130,55 @@ describe('auth routes', () => {
     expect(response.statusCode).toBe(403);
   });
 
-  it('allows sys-admin role management routes', async () => {
+  it('allows delegated user managers to access role management routes', async () => {
     app = createTestApp({
       disableExternalServices: true,
     });
 
     await app.ready();
 
-    const sysAdminUser: AuthUser = {
+    const delegatedManager: AuthUser = {
       ...userFixture,
-      role: 'SYS_ADMIN',
-      sourceRole: 'SYS_ADMIN',
+      role: 'ADMIN',
+      permissions: ['user.manage'],
     };
     const managedUser: ManagedUserSnapshot = {
-      ...sysAdminUser,
+      ...delegatedManager,
       createdTime: '2026-03-19T00:00:00.000Z',
       lastLoginTime: '2026-03-19T00:00:00.000Z',
     };
     const managedUsers: ManagedUserSnapshot[] = [managedUser];
 
-    app.auth.getCurrentUser = vi.fn(async () => sysAdminUser);
+    app.auth.getCurrentUser = vi.fn(async () => delegatedManager);
     app.auth.listManagedUsers = vi.fn(async () => managedUsers);
     app.auth.grantAdminRole = vi.fn(async () => managedUser);
     const revokedUser: ManagedUserSnapshot = {
       ...managedUser,
       role: 'USER',
-      sourceRole: 'USER',
+      permissions: [],
     };
 
     app.auth.revokeAdminRole = vi.fn(async () => revokedUser);
 
     const listResponse = await app.inject({
       method: 'GET',
-      url: '/api/admin/users',
+      url: '/api/management/users',
       cookies: {
-        [TEST_AUTH_COOKIES.access]: 'sys-admin-token',
+        [TEST_AUTH_COOKIES.access]: 'admin-token',
       },
     });
     const grantResponse = await app.inject({
       method: 'POST',
-      url: `/api/admin/users/${userFixture.id}/grant-admin`,
+      url: `/api/management/users/${userFixture.id}/grant-admin`,
       cookies: {
-        [TEST_AUTH_COOKIES.access]: 'sys-admin-token',
+        [TEST_AUTH_COOKIES.access]: 'admin-token',
       },
     });
     const revokeResponse = await app.inject({
       method: 'POST',
-      url: `/api/admin/users/${userFixture.id}/revoke-admin`,
+      url: `/api/management/users/${userFixture.id}/revoke-admin`,
       cookies: {
-        [TEST_AUTH_COOKIES.access]: 'sys-admin-token',
+        [TEST_AUTH_COOKIES.access]: 'admin-token',
       },
     });
 
@@ -189,20 +191,161 @@ describe('auth routes', () => {
     expect(revokeResponse.statusCode).toBe(200);
   });
 
-  it('returns 503 for github auth start when oauth is not configured', async () => {
+  it('redirects github auth start to oauth flow', async () => {
     app = createTestApp({
       disableExternalServices: true,
     });
 
     const response = await app.inject({
       method: 'GET',
-      url: '/auth/github',
+      url: '/auth/github?next=%2Fmanagement',
     });
 
-    expect(response.statusCode).toBe(503);
-    expect(response.json()).toEqual({
-      ok: false,
-      message: 'GitHub OAuth is not configured',
+    expect(response.statusCode).toBe(302);
+    expect(response.headers.location).toBe('/auth/github/start');
+    expect(response.cookies.find((cookie) => cookie.name === 'zhblogs_auth_return_to')?.value).toBe(
+      '/management',
+    );
+  });
+
+  it('uses auth service for local auth endpoints', async () => {
+    app = createTestApp({
+      disableExternalServices: true,
     });
+
+    await app.ready();
+
+    app.auth.completeGithubLogin = vi.fn(async (_request, reply) => {
+      reply.redirect('http://127.0.0.1:9902/dashboard');
+    });
+    app.auth.loginWithPassword = vi.fn(async (_identifier, _password, reply) => {
+      reply.header('set-cookie', `${TEST_AUTH_COOKIES.access}=login-token`);
+      return userFixture;
+    });
+    app.auth.registerLocalAccount = vi.fn(async () => undefined);
+    app.auth.verifyEmailToken = vi.fn(async () => undefined);
+    app.auth.resendVerificationEmail = vi.fn(async () => undefined);
+    app.auth.startPasswordReset = vi.fn(async () => undefined);
+    app.auth.resetPassword = vi.fn(async () => undefined);
+    app.auth.setPassword = vi.fn(async (_actor, _payload, reply) => {
+      reply.header('set-cookie', `${TEST_AUTH_COOKIES.access}=password-token`);
+      return userFixture;
+    });
+    app.auth.unbindGithub = vi.fn(async (_actor, reply) => {
+      reply.header('set-cookie', `${TEST_AUTH_COOKIES.access}=github-unbound-token`);
+      return {
+        ...userFixture,
+        hasGithub: false,
+      };
+    });
+
+    app.auth.getCurrentUser = vi.fn(async () => userFixture);
+
+    const loginResponse = await app.inject({
+      method: 'POST',
+      url: '/auth/login',
+      payload: {
+        identifier: 'user@example.com',
+        password: 'hunter2-pass',
+      },
+    });
+    const githubExchangeResponse = await app.inject({
+      method: 'GET',
+      url: '/auth/github/exchange?code=test-code&state=test-state',
+    });
+    const registerResponse = await app.inject({
+      method: 'POST',
+      url: '/auth/register',
+      payload: {
+        username: 'user_name',
+        email: 'user@example.com',
+        password: 'hunter2-pass',
+      },
+    });
+    const verifyResponse = await app.inject({
+      method: 'POST',
+      url: '/auth/verify-email',
+      payload: {
+        token: 'verify-token',
+      },
+    });
+    const resendResponse = await app.inject({
+      method: 'POST',
+      url: '/auth/verify-email/resend',
+      payload: {
+        email: 'user@example.com',
+      },
+    });
+    const forgotResponse = await app.inject({
+      method: 'POST',
+      url: '/auth/password/forgot',
+      payload: {
+        email: 'user@example.com',
+      },
+    });
+    const resetResponse = await app.inject({
+      method: 'POST',
+      url: '/auth/password/reset',
+      payload: {
+        token: 'reset-token',
+        password: 'new-password-123',
+      },
+    });
+    const passwordResponse = await app.inject({
+      method: 'POST',
+      url: '/auth/password',
+      payload: {
+        currentPassword: 'old-password',
+        nextPassword: 'new-password-123',
+      },
+      cookies: {
+        [TEST_AUTH_COOKIES.access]: 'test-token',
+      },
+    });
+    const unbindGithubResponse = await app.inject({
+      method: 'POST',
+      url: '/auth/github/unbind',
+      cookies: {
+        [TEST_AUTH_COOKIES.access]: 'test-token',
+      },
+    });
+
+    expect(loginResponse.statusCode).toBe(200);
+    expect(loginResponse.json()).toEqual({
+      ok: true,
+      user: userFixture,
+    });
+    expect(githubExchangeResponse.statusCode).toBe(302);
+    expect(githubExchangeResponse.headers.location).toBe('http://127.0.0.1:9902/dashboard');
+    expect(registerResponse.statusCode).toBe(200);
+    expect(registerResponse.json()).toEqual({ ok: true });
+    expect(verifyResponse.statusCode).toBe(200);
+    expect(resendResponse.statusCode).toBe(200);
+    expect(forgotResponse.statusCode).toBe(200);
+    expect(resetResponse.statusCode).toBe(200);
+    expect(passwordResponse.statusCode).toBe(200);
+    expect(passwordResponse.json()).toEqual({
+      ok: true,
+      user: userFixture,
+    });
+    expect(unbindGithubResponse.statusCode).toBe(200);
+    expect(unbindGithubResponse.json()).toEqual({
+      ok: true,
+      user: {
+        ...userFixture,
+        hasGithub: false,
+      },
+    });
+  });
+
+  it('fails startup when required auth config is missing', async () => {
+    app = createTestApp({
+      disableExternalServices: true,
+      envOverrides: {
+        API_GITHUB_CLIENT_ID: '',
+      },
+    });
+
+    await expect(app.ready()).rejects.toThrow(/API_GITHUB_CLIENT_ID/);
   });
 });

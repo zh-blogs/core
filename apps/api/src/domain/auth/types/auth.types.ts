@@ -1,4 +1,4 @@
-import type { UserRoleKey } from '@zhblogs/db';
+import type { ManagementPermissionKey, UserRoleKey } from '@zhblogs/db';
 
 export const EFFECTIVE_USER_ROLES = ['USER', 'ADMIN', 'SYS_ADMIN'] as const;
 
@@ -16,9 +16,12 @@ export interface AuthUser {
   email: string;
   nickname: string;
   avatarUrl: string | null;
-  sourceRole: UserRoleKey;
-  role: EffectiveUserRole;
+  role: UserRoleKey;
+  permissions: ManagementPermissionKey[];
   isActive: boolean;
+  isVerified: boolean;
+  hasPassword: boolean;
+  hasGithub: boolean;
   authVersion: number;
   adminGrantedBy: string | null;
   adminGrantedTime: string | null;
@@ -26,8 +29,7 @@ export interface AuthUser {
 
 export interface AuthTokenPayload {
   sub: string;
-  role: EffectiveUserRole;
-  sourceRole: UserRoleKey;
+  role: UserRoleKey;
   authVersion: number;
   sessionId: string;
   tokenType: TokenType;
@@ -55,8 +57,8 @@ export interface ManagedUserSnapshot {
   email: string;
   nickname: string;
   avatarUrl: string | null;
-  sourceRole: UserRoleKey;
-  role: EffectiveUserRole;
+  role: UserRoleKey;
+  permissions: ManagementPermissionKey[];
   isActive: boolean;
   adminGrantedBy: string | null;
   adminGrantedTime: string | null;

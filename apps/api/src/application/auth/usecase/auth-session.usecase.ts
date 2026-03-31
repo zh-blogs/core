@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
+import type { ManagementPermissionKey } from '@zhblogs/db';
+
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { signJwt, verifyJwt } from '@/domain/auth/service/auth-token.service';
@@ -41,6 +43,8 @@ export type SessionDeps = {
     domain?: string;
   };
   readUserById: (userId: string) => Promise<UserRow | null>;
+  readUserPermissions: (userId: string) => Promise<ManagementPermissionKey[]>;
+  readUserHasGithub: (userId: string) => Promise<boolean>;
 };
 
 export const readCookiePayload = (
@@ -123,14 +127,15 @@ export const createSessionHelpers = (deps: SessionDeps) => {
       throw new AuthError('user_not_found', 'User is unavailable');
     }
 
-    const user = buildAuthUser(userRecord);
+    const permissions = await deps.readUserPermissions(userRecord.id);
+    const hasGithub = await deps.readUserHasGithub(userRecord.id);
+    const user = buildAuthUser(userRecord, permissions, hasGithub);
 
     if (
       session.userId !== user.id ||
       session.authVersion !== user.authVersion ||
       payload.authVersion !== user.authVersion ||
-      payload.role !== user.role ||
-      payload.sourceRole !== user.sourceRole
+      payload.role !== user.role
     ) {
       throw new AuthError('session_invalidated', 'Login session invalidated');
     }
@@ -153,7 +158,6 @@ export const createSessionHelpers = (deps: SessionDeps) => {
     const accessToken = signJwt({
       subject: user.id,
       role: user.role,
-      sourceRole: user.sourceRole,
       authVersion: user.authVersion,
       sessionId: nextSessionId,
       tokenType: 'access',
@@ -163,7 +167,6 @@ export const createSessionHelpers = (deps: SessionDeps) => {
     const refreshToken = signJwt({
       subject: user.id,
       role: user.role,
-      sourceRole: user.sourceRole,
       authVersion: user.authVersion,
       sessionId: nextSessionId,
       tokenType: 'refresh',

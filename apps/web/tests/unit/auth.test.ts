@@ -5,7 +5,14 @@ import {
   hasAccessToPath,
   type SessionUser,
 } from '@/application/auth/auth.guard';
-import { forwardSetCookieHeaders, readSessionUser } from '@/application/auth/auth.server';
+import {
+  forwardSetCookieHeaders,
+  getGithubBindHref,
+  getGithubUnbindHref,
+  getLoginHref,
+  readSessionUser,
+} from '@/application/auth/auth.server';
+import { buildRedirectUrl } from '@/application/auth/auth-route.server';
 
 import { apiStubs } from '../setup/api-stubs';
 import { adminUserFixture } from '../setup/fixtures';
@@ -16,29 +23,67 @@ describe('route protection helpers', () => {
   it('detects protected route levels', () => {
     expect(getProtectionLevel('/')).toBeNull();
     expect(getProtectionLevel('/dashboard')).toBe('authenticated');
-    expect(getProtectionLevel('/admin')).toBe('admin');
-    expect(getProtectionLevel('/admin/users')).toBe('sys-admin');
+    expect(getProtectionLevel('/management')).toBe('management-home');
+    expect(getProtectionLevel('/management/users')).toBe('user.manage');
+    expect(getProtectionLevel('/management/site-submissions')).toBe('site_audit.review');
+    expect(getProtectionLevel('/management/announcements')).toBe('announcement.manage');
   });
 
   it('checks access against route level', () => {
     expect(hasAccessToPath(null, '/dashboard')).toBe(false);
     expect(hasAccessToPath(adminUser, '/dashboard')).toBe(true);
-    expect(hasAccessToPath(adminUser, '/admin')).toBe(true);
-    expect(hasAccessToPath(adminUser, '/admin/users')).toBe(false);
+    expect(hasAccessToPath(adminUser, '/management')).toBe(true);
+    expect(hasAccessToPath(adminUser, '/management/users')).toBe(false);
+    expect(hasAccessToPath(adminUser, '/management/site-submissions')).toBe(false);
+    expect(hasAccessToPath(adminUser, '/management/announcements')).toBe(false);
+    expect(
+      hasAccessToPath(
+        {
+          ...adminUser,
+          permissions: ['site_audit.review'],
+        },
+        '/management/site-submissions',
+      ),
+    ).toBe(true);
+    expect(
+      hasAccessToPath(
+        {
+          ...adminUser,
+          permissions: ['announcement.manage'],
+        },
+        '/management/announcements',
+      ),
+    ).toBe(true);
     expect(
       hasAccessToPath(
         {
           ...adminUser,
           role: 'SYS_ADMIN',
-          sourceRole: 'SYS_ADMIN',
         },
-        '/admin/users',
+        '/management/users',
       ),
     ).toBe(true);
   });
 });
 
 describe('server auth helpers', () => {
+  it('builds github auth links against the API base url', () => {
+    expect(getLoginHref('/management')).toBe('/auth/github?next=%2Fmanagement');
+    expect(getGithubBindHref()).toBe('/auth/github/bind');
+    expect(getGithubUnbindHref()).toBe('/auth/github/unbind');
+  });
+
+  it('builds absolute redirect urls for response redirects', () => {
+    const request = new Request('http://127.0.0.1:9902/forgot-password');
+
+    expect(
+      buildRedirectUrl(request, '/login', {
+        status: 'reset-sent',
+        next: '/management',
+      }),
+    ).toBe('http://127.0.0.1:9902/login?status=reset-sent&next=%2Fmanagement');
+  });
+
   it('returns null when auth API says session is missing', async () => {
     vi.stubGlobal(
       'fetch',

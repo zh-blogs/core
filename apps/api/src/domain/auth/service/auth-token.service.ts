@@ -6,7 +6,6 @@ import { AuthError } from '../types/auth.types';
 interface SignJwtOptions {
   subject: string;
   role: AuthTokenPayload['role'];
-  sourceRole: AuthTokenPayload['sourceRole'];
   authVersion: number;
   sessionId: string;
   tokenType: TokenType;
@@ -21,7 +20,6 @@ const base64UrlDecode = (value: string): string => Buffer.from(value, 'base64url
 export const signJwt = ({
   subject,
   role,
-  sourceRole,
   authVersion,
   sessionId,
   tokenType,
@@ -32,7 +30,6 @@ export const signJwt = ({
   const payload: AuthTokenPayload = {
     sub: subject,
     role,
-    sourceRole,
     authVersion,
     sessionId,
     tokenType,
@@ -93,7 +90,6 @@ export const verifyJwt = (
   if (
     typeof candidate.sub !== 'string' ||
     typeof candidate.role !== 'string' ||
-    typeof candidate.sourceRole !== 'string' ||
     typeof candidate.authVersion !== 'number' ||
     typeof candidate.sessionId !== 'string' ||
     typeof candidate.iat !== 'number' ||

@@ -1,3 +1,6 @@
+import type { ManagementPermissionKey } from '@zhblogs/db';
+
+import { canManageUsers } from '@/domain/auth/service/auth-role.service';
 import {
   buildManagedUserSnapshot,
   readMetadata,
@@ -8,6 +11,14 @@ import { AuthError, type AuthUser, type ManagedUserSnapshot } from '@/domain/aut
 type ManagementDeps = {
   listUsers: () => Promise<UserRow[]>;
   readUserById: (userId: string) => Promise<UserRow | null>;
+  readUserPermissions: (userId: string) => Promise<ManagementPermissionKey[]>;
+  readUserHasGithub: (userId: string) => Promise<boolean>;
+  replaceUserPermissions: (
+    targetUserId: string,
+    permissions: ManagementPermissionKey[],
+    actorId: string,
+  ) => Promise<void>;
+  clearUserPermissions: (targetUserId: string) => Promise<void>;
   updateUserRole: (
     target: UserRow,
     nextRole: UserRow['role'],
@@ -18,12 +29,28 @@ type ManagementDeps = {
 export const createManagementService = (deps: ManagementDeps) => ({
   listManagedUsers: async (): Promise<ManagedUserSnapshot[]> => {
     const users = await deps.listUsers();
-    return users.map(buildManagedUserSnapshot);
+    const [permissionEntries, githubEntries] = await Promise.all([
+      Promise.all(
+        users.map(async (user) => [user.id, await deps.readUserPermissions(user.id)] as const),
+      ),
+      Promise.all(
+        users.map(async (user) => [user.id, await deps.readUserHasGithub(user.id)] as const),
+      ),
+    ]);
+    const permissionByUserId = new Map(permissionEntries);
+    const githubByUserId = new Map(githubEntries);
+    return users.map((user) =>
+      buildManagedUserSnapshot(
+        user,
+        permissionByUserId.get(user.id) ?? [],
+        githubByUserId.get(user.id) ?? false,
+      ),
+    );
   },
 
   grantAdminRole: async (actor: AuthUser, targetUserId: string): Promise<ManagedUserSnapshot> => {
-    if (actor.role !== 'SYS_ADMIN') {
-      throw new AuthError('forbidden', 'SYS_ADMIN required', 403);
+    if (!canManageUsers(actor)) {
+      throw new AuthError('forbidden', 'user.manage required', 403);
     }
 
     const target = await deps.readUserById(targetUserId);
@@ -33,16 +60,21 @@ export const createManagementService = (deps: ManagementDeps) => ({
     }
 
     if (target.role === 'SYS_ADMIN') {
-      return buildManagedUserSnapshot(target);
+      return buildManagedUserSnapshot(target, [], await deps.readUserHasGithub(target.id));
     }
 
     const updatedUser = await deps.updateUserRole(target, 'ADMIN', actor.id);
-    return buildManagedUserSnapshot(updatedUser);
+    const permissions = await deps.readUserPermissions(updatedUser.id);
+    return buildManagedUserSnapshot(
+      updatedUser,
+      permissions,
+      await deps.readUserHasGithub(updatedUser.id),
+    );
   },
 
   revokeAdminRole: async (actor: AuthUser, targetUserId: string): Promise<ManagedUserSnapshot> => {
-    if (actor.role !== 'SYS_ADMIN') {
-      throw new AuthError('forbidden', 'SYS_ADMIN required', 403);
+    if (!canManageUsers(actor)) {
+      throw new AuthError('forbidden', 'user.manage required', 403);
     }
 
     const target = await deps.readUserById(targetUserId);
@@ -59,8 +91,37 @@ export const createManagementService = (deps: ManagementDeps) => ({
       );
     }
 
+    await deps.clearUserPermissions(target.id);
     const updatedUser = await deps.updateUserRole(target, 'USER', null);
-    return buildManagedUserSnapshot(updatedUser);
+    return buildManagedUserSnapshot(updatedUser, [], await deps.readUserHasGithub(updatedUser.id));
+  },
+
+  updateUserPermissions: async (
+    actor: AuthUser,
+    targetUserId: string,
+    permissions: ManagementPermissionKey[],
+  ): Promise<ManagedUserSnapshot> => {
+    if (!canManageUsers(actor)) {
+      throw new AuthError('forbidden', 'user.manage required', 403);
+    }
+
+    const target = await deps.readUserById(targetUserId);
+
+    if (!target) {
+      throw new AuthError('user_not_found', 'User not found', 404);
+    }
+
+    if (target.role !== 'ADMIN') {
+      throw new AuthError('forbidden', 'Only ADMIN users can receive management permissions', 403);
+    }
+
+    await deps.replaceUserPermissions(target.id, permissions, actor.id);
+    const updatedPermissions = await deps.readUserPermissions(target.id);
+    return buildManagedUserSnapshot(
+      target,
+      updatedPermissions,
+      await deps.readUserHasGithub(target.id),
+    );
   },
 });
 

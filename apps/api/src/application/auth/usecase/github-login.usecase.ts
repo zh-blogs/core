@@ -1,8 +1,15 @@
-import { type dbRead, type dbWrite, UserOauthAccounts, Users } from '@zhblogs/db';
+import {
+  type dbRead,
+  type dbWrite,
+  type ManagementPermissionKey,
+  UserOauthAccounts,
+  Users,
+} from '@zhblogs/db';
 
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
+import { normalizeEmail } from '@/domain/auth/service/auth-identity.service';
 import type { UserRow } from '@/domain/auth/service/auth-user.service';
 import { buildAuthUser } from '@/domain/auth/service/auth-user.service';
 import { AuthError, type AuthUser } from '@/domain/auth/types/auth.types';
@@ -14,15 +21,24 @@ export interface GithubOAuthNamespace {
   ) => Promise<{ token: { access_token: string } }>;
 }
 
+export type GithubAuthIntent = 'login' | 'bind';
+
 type OauthDeps = {
   db: {
     read: typeof dbRead;
     write: typeof dbWrite;
   };
-  githubOAuth2?: GithubOAuthNamespace;
+  githubOAuth2: GithubOAuthNamespace;
   githubScope: string;
   webBaseUrl: string;
+  readReturnToPath: (request: FastifyRequest) => string | null;
+  clearReturnToCookie: (reply: FastifyReply) => void;
+  readGithubIntent: (request: FastifyRequest) => GithubAuthIntent;
+  clearGithubIntentCookie: (reply: FastifyReply) => void;
   readUserById: (userId: string) => Promise<UserRow | null>;
+  readUserPermissions: (userId: string) => Promise<ManagementPermissionKey[]>;
+  readUserHasGithub: (userId: string) => Promise<boolean>;
+  readCurrentUserForBind: (request: FastifyRequest) => Promise<AuthUser>;
   createTokensForUser: (
     user: AuthUser,
     currentSessionId?: string,
@@ -36,21 +52,25 @@ const parseGithubScopes = (scope: string): string[] =>
     .map((entry) => entry.trim())
     .filter(Boolean);
 
+const appendStatusToPath = (pathname: string, status: string): string => {
+  const target = new URL(pathname, 'http://zhblogs.local');
+  target.searchParams.set('status', status);
+  return `${target.pathname}${target.search}`;
+};
+
 export const createCompleteGithubLogin = (deps: OauthDeps) => {
   return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
-    const githubOAuth2 = deps.githubOAuth2;
-
-    if (!githubOAuth2) {
-      throw new AuthError('oauth_not_configured', 'GitHub OAuth is not configured', 503);
-    }
-
-    const token = await githubOAuth2.getAccessTokenFromAuthorizationCodeFlow(request);
+    const token = await deps.githubOAuth2.getAccessTokenFromAuthorizationCodeFlow(request);
     const githubIdentity = await fetchGithubIdentity(token.token.access_token);
     const now = new Date();
+    const returnToPath = deps.readReturnToPath(request);
+    const intent = deps.readGithubIntent(request);
 
     const [existingOauthAccount] = await deps.db.write
       .select({
+        id: UserOauthAccounts.id,
         userId: UserOauthAccounts.user_id,
+        providerUserId: UserOauthAccounts.provider_user_id,
       })
       .from(UserOauthAccounts)
       .where(
@@ -61,12 +81,97 @@ export const createCompleteGithubLogin = (deps: OauthDeps) => {
       )
       .limit(1);
 
+    if (intent === 'bind') {
+      const currentUser = await deps.readCurrentUserForBind(request);
+      const normalizedGithubEmail = normalizeEmail(githubIdentity.email);
+      const normalizedCurrentEmail = normalizeEmail(currentUser.email);
+
+      if (normalizedGithubEmail !== normalizedCurrentEmail) {
+        throw new AuthError(
+          'github_bind_email_mismatch',
+          'GitHub primary email must match the current account email',
+          409,
+        );
+      }
+
+      const [existingUserBinding] = await deps.db.write
+        .select({
+          id: UserOauthAccounts.id,
+          providerUserId: UserOauthAccounts.provider_user_id,
+        })
+        .from(UserOauthAccounts)
+        .where(
+          and(
+            eq(UserOauthAccounts.provider, 'GITHUB'),
+            eq(UserOauthAccounts.user_id, currentUser.id),
+          ),
+        )
+        .limit(1);
+
+      if (existingOauthAccount?.userId && existingOauthAccount.userId !== currentUser.id) {
+        throw new AuthError('github_account_conflict', 'GitHub account is already bound', 409);
+      }
+
+      if (
+        existingUserBinding?.providerUserId &&
+        existingUserBinding.providerUserId !== githubIdentity.githubUserId
+      ) {
+        throw new AuthError(
+          'github_already_bound',
+          'Current account already has a GitHub binding',
+          409,
+        );
+      }
+
+      if (existingUserBinding?.id) {
+        await deps.db.write
+          .update(Users)
+          .set({
+            is_verified: true,
+          })
+          .where(eq(Users.id, currentUser.id));
+
+        await deps.db.write
+          .update(UserOauthAccounts)
+          .set({
+            provider_username: githubIdentity.login,
+            access_token: token.token.access_token,
+            scopes: parseGithubScopes(deps.githubScope),
+            profile: githubIdentity.rawProfile,
+            updated_time: now,
+          })
+          .where(eq(UserOauthAccounts.id, existingUserBinding.id));
+      } else {
+        await deps.db.write
+          .update(Users)
+          .set({
+            is_verified: true,
+          })
+          .where(eq(Users.id, currentUser.id));
+
+        await deps.db.write.insert(UserOauthAccounts).values({
+          user_id: currentUser.id,
+          provider: 'GITHUB',
+          provider_user_id: githubIdentity.githubUserId,
+          provider_username: githubIdentity.login,
+          access_token: token.token.access_token,
+          scopes: parseGithubScopes(deps.githubScope),
+          profile: githubIdentity.rawProfile,
+        });
+      }
+
+      deps.clearGithubIntentCookie(reply);
+      deps.clearReturnToCookie(reply);
+      void reply.redirect(appendStatusToPath(returnToPath ?? '/dashboard', 'github-bound'));
+      return;
+    }
+
     const [matchedEmailUser] = existingOauthAccount
       ? []
       : await deps.db.write
           .select()
           .from(Users)
-          .where(eq(Users.email, githubIdentity.email))
+          .where(sql`lower(${Users.email}) = ${normalizeEmail(githubIdentity.email)}`)
           .limit(1);
 
     let userRecord: UserRow | undefined;
@@ -77,6 +182,7 @@ export const createCompleteGithubLogin = (deps: OauthDeps) => {
       const [updatedUser] = await deps.db.write
         .update(Users)
         .set({
+          email: normalizeEmail(githubIdentity.email),
           nickname: githubIdentity.nickname,
           avatar_url: githubIdentity.avatarUrl,
           last_login_time: now,
@@ -91,7 +197,7 @@ export const createCompleteGithubLogin = (deps: OauthDeps) => {
         .insert(Users)
         .values({
           username: githubIdentity.login,
-          email: githubIdentity.email,
+          email: normalizeEmail(githubIdentity.email),
           nickname: githubIdentity.nickname,
           avatar_url: githubIdentity.avatarUrl,
           is_verified: true,
@@ -107,6 +213,27 @@ export const createCompleteGithubLogin = (deps: OauthDeps) => {
 
     if (!userRecord) {
       throw new AuthError('user_upsert_failed', 'Failed to provision login user', 500);
+    }
+
+    const [existingUserBinding] = await deps.db.write
+      .select({
+        providerUserId: UserOauthAccounts.provider_user_id,
+      })
+      .from(UserOauthAccounts)
+      .where(
+        and(eq(UserOauthAccounts.provider, 'GITHUB'), eq(UserOauthAccounts.user_id, userRecord.id)),
+      )
+      .limit(1);
+
+    if (
+      existingUserBinding?.providerUserId &&
+      existingUserBinding.providerUserId !== githubIdentity.githubUserId
+    ) {
+      throw new AuthError(
+        'github_already_bound',
+        'Current account already has a different GitHub binding',
+        409,
+      );
     }
 
     await deps.db.write
@@ -138,10 +265,16 @@ export const createCompleteGithubLogin = (deps: OauthDeps) => {
       throw new AuthError('user_not_found', 'User not found after login', 500);
     }
 
-    const user = buildAuthUser(refreshedUserRecord);
+    const permissions = await deps.readUserPermissions(refreshedUserRecord.id);
+    const hasGithub = await deps.readUserHasGithub(refreshedUserRecord.id);
+    const user = buildAuthUser(refreshedUserRecord, permissions, hasGithub);
     const { accessToken, refreshToken } = await deps.createTokensForUser(user);
 
     deps.setSessionCookies(reply, accessToken, refreshToken);
-    void reply.redirect(`${deps.webBaseUrl}/dashboard`);
+    deps.clearGithubIntentCookie(reply);
+    deps.clearReturnToCookie(reply);
+    void reply.redirect(
+      returnToPath ?? `${deps.webBaseUrl}/${user.role === 'USER' ? 'dashboard' : 'management'}`,
+    );
   };
 };

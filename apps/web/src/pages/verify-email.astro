@@ -1,0 +1,86 @@
+---
+import { getApiBaseUrl } from '@/application/auth/auth.server';
+import { getAuthErrorMessage, getAuthStatusMessage } from '@/application/auth/auth-page';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+export const prerender = false;
+
+const token = Astro.url.searchParams.get('token')?.trim() || '';
+const nextPath = Astro.url.searchParams.get('next')?.trim() || null;
+
+let statusCode: string | null = null;
+let errorCode: string | null = null;
+
+if (!token) {
+  errorCode = 'invalid_verification_token';
+} else {
+  const response = await fetch(`${getApiBaseUrl()}/auth/verify-email`, {
+    method: 'POST',
+    headers: {
+      accept: 'application/json',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({ token }),
+  });
+
+  if (response.ok) {
+    statusCode = 'email-verified';
+  } else {
+    try {
+      const payload = (await response.json()) as { code?: string };
+      errorCode = payload.code ?? 'request_failed';
+    } catch {
+      errorCode = 'request_failed';
+    }
+  }
+}
+
+const statusMessage = getAuthStatusMessage(statusCode);
+const errorMessage = getAuthErrorMessage(errorCode);
+const loginHref = `/login${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ''}${
+  statusCode ? `${nextPath ? '&' : '?'}status=${encodeURIComponent(statusCode)}` : ''
+}`;
+---
+
+<BaseLayout title="Verify Email | ZhBlogs" showFooter={false}>
+  <main class="page-shell auth-shell items-center justify-center">
+    <section class="page-stack max-w-md">
+      <div class="surface-card space-y-6">
+        <div class="page-lead">
+          <p class="eyebrow">
+            <span class="status-dot" style="--status-dot: var(--color-info-dot)"></span>
+            auth / verify email
+          </p>
+          <h1 class="page-lead-title">邮箱验证结果</h1>
+        </div>
+
+        {
+          statusMessage && (
+            <div class="status-panel status-panel-success">
+              <p class="status-panel-title">操作已完成</p>
+              <p class="status-panel-copy">{statusMessage}</p>
+            </div>
+          )
+        }
+        {
+          errorMessage && (
+            <div class="status-panel status-panel-error">
+              <p class="status-panel-title">需要处理</p>
+              <p class="status-panel-copy">{errorMessage}</p>
+            </div>
+          )
+        }
+
+        <div class="grid gap-3 pt-4 sm:grid-cols-2">
+          <a class="action-button action-button-primary" href={loginHref}>返回登录</a>
+          <a
+            class="action-button action-button-ghost"
+            href={`/register${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ''}`}
+          >
+            返回注册
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

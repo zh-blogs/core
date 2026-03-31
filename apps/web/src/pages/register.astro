@@ -1,0 +1,84 @@
+---
+import { getAuthErrorMessage, getAuthStatusMessage } from '@/application/auth/auth-page';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+export const prerender = false;
+
+const nextPath = Astro.url.searchParams.get('next')?.trim() || null;
+const errorMessage = getAuthErrorMessage(Astro.url.searchParams.get('error'));
+const statusMessage = getAuthStatusMessage(Astro.url.searchParams.get('status'));
+---
+
+<BaseLayout title="Register | ZhBlogs" showFooter={false}>
+  <main class="page-shell auth-shell items-center justify-center">
+    <section class="page-stack max-w-md">
+      <div class="surface-card space-y-6">
+        <div class="page-lead">
+          <p class="eyebrow">
+            <span class="status-dot" style="--status-dot: var(--color-info-dot)"></span>
+            auth / register
+          </p>
+          <h1 class="page-lead-title">创建本地账号</h1>
+        </div>
+
+        {
+          statusMessage && (
+            <div class="status-panel status-panel-success">
+              <p class="status-panel-title">操作已完成</p>
+              <p class="status-panel-copy">{statusMessage}</p>
+            </div>
+          )
+        }
+        {
+          errorMessage && (
+            <div class="status-panel status-panel-error">
+              <p class="status-panel-title">需要处理</p>
+              <p class="status-panel-copy">{errorMessage}</p>
+            </div>
+          )
+        }
+
+        <form action="/auth/register" class="form-stack" method="post">
+          <input type="hidden" name="next" value={nextPath ?? ''} />
+          <label class="form-field">
+            <span>用户名</span>
+            <input
+              maxlength="32"
+              minlength="3"
+              name="username"
+              pattern="[A-Za-z0-9_-]{3,32}"
+              required
+              type="text"
+            />
+          </label>
+          <label class="form-field">
+            <span>邮箱</span>
+            <input name="email" required type="email" />
+          </label>
+          <label class="form-field">
+            <span>密码</span>
+            <input maxlength="128" minlength="8" name="password" required type="password" />
+          </label>
+          <label class="form-field">
+            <span>确认密码</span>
+            <input maxlength="128" minlength="8" name="confirmPassword" required type="password" />
+          </label>
+          <div class="pt-4">
+            <button class="action-button action-button-primary w-full" type="submit">
+              注册并发送验证邮件
+            </button>
+          </div>
+        </form>
+
+        <div class="flex justify-end text-sm">
+          <a
+            class="text-(--color-fg-3) underline decoration-[color:var(--color-line-med)] underline-offset-[0.18em] transition hover:text-(--color-fg)"
+            href={`/login${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ''}`}
+          >
+            返回登录
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

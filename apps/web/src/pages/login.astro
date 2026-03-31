@@ -1,0 +1,95 @@
+---
+import { getLoginHref } from '@/application/auth/auth.server';
+import { getAuthErrorMessage, getAuthStatusMessage } from '@/application/auth/auth-page';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+export const prerender = false;
+
+const nextPath = Astro.url.searchParams.get('next')?.trim() || null;
+const loginHref = getLoginHref(nextPath ?? undefined);
+const statusMessage = getAuthStatusMessage(Astro.url.searchParams.get('status'));
+const errorCode = Astro.url.searchParams.get('error');
+const errorMessage = getAuthErrorMessage(errorCode);
+const resendEmail = Astro.url.searchParams.get('email')?.trim() || '';
+---
+
+<BaseLayout title="登录 | 集博栈" showFooter={false}>
+  <main class="page-shell auth-shell items-center justify-center">
+    <section class="page-stack max-w-md">
+      <div class="surface-card space-y-6">
+        <div class="page-lead">
+          <p class="eyebrow">
+            <span class="status-dot" style="--status-dot: var(--color-info-dot)"></span>
+            auth / login
+          </p>
+          <h1 class="page-lead-title">登录</h1>
+        </div>
+
+        {
+          statusMessage && (
+            <div class="status-panel status-panel-success">
+              <p class="status-panel-title">操作已完成</p>
+              <p class="status-panel-copy">{statusMessage}</p>
+            </div>
+          )
+        }
+
+        {
+          errorMessage && (
+            <div class="status-panel status-panel-error">
+              <p class="status-panel-title">需要处理</p>
+              <p class="status-panel-copy">{errorMessage}</p>
+            </div>
+          )
+        }
+
+        <form action="/auth/login" class="form-stack" method="post">
+          <input type="hidden" name="next" value={nextPath ?? ''} />
+          <label class="form-field">
+            <span>用户名或邮箱</span>
+            <input name="identifier" required type="text" value={resendEmail} />
+          </label>
+          <label class="form-field">
+            <span>密码</span>
+            <input name="password" required type="password" />
+          </label>
+          <div class="grid gap-3 pt-4">
+            <button class="action-button action-button-primary w-full" type="submit">登录</button>
+            <a
+              class="action-button action-button-secondary w-full"
+              href={`/register${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ''}`}
+            >
+              注册
+            </a>
+          </div>
+        </form>
+
+        <div class="grid gap-3 sm:grid-cols-2">
+          <a class="action-button action-button-secondary" href={loginHref}>使用 GitHub 登录</a>
+          <a class="action-button action-button-ghost" href="/">返回首页</a>
+        </div>
+
+        <div class="flex justify-end text-sm">
+          <a
+            class="text-(--color-fg-3) underline decoration-[color:var(--color-line-med)] underline-offset-[0.18em] transition hover:text-(--color-fg)"
+            href={`/forgot-password${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ''}`}
+          >
+            忘记密码
+          </a>
+        </div>
+
+        {
+          errorCode === 'email_not_verified' && resendEmail && (
+            <form action="/auth/resend-verification" class="form-stack" method="post">
+              <input type="hidden" name="email" value={resendEmail} />
+              <input type="hidden" name="next" value={nextPath ?? ''} />
+              <button class="action-button action-button-secondary" type="submit">
+                重新发送验证邮件
+              </button>
+            </form>
+          )
+        }
+      </div>
+    </section>
+  </main>
+</BaseLayout>

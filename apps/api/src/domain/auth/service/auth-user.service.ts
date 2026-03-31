@@ -1,8 +1,6 @@
-import type { Users } from '@zhblogs/db';
+import type { ManagementPermissionKey, Users } from '@zhblogs/db';
 
 import type { AuthUser, AuthUserMetadata, ManagedUserSnapshot } from '../types/auth.types';
-
-import { normalizeUserRole } from './auth-role.service';
 
 export type UserRow = typeof Users.$inferSelect;
 
@@ -31,7 +29,11 @@ export const readMetadata = (
   };
 };
 
-export const buildAuthUser = (record: UserRow): AuthUser => {
+export const buildAuthUser = (
+  record: UserRow,
+  permissions: ManagementPermissionKey[] = [],
+  hasGithub = false,
+): AuthUser => {
   const metadata = readMetadata(record.metadata);
 
   return {
@@ -39,17 +41,24 @@ export const buildAuthUser = (record: UserRow): AuthUser => {
     email: record.email,
     nickname: record.nickname,
     avatarUrl: record.avatar_url ?? null,
-    sourceRole: record.role as AuthUser['sourceRole'],
-    role: normalizeUserRole(record.role as AuthUser['sourceRole']),
+    role: record.role as AuthUser['role'],
+    permissions,
     isActive: record.is_active,
+    isVerified: record.is_verified,
+    hasPassword: Boolean(record.password_hash?.trim()),
+    hasGithub,
     authVersion: metadata.auth_version,
     adminGrantedBy: metadata.admin_granted_by,
     adminGrantedTime: metadata.admin_granted_time,
   };
 };
 
-export const buildManagedUserSnapshot = (record: UserRow): ManagedUserSnapshot => {
-  const authUser = buildAuthUser(record);
+export const buildManagedUserSnapshot = (
+  record: UserRow,
+  permissions: ManagementPermissionKey[] = [],
+  hasGithub = false,
+): ManagedUserSnapshot => {
+  const authUser = buildAuthUser(record, permissions, hasGithub);
 
   return {
     ...authUser,

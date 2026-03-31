@@ -1,7 +1,12 @@
-import { Users } from '@zhblogs/db';
+import {
+  type ManagementPermissionKey,
+  UserManagementPermissions,
+  UserOauthAccounts,
+  Users,
+} from '@zhblogs/db';
 
 import fastifyOauth2 from '@fastify/oauth2';
-import { desc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq } from 'drizzle-orm';
 import type { FastifyReply, FastifyRequest, preHandlerHookHandler } from 'fastify';
 import fp from 'fastify-plugin';
 
@@ -19,25 +24,48 @@ import {
   createCompleteGithubLogin,
   type GithubOAuthNamespace,
 } from '@/application/auth/usecase/github-login.usecase';
+import { createLocalAuthService } from '@/application/auth/usecase/local-auth.usecase';
 import { hasRequiredRole } from '@/domain/auth/service/auth-role.service';
 import { buildAuthUser, type UserRow } from '@/domain/auth/service/auth-user.service';
-import {
-  AuthError,
-  type AuthUser,
-  type EffectiveUserRole,
-  type ManagedUserSnapshot,
-} from '@/domain/auth/types/auth.types';
+import { AuthError, type AuthUser, type ManagedUserSnapshot } from '@/domain/auth/types/auth.types';
 
 export interface AuthService {
-  guard: (requiredRole?: EffectiveUserRole) => preHandlerHookHandler;
+  guard: (requiredRole?: AuthUser['role']) => preHandlerHookHandler;
   getCurrentUser: (request: FastifyRequest) => Promise<AuthUser>;
   getOptionalUser: (request: FastifyRequest) => Promise<AuthUser | null>;
+  beginGithubBind: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
   completeGithubLogin: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+  loginWithPassword: (
+    identifier: string,
+    password: string,
+    reply: FastifyReply,
+  ) => Promise<AuthUser>;
+  registerLocalAccount: (payload: {
+    username: string;
+    email: string;
+    password: string;
+    nextPath?: string | null;
+  }) => Promise<void>;
+  verifyEmailToken: (token: string) => Promise<void>;
+  resendVerificationEmail: (payload: { email: string; nextPath?: string | null }) => Promise<void>;
+  startPasswordReset: (payload: { email: string; nextPath?: string | null }) => Promise<void>;
+  resetPassword: (payload: { token: string; password: string }) => Promise<void>;
+  setPassword: (
+    actor: AuthUser,
+    payload: { currentPassword?: string | null; nextPassword: string },
+    reply: FastifyReply,
+  ) => Promise<AuthUser>;
+  unbindGithub: (actor: AuthUser, reply: FastifyReply) => Promise<AuthUser>;
   refreshSession: (request: FastifyRequest, reply: FastifyReply) => Promise<AuthUser>;
   logout: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
   listManagedUsers: () => Promise<ManagedUserSnapshot[]>;
   grantAdminRole: (actor: AuthUser, targetUserId: string) => Promise<ManagedUserSnapshot>;
   revokeAdminRole: (actor: AuthUser, targetUserId: string) => Promise<ManagedUserSnapshot>;
+  updateUserPermissions: (
+    actor: AuthUser,
+    targetUserId: string,
+    permissions: ManagementPermissionKey[],
+  ) => Promise<ManagedUserSnapshot>;
   issueSessionForUserId: (
     userId: string,
     reply?: FastifyReply,
@@ -56,6 +84,18 @@ declare module 'fastify' {
 }
 
 const isAuthError = (error: unknown): error is AuthError => error instanceof AuthError;
+const AUTH_RETURN_TO_COOKIE_NAME = 'zhblogs_auth_return_to';
+const AUTH_GITHUB_INTENT_COOKIE_NAME = 'zhblogs_github_intent';
+
+const sanitizeReturnToPath = (value: string | null | undefined): string | null => {
+  const normalized = value?.trim() ?? '';
+
+  if (!normalized.startsWith('/') || normalized.startsWith('//')) {
+    return null;
+  }
+
+  return normalized;
+};
 
 export const authPlugin = fp(
   async (app) => {
@@ -73,23 +113,21 @@ export const authPlugin = fp(
       ...(app.config.API_COOKIE_DOMAIN ? { domain: app.config.API_COOKIE_DOMAIN } : {}),
     };
 
-    if (app.config.API_GITHUB_CLIENT_ID && app.config.API_GITHUB_CLIENT_SECRET) {
-      await app.register(fastifyOauth2, {
-        name: 'githubOAuth2',
-        credentials: {
-          client: {
-            id: app.config.API_GITHUB_CLIENT_ID,
-            secret: app.config.API_GITHUB_CLIENT_SECRET,
-          },
-          auth: fastifyOauth2.GITHUB_CONFIGURATION,
+    await app.register(fastifyOauth2, {
+      name: 'githubOAuth2',
+      credentials: {
+        client: {
+          id: app.config.API_GITHUB_CLIENT_ID,
+          secret: app.config.API_GITHUB_CLIENT_SECRET,
         },
-        callbackUri: app.config.API_GITHUB_CALLBACK_URL,
-        scope: app.config.API_GITHUB_SCOPE.split(',')
-          .map((entry) => entry.trim())
-          .filter(Boolean),
-        startRedirectPath: '/auth/github',
-      });
-    }
+        auth: fastifyOauth2.GITHUB_CONFIGURATION,
+      },
+      callbackUri: app.config.API_GITHUB_CALLBACK_URL,
+      scope: app.config.API_GITHUB_SCOPE.split(',')
+        .map((entry) => entry.trim())
+        .filter(Boolean),
+      startRedirectPath: '/auth/github/start',
+    });
 
     app.decorateRequest('currentUser', null);
 
@@ -101,6 +139,56 @@ export const authPlugin = fp(
 
     const listUsers = async (): Promise<UserRow[]> =>
       app.db.read.select().from(Users).orderBy(desc(Users.created_time));
+
+    const readUserHasGithub = async (userId: string): Promise<boolean> => {
+      const [row] = await app.db.read
+        .select({
+          id: UserOauthAccounts.id,
+        })
+        .from(UserOauthAccounts)
+        .where(eq(UserOauthAccounts.user_id, userId))
+        .limit(1);
+
+      return Boolean(row?.id);
+    };
+
+    const readUserPermissions = async (userId: string): Promise<ManagementPermissionKey[]> => {
+      const rows = await app.db.read
+        .select({
+          permission_key: UserManagementPermissions.permission_key,
+        })
+        .from(UserManagementPermissions)
+        .where(eq(UserManagementPermissions.user_id, userId))
+        .orderBy(asc(UserManagementPermissions.permission_key));
+
+      return rows.map((row) => row.permission_key as ManagementPermissionKey);
+    };
+
+    const clearUserPermissions = async (targetUserId: string): Promise<void> => {
+      await app.db.write
+        .delete(UserManagementPermissions)
+        .where(eq(UserManagementPermissions.user_id, targetUserId));
+    };
+
+    const replaceUserPermissions = async (
+      targetUserId: string,
+      permissions: ManagementPermissionKey[],
+      actorId: string,
+    ): Promise<void> => {
+      await clearUserPermissions(targetUserId);
+
+      if (permissions.length === 0) {
+        return;
+      }
+
+      await app.db.write.insert(UserManagementPermissions).values(
+        permissions.map((permission_key) => ({
+          user_id: targetUserId,
+          permission_key,
+          granted_by: actorId,
+        })),
+      );
+    };
 
     const updateUserRole = async (
       target: UserRow,
@@ -134,21 +222,56 @@ export const authPlugin = fp(
         },
         cookieBaseOptions,
         readUserById,
+        readUserPermissions,
+        readUserHasGithub,
       });
 
     const completeGithubLogin = createCompleteGithubLogin({
       db: app.db,
-      githubOAuth2: app.githubOAuth2,
+      githubOAuth2: app.githubOAuth2 as GithubOAuthNamespace,
       githubScope: app.config.API_GITHUB_SCOPE,
       webBaseUrl: app.config.API_WEB_BASE_URL,
+      readReturnToPath: (request) =>
+        sanitizeReturnToPath(request.cookies[AUTH_RETURN_TO_COOKIE_NAME]),
+      clearReturnToCookie: (reply) => {
+        reply.clearCookie(AUTH_RETURN_TO_COOKIE_NAME, cookieBaseOptions);
+      },
+      readGithubIntent: (request) =>
+        request.cookies[AUTH_GITHUB_INTENT_COOKIE_NAME] === 'bind' ? 'bind' : 'login',
+      clearGithubIntentCookie: (reply) => {
+        reply.clearCookie(AUTH_GITHUB_INTENT_COOKIE_NAME, cookieBaseOptions);
+      },
       readUserById,
+      readUserPermissions,
+      readUserHasGithub,
+      readCurrentUserForBind: async (request) => {
+        const payload = readCookiePayload(
+          request,
+          ACCESS_COOKIE_NAME,
+          app.config.API_JWT_ACCESS_SECRET,
+          'access',
+        );
+        return validateAuthenticatedUser(payload);
+      },
       createTokensForUser,
       setSessionCookies,
     });
     const managementService = createManagementService({
       listUsers,
       readUserById,
+      readUserPermissions,
+      readUserHasGithub,
+      replaceUserPermissions,
+      clearUserPermissions,
       updateUserRole,
+    });
+    const localAuthService = createLocalAuthService({
+      db: app.db,
+      config: app.config,
+      readUserById,
+      readUserPermissions,
+      readUserHasGithub,
+      issueSessionForUserId: async (userId, reply) => issueSessionForUserId(userId, reply),
     });
 
     const issueSessionForUserId = async (
@@ -161,7 +284,9 @@ export const authPlugin = fp(
         throw new AuthError('user_not_found', 'User not found', 404);
       }
 
-      const user = buildAuthUser(userRecord);
+      const permissions = await readUserPermissions(userRecord.id);
+      const hasGithub = await readUserHasGithub(userRecord.id);
+      const user = buildAuthUser(userRecord, permissions, hasGithub);
       const { accessToken, refreshToken } = await createTokensForUser(user);
 
       if (reply) {
@@ -217,7 +342,74 @@ export const authPlugin = fp(
         }
       },
 
+      beginGithubBind: async (request, reply) => {
+        await service.getCurrentUser(request);
+
+        reply.setCookie(AUTH_GITHUB_INTENT_COOKIE_NAME, 'bind', {
+          ...cookieBaseOptions,
+          maxAge: 10 * 60,
+        });
+        reply.setCookie(AUTH_RETURN_TO_COOKIE_NAME, '/dashboard', {
+          ...cookieBaseOptions,
+          maxAge: 10 * 60,
+        });
+        void reply.redirect('/auth/github/start');
+      },
+
       completeGithubLogin,
+
+      loginWithPassword: (identifier, password, reply) =>
+        localAuthService.loginWithPassword({ identifier, password }, reply),
+      registerLocalAccount: (payload) => localAuthService.registerLocalAccount(payload),
+      verifyEmailToken: (token) => localAuthService.verifyEmailToken({ token }),
+      resendVerificationEmail: (payload) => localAuthService.resendVerificationEmail(payload),
+      startPasswordReset: (payload) => localAuthService.startPasswordReset(payload),
+      resetPassword: (payload) => localAuthService.resetPassword(payload),
+      setPassword: (actor, payload, reply) =>
+        localAuthService.setPassword({
+          actor,
+          currentPassword: payload.currentPassword,
+          nextPassword: payload.nextPassword,
+          reply,
+        }),
+      unbindGithub: async (actor, reply) => {
+        const userRecord = await readUserById(actor.id);
+
+        if (!userRecord) {
+          throw new AuthError('user_not_found', 'User not found', 404);
+        }
+
+        const [binding] = await app.db.read
+          .select({
+            id: UserOauthAccounts.id,
+          })
+          .from(UserOauthAccounts)
+          .where(
+            and(eq(UserOauthAccounts.user_id, actor.id), eq(UserOauthAccounts.provider, 'GITHUB')),
+          )
+          .limit(1);
+
+        if (!binding) {
+          throw new AuthError(
+            'github_not_bound',
+            'Current account does not have a GitHub binding',
+            404,
+          );
+        }
+
+        if (!userRecord.password_hash) {
+          throw new AuthError(
+            'github_unbind_requires_password',
+            'Set a local password before unbinding GitHub',
+            409,
+          );
+        }
+
+        await app.db.write.delete(UserOauthAccounts).where(eq(UserOauthAccounts.id, binding.id));
+
+        const session = await issueSessionForUserId(actor.id, reply);
+        return session.user;
+      },
 
       refreshSession: async (request, reply) => {
         const payload = readCookiePayload(
@@ -256,6 +448,7 @@ export const authPlugin = fp(
       listManagedUsers: managementService.listManagedUsers,
       grantAdminRole: managementService.grantAdminRole,
       revokeAdminRole: managementService.revokeAdminRole,
+      updateUserPermissions: managementService.updateUserPermissions,
 
       issueSessionForUserId,
     };

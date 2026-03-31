@@ -1,24 +1,16 @@
-import type { UserRoleKey } from '@zhblogs/db';
+import type { ManagementPermissionKey, UserRoleKey } from '@zhblogs/db';
 
-import type { AuthUser, EffectiveUserRole } from '../types/auth.types';
+import type { AuthUser } from '../types/auth.types';
 
-const ROLE_WEIGHT: Record<EffectiveUserRole, number> = {
+const ROLE_WEIGHT: Record<UserRoleKey, number> = {
   USER: 1,
   ADMIN: 2,
   SYS_ADMIN: 3,
 };
 
-export const normalizeUserRole = (role: UserRoleKey): EffectiveUserRole => {
-  if (role === 'CONTRIBUTOR') {
-    return 'ADMIN';
-  }
-
-  return role;
-};
-
 export const hasRequiredRole = (
   user: Pick<AuthUser, 'role'>,
-  requiredRole?: EffectiveUserRole,
+  requiredRole?: UserRoleKey,
 ): boolean => {
   if (!requiredRole) {
     return true;
@@ -26,3 +18,11 @@ export const hasRequiredRole = (
 
   return ROLE_WEIGHT[user.role] >= ROLE_WEIGHT[requiredRole];
 };
+
+export const hasManagementPermission = (
+  user: Pick<AuthUser, 'role' | 'permissions'>,
+  permission: ManagementPermissionKey,
+): boolean => user.role === 'SYS_ADMIN' || user.permissions.includes(permission);
+
+export const canManageUsers = (user: Pick<AuthUser, 'role' | 'permissions'>): boolean =>
+  hasManagementPermission(user, 'user.manage');

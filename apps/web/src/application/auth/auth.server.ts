@@ -3,11 +3,28 @@ import type { SessionUser } from './auth.guard';
 const DEFAULT_API_BASE_URL = 'http://127.0.0.1:9901';
 
 const trimTrailingSlash = (value: string): string => value.replace(/\/+$/, '');
+const buildWebAuthPath = (pathname: string, params: Record<string, string> = {}): string => {
+  const target = new URL(pathname, 'http://zhblogs.local');
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value) {
+      target.searchParams.set(key, value);
+    }
+  }
+
+  return `${target.pathname}${target.search}`;
+};
 
 export const getApiBaseUrl = (): string =>
   trimTrailingSlash(import.meta.env.PUBLIC_API_BASE_URL || DEFAULT_API_BASE_URL);
 
-export const getLoginHref = (): string => `${getApiBaseUrl()}/auth/github`;
+export const getLoginHref = (next?: string): string => {
+  const normalizedNext = next?.trim();
+  return buildWebAuthPath('/auth/github', normalizedNext ? { next: normalizedNext } : {});
+};
+
+export const getGithubBindHref = (): string => '/auth/github/bind';
+export const getGithubUnbindHref = (): string => '/auth/github/unbind';
 
 export const readSessionUser = async (request: Request): Promise<SessionUser | null> => {
   const cookie = request.headers.get('cookie');
