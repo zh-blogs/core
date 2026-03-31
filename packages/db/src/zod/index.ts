@@ -39,7 +39,11 @@ import {
   TAG_TYPE_KEYS,
   TECHNOLOGY_TYPE_KEYS,
 } from '../constants/taxonomy';
-import { USER_OAUTH_PROVIDER_KEYS, USER_ROLE_KEYS } from '../constants/user';
+import {
+  MANAGEMENT_PERMISSION_KEYS,
+  USER_OAUTH_PROVIDER_KEYS,
+  USER_ROLE_KEYS,
+} from '../constants/user';
 import {
   Announcements,
   ArticleFeedbackAudits,
@@ -71,7 +75,10 @@ import {
   TechnologyCatalogs,
   TechnologyStats,
   UserApiTokens,
+  UserEmailVerificationTokens,
+  UserManagementPermissions,
   UserOauthAccounts,
+  UserPasswordResetTokens,
   Users,
   UserSites,
 } from '../schema';
@@ -133,6 +140,7 @@ export const tagTypeSchema = toEnumSchema(TAG_TYPE_KEYS);
 export const technologyTypeSchema = toEnumSchema(TECHNOLOGY_TYPE_KEYS);
 export const siteTechStackCategorySchema = toEnumSchema(SITE_TECH_STACK_CATEGORY_KEYS);
 export const userRoleSchema = toEnumSchema(USER_ROLE_KEYS);
+export const managementPermissionSchema = toEnumSchema(MANAGEMENT_PERMISSION_KEYS);
 export const userOauthProviderSchema = toEnumSchema(USER_OAUTH_PROVIDER_KEYS);
 export const siteCheckRegionSchema = toEnumSchema(SITE_CHECK_REGION_KEYS);
 export const siteCheckResultSchema = toEnumSchema(SITE_CHECK_RESULT_KEYS);
@@ -522,6 +530,16 @@ export const userOauthAccountUpdateSchema = createUpdateSchema(UserOauthAccounts
   profile: jsonRecordSchema.optional(),
 });
 
+export const userEmailVerificationTokenSelectSchema = createSelectSchema(
+  UserEmailVerificationTokens,
+);
+export const userEmailVerificationTokenInsertSchema = createInsertSchema(
+  UserEmailVerificationTokens,
+);
+export const userEmailVerificationTokenUpdateSchema = createUpdateSchema(
+  UserEmailVerificationTokens,
+);
+
 export const userApiTokenSelectSchema = createSelectSchema(UserApiTokens, {
   scopes: z.array(z.string()),
 });
@@ -531,6 +549,14 @@ export const userApiTokenInsertSchema = createInsertSchema(UserApiTokens, {
 export const userApiTokenUpdateSchema = createUpdateSchema(UserApiTokens, {
   scopes: z.array(z.string()).optional(),
 });
+
+export const userManagementPermissionSelectSchema = createSelectSchema(UserManagementPermissions);
+export const userManagementPermissionInsertSchema = createInsertSchema(UserManagementPermissions);
+export const userManagementPermissionUpdateSchema = createUpdateSchema(UserManagementPermissions);
+
+export const userPasswordResetTokenSelectSchema = createSelectSchema(UserPasswordResetTokens);
+export const userPasswordResetTokenInsertSchema = createInsertSchema(UserPasswordResetTokens);
+export const userPasswordResetTokenUpdateSchema = createUpdateSchema(UserPasswordResetTokens);
 
 export const userSiteSelectSchema = createSelectSchema(UserSites);
 export const userSiteInsertSchema = createInsertSchema(UserSites);
@@ -593,6 +619,7 @@ export type ExecutionStatus = z.infer<typeof executionStatusSchema>;
 export type TagType = z.infer<typeof tagTypeSchema>;
 export type TechnologyType = z.infer<typeof technologyTypeSchema>;
 export type UserRole = z.infer<typeof userRoleSchema>;
+export type ManagementPermission = z.infer<typeof managementPermissionSchema>;
 export type UserOauthProvider = z.infer<typeof userOauthProviderSchema>;
 export type SiteCheckRegion = z.infer<typeof siteCheckRegionSchema>;
 export type SiteCheckResult = z.infer<typeof siteCheckResultSchema>;

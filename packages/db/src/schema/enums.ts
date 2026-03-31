@@ -36,7 +36,11 @@ import {
   TAG_TYPE_KEYS,
   TECHNOLOGY_TYPE_KEYS,
 } from '../constants/taxonomy';
-import { USER_OAUTH_PROVIDER_KEYS, USER_ROLE_KEYS } from '../constants/user';
+import {
+  MANAGEMENT_PERMISSION_KEYS,
+  USER_OAUTH_PROVIDER_KEYS,
+  USER_ROLE_KEYS,
+} from '../constants/user';
 
 export const fromSourceEnum = pgEnum('from_source_enum', FROM_SOURCE_KEYS as [string, ...string[]]);
 export const fromSources = fromSourceEnum;
@@ -113,6 +117,10 @@ export const siteTechStackCategoryEnum = pgEnum(
   SITE_TECH_STACK_CATEGORY_KEYS as [string, ...string[]],
 );
 export const userRoleEnum = pgEnum('user_role_enum', USER_ROLE_KEYS as [string, ...string[]]);
+export const managementPermissionEnum = pgEnum(
+  'management_permission_enum',
+  MANAGEMENT_PERMISSION_KEYS,
+);
 export const userOauthProviderEnum = pgEnum(
   'user_oauth_provider_enum',
   USER_OAUTH_PROVIDER_KEYS as [string, ...string[]],

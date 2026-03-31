@@ -18,13 +18,13 @@ export const TAG_TYPE_KEYS = Object.keys(TAG_TYPES) as Array<keyof typeof TAG_TY
 export type TagTypeKey = (typeof TAG_TYPE_KEYS)[number];
 
 export const TECHNOLOGY_TYPES = {
-  SYSTEM: {
-    label: '博客系统',
-    description: '成熟博客系统，如 WordPress、Hexo、Hugo',
-  },
   FRAMEWORK: {
     label: '技术框架',
-    description: '用于自定义博客构建的框架，如 Next.js、Nuxt',
+    description: '用于程序实现的框架技术栈，如 Astro、Next.js、Nuxt',
+  },
+  LANGUAGE: {
+    label: '编程语言',
+    description: '用于程序实现的编程语言，如 TypeScript、Go、Ruby',
   },
 } as const;
 

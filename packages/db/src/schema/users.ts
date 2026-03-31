@@ -13,7 +13,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { v7 } from 'uuid';
 
-import { userOauthProviderEnum, userRoleEnum } from './enums';
+import { managementPermissionEnum, userOauthProviderEnum, userRoleEnum } from './enums';
 import { Sites } from './sites';
 
 /** 用户主表，保留基础身份信息并预留扩展能力 */
@@ -57,8 +57,8 @@ export const Users = pgTable(
       .$onUpdateFn(() => new Date()),
   },
   (table) => [
-    uniqueIndex('users_email_index').on(table.email),
-    uniqueIndex('users_username_index').on(table.username),
+    uniqueIndex('users_email_lower_index').on(sql`lower(${table.email})`),
+    uniqueIndex('users_username_lower_index').on(sql`lower(${table.username})`),
     index('users_role_active_index').on(table.role, table.is_active),
     index('users_created_time_index').on(table.created_time.desc()),
     check('users_username_not_blank_check', sql`btrim(${table.username}) <> ''`),
@@ -110,8 +110,69 @@ export const UserOauthAccounts = pgTable(
       table.provider,
       table.provider_user_id,
     ),
+    uniqueIndex('user_oauth_accounts_user_provider_index').on(table.user_id, table.provider),
     index('user_oauth_accounts_user_id_index').on(table.user_id),
     index('user_oauth_accounts_provider_index').on(table.provider),
+  ],
+);
+
+export const UserEmailVerificationTokens = pgTable(
+  'user_email_verification_tokens',
+  {
+    id: uuid()
+      .$default(() => v7())
+      .primaryKey(),
+    user_id: uuid()
+      .notNull()
+      .references(() => Users.id, {
+        onDelete: 'cascade',
+        onUpdate: 'cascade',
+      }),
+    email: varchar({ length: 128 }).notNull(),
+    token_hash: varchar({ length: 128 }).notNull(),
+    expires_time: timestamp({ withTimezone: true, precision: 6 }).notNull(),
+    consumed_time: timestamp({ withTimezone: true, precision: 6 }),
+    created_time: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
+    updated_time: timestamp({ withTimezone: true, precision: 6 })
+      .notNull()
+      .defaultNow()
+      .$onUpdateFn(() => new Date()),
+  },
+  (table) => [
+    uniqueIndex('user_email_verification_tokens_token_hash_index').on(table.token_hash),
+    index('user_email_verification_tokens_user_id_index').on(table.user_id),
+    index('user_email_verification_tokens_email_index').on(table.email),
+    index('user_email_verification_tokens_expires_time_index').on(table.expires_time),
+  ],
+);
+
+export const UserPasswordResetTokens = pgTable(
+  'user_password_reset_tokens',
+  {
+    id: uuid()
+      .$default(() => v7())
+      .primaryKey(),
+    user_id: uuid()
+      .notNull()
+      .references(() => Users.id, {
+        onDelete: 'cascade',
+        onUpdate: 'cascade',
+      }),
+    email: varchar({ length: 128 }).notNull(),
+    token_hash: varchar({ length: 128 }).notNull(),
+    expires_time: timestamp({ withTimezone: true, precision: 6 }).notNull(),
+    consumed_time: timestamp({ withTimezone: true, precision: 6 }),
+    created_time: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
+    updated_time: timestamp({ withTimezone: true, precision: 6 })
+      .notNull()
+      .defaultNow()
+      .$onUpdateFn(() => new Date()),
+  },
+  (table) => [
+    uniqueIndex('user_password_reset_tokens_token_hash_index').on(table.token_hash),
+    index('user_password_reset_tokens_user_id_index').on(table.user_id),
+    index('user_password_reset_tokens_email_index').on(table.email),
+    index('user_password_reset_tokens_expires_time_index').on(table.expires_time),
   ],
 );
 
@@ -185,5 +246,36 @@ export const UserSites = pgTable(
   (table) => [
     uniqueIndex('user_sites_site_id_index').on(table.site_id),
     index('user_sites_user_id_index').on(table.user_id),
+  ],
+);
+
+/** 用户管理权限关联表，仅允许 ADMIN 账号持有模块权限 */
+export const UserManagementPermissions = pgTable(
+  'user_management_permissions',
+  {
+    id: uuid()
+      .$default(() => v7())
+      .primaryKey(),
+    user_id: uuid()
+      .notNull()
+      .references(() => Users.id, {
+        onDelete: 'cascade',
+        onUpdate: 'cascade',
+      }),
+    permission_key: managementPermissionEnum().notNull(),
+    granted_by: uuid().references(() => Users.id, {
+      onDelete: 'set null',
+      onUpdate: 'cascade',
+    }),
+    created_time: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('user_management_permissions_user_permission_index').on(
+      table.user_id,
+      table.permission_key,
+    ),
+    index('user_management_permissions_user_id_index').on(table.user_id),
+    index('user_management_permissions_granted_by_index').on(table.granted_by),
+    index('user_management_permissions_permission_key_index').on(table.permission_key),
   ],
 );

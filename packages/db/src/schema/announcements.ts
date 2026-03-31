@@ -1,14 +1,5 @@
 import { sql } from 'drizzle-orm';
-import {
-  check,
-  index,
-  integer,
-  pgTable,
-  text,
-  timestamp,
-  uuid,
-  varchar,
-} from 'drizzle-orm/pg-core';
+import { check, index, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { v7 } from 'uuid';
 
 import { announcementStatusEnum } from './enums';
@@ -24,12 +15,8 @@ export const Announcements = pgTable(
       .primaryKey(),
     /** 公告标题 */
     title: varchar({ length: 256 }).notNull(),
-    /** 公告摘要，用于首页与公告列表 */
-    summary: text().notNull(),
-    /** 公告正文，供后台与完整公告页使用 */
+    /** 公告正文，供首页卡片、公告列表与后台使用 */
     content: text(),
-    /** 公告标签，例如维护通知、项目公告 */
-    tag: varchar({ length: 64 }).notNull(),
     /** 公告生命周期状态 */
     status: announcementStatusEnum().notNull().default('DRAFT'),
     /** 发布时间，草稿允许为空，预发布和已发布需要设置 */
@@ -38,8 +25,6 @@ export const Announcements = pgTable(
     expire_time: timestamp({ withTimezone: true, precision: 6 }),
     /** 实际过期时间，即时过期和定时过期都会写入 */
     expired_time: timestamp({ withTimezone: true, precision: 6 }),
-    /** 排序权重，值越大越靠前 */
-    sort_order: integer().notNull().default(0),
     /** 创建人 */
     created_by: uuid().references(() => Users.id, {
       onDelete: 'set null',
@@ -61,13 +46,12 @@ export const Announcements = pgTable(
   (table) => [
     index('announcements_status_publish_time_index').on(table.status, table.publish_time.desc()),
     index('announcements_expire_time_index').on(table.expire_time),
-    index('announcements_sort_order_publish_time_index').on(
-      table.sort_order.desc(),
-      table.publish_time.desc(),
-    ),
     index('announcements_created_time_index').on(table.created_time.desc()),
     check('announcements_title_not_blank_check', sql`btrim(${table.title}) <> ''`),
-    check('announcements_tag_not_blank_check', sql`btrim(${table.tag}) <> ''`),
+    check(
+      'announcements_publish_time_required_check',
+      sql`${table.status} not in ('SCHEDULED', 'PUBLISHED') or ${table.publish_time} is not null`,
+    ),
     check(
       'announcements_publish_expire_timeline_check',
       sql`${table.expire_time} is null or ${table.publish_time} is null or ${table.expire_time} >= ${table.publish_time}`,

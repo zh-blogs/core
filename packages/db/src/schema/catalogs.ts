@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
+  type AnyPgColumn,
   boolean,
   check,
   index,
@@ -12,6 +13,7 @@ import {
 import { v7 } from 'uuid';
 
 import { tagTypeEnum, technologyTypeEnum } from './enums';
+import { Users } from './users';
 
 /** 标签定义表，用于主标签、副标签的展示描述与筛选映射 */
 export const TagDefinitions = pgTable(
@@ -31,6 +33,18 @@ export const TagDefinitions = pgTable(
     description: varchar({ length: 512 }),
     /** 是否启用 */
     is_enabled: boolean().notNull().default(true),
+    /** 合并后的目标标签 */
+    merged_into_tag_id: uuid().references((): AnyPgColumn => TagDefinitions.id, {
+      onDelete: 'set null',
+      onUpdate: 'cascade',
+    }),
+    /** 执行合并的管理员 */
+    merged_by: uuid().references(() => Users.id, {
+      onDelete: 'set null',
+      onUpdate: 'cascade',
+    }),
+    /** 合并时间 */
+    merged_time: timestamp({ withTimezone: true, precision: 6 }),
     /** 创建时间 */
     created_time: timestamp({ withTimezone: true, precision: 6 }).notNull().defaultNow(),
     /** 更新时间 */
@@ -43,6 +57,7 @@ export const TagDefinitions = pgTable(
     uniqueIndex('tag_definitions_name_type_index').on(table.name, table.tag_type),
     uniqueIndex('tag_definitions_type_machine_key_index').on(table.tag_type, table.machine_key),
     index('tag_definitions_type_enabled_index').on(table.tag_type, table.is_enabled),
+    index('tag_definitions_merged_into_tag_id_index').on(table.merged_into_tag_id),
     check('tag_definitions_name_not_blank_check', sql`btrim(${table.name}) <> ''`),
     check(
       'tag_definitions_machine_key_not_blank_check',
@@ -52,10 +67,14 @@ export const TagDefinitions = pgTable(
       'tag_definitions_warning_machine_key_required_check',
       sql`${table.tag_type} <> 'WARNING' or btrim(coalesce(${table.machine_key}, '')) <> ''`,
     ),
+    check(
+      'tag_definitions_merged_into_tag_id_self_check',
+      sql`${table.merged_into_tag_id} is null or ${table.merged_into_tag_id} <> ${table.id}`,
+    ),
   ],
 );
 
-/** 技术目录表，用于博客系统、框架、语言等展示信息与站点架构引用 */
+/** 技术栈目录表，用于程序技术栈的全局候选词库 */
 export const TechnologyCatalogs = pgTable(
   'technology_catalogs',
   {
