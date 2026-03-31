@@ -41,11 +41,38 @@ const announcementItemSchema = {
   properties: {
     id: { type: 'string' },
     title: { type: 'string' },
-    summary: { type: 'string' },
-    tag: { type: 'string' },
+    content: { type: ['string', 'null'] },
     publishTime: { type: ['string', 'null'] },
   },
-  required: ['id', 'title', 'summary', 'tag', 'publishTime'],
+  required: ['id', 'title', 'content', 'publishTime'],
+} as const;
+
+const currentAnnouncementResponseSchema = {
+  type: 'object',
+  properties: {
+    ok: { type: 'boolean' },
+    data: {
+      type: ['object', 'null'],
+      properties: {
+        ...announcementItemSchema.properties,
+      },
+      required: announcementItemSchema.required,
+    },
+  },
+  required: ['ok', 'data'],
+} as const;
+
+const announcementArchiveItemSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'string' },
+    title: { type: 'string' },
+    content: { type: ['string', 'null'] },
+    status: { type: 'string' },
+    publishTime: { type: ['string', 'null'] },
+    expireTime: { type: ['string', 'null'] },
+  },
+  required: ['id', 'title', 'content', 'status', 'publishTime', 'expireTime'],
 } as const;
 
 const announcementsResponseSchema = {
@@ -57,10 +84,20 @@ const announcementsResponseSchema = {
       properties: {
         items: {
           type: 'array',
-          items: announcementItemSchema,
+          items: announcementArchiveItemSchema,
+        },
+        pagination: {
+          type: 'object',
+          properties: {
+            page: { type: 'number' },
+            pageSize: { type: 'number' },
+            totalItems: { type: 'number' },
+            totalPages: { type: 'number' },
+          },
+          required: ['page', 'pageSize', 'totalItems', 'totalPages'],
         },
       },
-      required: ['items'],
+      required: ['items', 'pagination'],
     },
   },
   required: ['ok', 'data'],
@@ -68,6 +105,7 @@ const announcementsResponseSchema = {
 
 export {
   announcementsResponseSchema,
+  currentAnnouncementResponseSchema,
   directoryMetaResponseSchema,
   directoryResponseSchema,
   homeResponseSchema,

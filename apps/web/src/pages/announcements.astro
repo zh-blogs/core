@@ -1,0 +1,32 @@
+---
+export const prerender = false;
+
+import { readAnnouncementArchive } from '@/application/announcement/announcement.server';
+import AnnouncementArchivePage from '@/components/announcement/AnnouncementArchivePage.svelte';
+import PublicHeader from '@/components/public-header/PublicHeader.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+const requestedPage = Math.max(1, Number(Astro.url.searchParams.get('page') || 1));
+const requestedPageSize = Math.max(1, Number(Astro.url.searchParams.get('pageSize') || 20));
+const archive = await readAnnouncementArchive(requestedPage, requestedPageSize);
+
+const fallbackArchive = archive ?? {
+  items: [],
+  pagination: {
+    page: 1,
+    pageSize: requestedPageSize,
+    totalItems: 0,
+    totalPages: 1,
+  },
+};
+
+const announcementDescription = '查看集博栈已经发布过的公告与历史通知。';
+---
+
+<BaseLayout title="公告归档 | 集博栈" description={announcementDescription}>
+  <PublicHeader currentPath={Astro.url.pathname} />
+
+  <main class="flex-1">
+    <AnnouncementArchivePage client:load initialResult={fallbackArchive} />
+  </main>
+</BaseLayout>

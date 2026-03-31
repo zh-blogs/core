@@ -1,0 +1,247 @@
+---
+export const prerender = false;
+
+import { fetchProtectedJson } from '@/application/auth/auth.server';
+import AnnouncementEditorDialog from '@/components/management/announcements/AnnouncementEditorDialog.astro';
+import AnnouncementEditorScript from '@/components/management/announcements/AnnouncementEditorScript.astro';
+import AnnouncementFeedbackDialog from '@/components/management/announcements/AnnouncementFeedbackDialog.astro';
+import AnnouncementListSection from '@/components/management/announcements/AnnouncementListSection.astro';
+import ManagementLayout from '@/layouts/ManagementLayout.astro';
+
+type ManagedAnnouncement = {
+  id: string;
+  title: string;
+  content: string | null;
+  status: 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'EXPIRED';
+  publishTime: string | null;
+  expireTime: string | null;
+  expiredTime: string | null;
+  createdBy: string | null;
+  updatedBy: string | null;
+  createdTime: string;
+  updatedTime: string;
+};
+
+type AnnouncementFormState = {
+  id: string;
+  title: string;
+  content: string;
+  status: ManagedAnnouncement['status'];
+  publishTime: string;
+  expireTime: string;
+  scheduleEnabled: boolean;
+  autoExpireEnabled: boolean;
+};
+
+type AnnouncementPagination = {
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+};
+
+const DEFAULT_PAGE_SIZE = 10;
+const requestedPage = Math.max(1, Number(Astro.url.searchParams.get('page') || 1));
+const requestedPageSize = Math.max(
+  1,
+  Number(Astro.url.searchParams.get('pageSize') || DEFAULT_PAGE_SIZE),
+);
+
+const payload = await fetchProtectedJson<{
+  ok: boolean;
+  data: {
+    items: ManagedAnnouncement[];
+    pagination: AnnouncementPagination;
+  };
+}>(
+  Astro.request,
+  `/api/management/announcements?page=${requestedPage}&pageSize=${requestedPageSize}`,
+);
+
+const editingId = Astro.url.searchParams.get('edit')?.trim() || null;
+const status = Astro.url.searchParams.get('status')?.trim() || null;
+const errorMessage = Astro.url.searchParams.get('message')?.trim() || null;
+const modalMode = Astro.url.searchParams.get('mode')?.trim() || null;
+const statusMessage =
+  status === 'saved'
+    ? '公告已保存。'
+    : status === 'deleted'
+      ? '公告已删除。'
+      : status === 'archived'
+        ? '公告已归档。'
+        : null;
+const feedbackTone = errorMessage ? 'error' : statusMessage ? 'success' : null;
+const feedbackTitle = errorMessage
+  ? '操作未完成'
+  : status === 'deleted'
+    ? '删除完成'
+    : status === 'archived'
+      ? '归档完成'
+      : '保存完成';
+const feedbackMessage = errorMessage ?? statusMessage;
+
+const formatDateTimeInput = (value: string | null): string => {
+  if (!value) {
+    return '';
+  }
+
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return '';
+  }
+
+  parsed.setMinutes(parsed.getMinutes() - parsed.getTimezoneOffset());
+  return parsed.toISOString().slice(0, 16);
+};
+
+const buildFormState = (entry?: ManagedAnnouncement | null): AnnouncementFormState => ({
+  id: entry?.id ?? '',
+  title: entry?.title ?? '',
+  content: entry?.content ?? '',
+  status: entry?.status ?? 'DRAFT',
+  publishTime: formatDateTimeInput(entry?.publishTime ?? null),
+  expireTime: formatDateTimeInput(entry?.expireTime ?? null),
+  scheduleEnabled: entry?.status === 'SCHEDULED',
+  autoExpireEnabled: Boolean(entry?.expireTime),
+});
+
+const STATUS_LABELS: Record<ManagedAnnouncement['status'], string> = {
+  DRAFT: '草稿',
+  SCHEDULED: '预发布',
+  PUBLISHED: '已发布',
+  EXPIRED: '已归档',
+};
+
+const isPastTime = (value: string | null): boolean => {
+  if (!value) {
+    return false;
+  }
+
+  const parsed = new Date(value);
+  return !Number.isNaN(parsed.getTime()) && parsed.getTime() <= Date.now();
+};
+
+const isActivePublished = (entry: ManagedAnnouncement): boolean => {
+  if (entry.status !== 'PUBLISHED' || !entry.publishTime) {
+    return false;
+  }
+
+  const publishTime = new Date(entry.publishTime);
+
+  return (
+    !Number.isNaN(publishTime.getTime()) &&
+    publishTime.getTime() <= Date.now() &&
+    !isPastTime(entry.expireTime)
+  );
+};
+
+const canArchive = (entry: ManagedAnnouncement): boolean => isActivePublished(entry);
+
+const getDisplayStatus = (entry: ManagedAnnouncement): string => {
+  if (entry.status === 'PUBLISHED' && isPastTime(entry.expireTime)) {
+    return '已归档';
+  }
+
+  return STATUS_LABELS[entry.status];
+};
+
+const buildListHref = (page: number): string => {
+  const target = new URL('/management/announcements', 'http://zhblogs.local');
+
+  if (page > 1) {
+    target.searchParams.set('page', String(page));
+  }
+
+  if (payload.data.pagination.pageSize !== DEFAULT_PAGE_SIZE) {
+    target.searchParams.set('pageSize', String(payload.data.pagination.pageSize));
+  }
+
+  return `${target.pathname}${target.search}`;
+};
+
+const activeEntry = editingId
+  ? (payload.data.items.find((entry) => entry.id === editingId) ?? null)
+  : null;
+const initialFormState = buildFormState(activeEntry);
+const initialModalMode = activeEntry !== null ? 'edit' : modalMode === 'create' ? 'create' : '';
+const pagination = payload.data.pagination;
+const visiblePageStart = Math.max(1, pagination.page - 2);
+const visiblePageEnd = Math.min(pagination.totalPages, pagination.page + 2);
+const visiblePages = Array.from(
+  { length: visiblePageEnd - visiblePageStart + 1 },
+  (_, index) => visiblePageStart + index,
+);
+
+const listItems = payload.data.items.map((entry) => ({
+  entry,
+  formState: buildFormState(entry),
+  displayStatus: getDisplayStatus(entry),
+  canArchive: canArchive(entry),
+}));
+
+const paginationView = {
+  page: pagination.page,
+  pageSize: pagination.pageSize,
+  totalItems: pagination.totalItems,
+  totalPages: pagination.totalPages,
+  previousHref: pagination.page > 1 ? buildListHref(pagination.page - 1) : null,
+  nextHref: pagination.page < pagination.totalPages ? buildListHref(pagination.page + 1) : null,
+  pages: visiblePages.map((pageNumber) => ({
+    page: pageNumber,
+    href: buildListHref(pageNumber),
+    isCurrent: pageNumber === pagination.page,
+  })),
+};
+---
+
+<ManagementLayout
+  title="公告管理"
+  currentPath="/management/announcements"
+  eyebrow="management / announcements"
+  heading="公告管理"
+  description="维护首页当前公告与公开公告归档。系统会阻止多个已发布或预发布公告在时间窗上发生重叠。"
+>
+  <section class="page-section">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">
+          <span class="status-dot" style="--status-dot: var(--color-info-dot)"></span>
+          announcements / list
+        </p>
+        <h2 class="section-title">公告列表</h2>
+      </div>
+      <div class="action-row">
+        <button
+          class="action-button action-button-primary"
+          data-announcement-open="create"
+          type="button"
+        >
+          新建公告
+        </button>
+      </div>
+    </div>
+
+    <AnnouncementListSection items={listItems} pagination={paginationView} />
+  </section>
+
+  <AnnouncementEditorDialog
+    initialFormState={initialFormState}
+    initialModalMode={initialModalMode}
+    pagination={pagination}
+  />
+
+  {
+    feedbackMessage && feedbackTone && (
+      <AnnouncementFeedbackDialog
+        feedbackMessage={feedbackMessage}
+        feedbackTitle={feedbackTitle}
+        feedbackTone={feedbackTone}
+        initialFormState={initialFormState}
+        initialModalMode={initialModalMode}
+      />
+    )
+  }
+</ManagementLayout>
+
+<AnnouncementEditorScript />

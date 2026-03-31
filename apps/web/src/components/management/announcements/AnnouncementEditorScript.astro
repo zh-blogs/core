@@ -1,0 +1,269 @@
+<script is:inline>
+  const emptyRecord = {
+    id: '',
+    title: '',
+    content: '',
+    status: 'DRAFT',
+    publishTime: '',
+    expireTime: '',
+    scheduleEnabled: false,
+    autoExpireEnabled: false,
+  };
+
+  const isDialog = (node) => node instanceof HTMLDialogElement;
+  const isForm = (node) => node instanceof HTMLFormElement;
+  const isInput = (node) => node instanceof HTMLInputElement;
+  const isTextArea = (node) => node instanceof HTMLTextAreaElement;
+  const isElement = (node) => node instanceof HTMLElement;
+
+  const requireElement = (id, guard) => {
+    const node = document.getElementById(id);
+    return guard(node) ? node : null;
+  };
+
+  const createEditorElements = () => {
+    const dialog = requireElement('announcement-editor', isDialog);
+    const form = requireElement('announcement-editor-form', isForm);
+    const fieldId = requireElement('announcement-editor-id', isInput);
+    const fieldTitle = requireElement('announcement-editor-title-input', isInput);
+    const fieldContent = requireElement('announcement-editor-content', isTextArea);
+    const scheduleToggle = requireElement('announcement-editor-scheduled', isInput);
+    const autoExpireToggle = requireElement('announcement-editor-auto-expire', isInput);
+    const fieldPublishTime = requireElement('announcement-editor-publish-time', isInput);
+    const fieldExpireTime = requireElement('announcement-editor-expire-time', isInput);
+    const titleNode = requireElement('announcement-editor-title', isElement);
+
+    if (
+      !dialog ||
+      !form ||
+      !fieldId ||
+      !fieldTitle ||
+      !fieldContent ||
+      !scheduleToggle ||
+      !autoExpireToggle ||
+      !fieldPublishTime ||
+      !fieldExpireTime ||
+      !titleNode
+    ) {
+      return null;
+    }
+
+    return {
+      dialog,
+      form,
+      fieldId,
+      fieldTitle,
+      fieldContent,
+      scheduleToggle,
+      autoExpireToggle,
+      fieldPublishTime,
+      fieldExpireTime,
+      titleNode,
+      publishField: document.getElementById('announcement-editor-publish-field'),
+      expireField: document.getElementById('announcement-editor-expire-field'),
+      draftButton: document.getElementById('announcement-editor-submit-draft'),
+      publishRequiredBadge: document.getElementById('announcement-editor-publish-required'),
+      expireRequiredBadge: document.getElementById('announcement-editor-expire-required'),
+      closeButton: document.getElementById('announcement-editor-close'),
+      feedbackDialog: document.getElementById('announcement-feedback'),
+      feedbackCloseButton: document.getElementById('announcement-feedback-close'),
+      feedbackEditButton: document.getElementById('announcement-feedback-edit'),
+    };
+  };
+
+  const readRecord = (id) => {
+    const node = document.getElementById(`announcement-record-${id}`);
+    if (!(node instanceof HTMLScriptElement) || !node.textContent) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(node.textContent);
+    } catch {
+      return null;
+    }
+  };
+
+  const setFieldRequired = (field, required) => {
+    field.disabled = !required;
+    field.required = required;
+  };
+
+  const toggleHidden = (node, hidden) => {
+    if (node instanceof HTMLElement) {
+      node.hidden = hidden;
+    }
+  };
+
+  const applyPublishValidity = (elements, publishRequired) => {
+    const { fieldPublishTime } = elements;
+    fieldPublishTime.setCustomValidity('');
+
+    if (publishRequired && !fieldPublishTime.value) {
+      fieldPublishTime.setCustomValidity('发布时间为必填项。');
+      return;
+    }
+
+    if (publishRequired && fieldPublishTime.value) {
+      const publishTime = new Date(fieldPublishTime.value);
+      const now = new Date();
+
+      if (publishTime.getTime() <= now.getTime()) {
+        fieldPublishTime.setCustomValidity('预发布公告的发布时间必须晚于当前时间。');
+      }
+    }
+  };
+
+  const applyExpireValidity = (elements, publishRequired, expireRequired) => {
+    const { fieldExpireTime, fieldPublishTime } = elements;
+    fieldExpireTime.setCustomValidity('');
+
+    if (expireRequired && !fieldExpireTime.value) {
+      fieldExpireTime.setCustomValidity('结束时间为必填项。');
+      return;
+    }
+
+    if (fieldExpireTime.value) {
+      const expireTime = new Date(fieldExpireTime.value);
+      const baselineTime =
+        publishRequired && fieldPublishTime.value ? new Date(fieldPublishTime.value) : new Date();
+
+      if (expireTime.getTime() < baselineTime.getTime()) {
+        fieldExpireTime.setCustomValidity('结束时间不能早于公告生效时间。');
+      }
+    }
+  };
+
+  const updateTimingValidity = (elements) => {
+    const publishRequired = elements.scheduleToggle.checked;
+    const expireRequired = elements.autoExpireToggle.checked;
+
+    setFieldRequired(elements.fieldPublishTime, publishRequired);
+    setFieldRequired(elements.fieldExpireTime, expireRequired);
+    toggleHidden(elements.publishRequiredBadge, !publishRequired);
+    toggleHidden(elements.expireRequiredBadge, !expireRequired);
+    toggleHidden(elements.publishField, !publishRequired);
+    toggleHidden(elements.expireField, !expireRequired);
+
+    applyPublishValidity(elements, publishRequired);
+    applyExpireValidity(elements, publishRequired, expireRequired);
+  };
+
+  const applyRecord = (elements, record, mode) => {
+    const nextRecord = record ?? emptyRecord;
+    elements.fieldId.value = nextRecord.id ?? '';
+    elements.fieldTitle.value = nextRecord.title ?? '';
+    elements.fieldContent.value = nextRecord.content ?? '';
+    elements.scheduleToggle.checked = Boolean(nextRecord.scheduleEnabled);
+    elements.autoExpireToggle.checked = Boolean(nextRecord.autoExpireEnabled);
+    elements.fieldPublishTime.value = nextRecord.publishTime ?? '';
+    elements.fieldExpireTime.value = nextRecord.expireTime ?? '';
+    elements.titleNode.textContent = mode === 'edit' ? '编辑公告' : '新建公告';
+    updateTimingValidity(elements);
+
+    if (elements.draftButton instanceof HTMLButtonElement) {
+      const allowDraft = mode === 'create' || (mode === 'edit' && nextRecord.status === 'DRAFT');
+      elements.draftButton.hidden = !allowDraft;
+      elements.draftButton.disabled = !allowDraft;
+    }
+  };
+
+  const openCreateDialog = (elements) => {
+    applyRecord(elements, emptyRecord, 'create');
+    elements.dialog.showModal();
+  };
+
+  const openEditDialog = (elements, id) => {
+    const record = readRecord(id);
+    if (!record) {
+      return;
+    }
+
+    applyRecord(elements, record, 'edit');
+    elements.dialog.showModal();
+  };
+
+  const bindEditorTriggers = (openCreate, openEdit) => {
+    document.querySelectorAll('[data-announcement-open="create"]').forEach((node) => {
+      node.addEventListener('click', openCreate);
+    });
+
+    document.querySelectorAll('[data-announcement-edit-id]').forEach((node) => {
+      node.addEventListener('click', () => {
+        const id = node.getAttribute('data-announcement-edit-id');
+        if (id) {
+          openEdit(id);
+        }
+      });
+    });
+  };
+
+  const bindTimingListeners = (elements) => {
+    elements.scheduleToggle.addEventListener('change', () => updateTimingValidity(elements));
+    elements.autoExpireToggle.addEventListener('change', () => updateTimingValidity(elements));
+    elements.fieldPublishTime.addEventListener('input', () => updateTimingValidity(elements));
+    elements.fieldExpireTime.addEventListener('input', () => updateTimingValidity(elements));
+  };
+
+  const bindFormValidation = (elements) => {
+    elements.form.addEventListener('submit', (event) => {
+      updateTimingValidity(elements);
+
+      if (!elements.form.checkValidity()) {
+        event.preventDefault();
+        elements.form.reportValidity();
+      }
+    });
+  };
+
+  const openInitialMode = (elements, openCreate, openEdit) => {
+    const initialMode = elements.dialog.dataset.initialMode;
+    const initialId = elements.dialog.dataset.initialId;
+
+    if (initialMode === 'edit' && initialId) {
+      openEdit(initialId);
+      return;
+    }
+
+    if (initialMode === 'create') {
+      openCreate();
+    }
+  };
+
+  const bindFeedbackDialog = (elements, openCreate, openEdit) => {
+    if (!(elements.feedbackDialog instanceof HTMLDialogElement)) {
+      return false;
+    }
+
+    elements.feedbackDialog.showModal();
+    elements.feedbackCloseButton?.addEventListener('click', () => elements.feedbackDialog.close());
+    elements.feedbackEditButton?.addEventListener('click', () => {
+      elements.feedbackDialog.close();
+      openInitialMode(elements, openCreate, openEdit);
+    });
+
+    return true;
+  };
+
+  const initAnnouncementEditor = () => {
+    const elements = createEditorElements();
+    if (!elements) {
+      return;
+    }
+
+    const openCreate = () => openCreateDialog(elements);
+    const openEdit = (id) => openEditDialog(elements, id);
+
+    bindEditorTriggers(openCreate, openEdit);
+    bindTimingListeners(elements);
+    bindFormValidation(elements);
+    elements.closeButton?.addEventListener('click', () => elements.dialog.close());
+
+    const handled = bindFeedbackDialog(elements, openCreate, openEdit);
+    if (!handled) {
+      openInitialMode(elements, openCreate, openEdit);
+    }
+  };
+
+  initAnnouncementEditor();
+</script>

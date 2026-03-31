@@ -11,6 +11,8 @@ import { authPlugin } from '@/infrastructure/auth/http/auth.service';
 import { registerAuthRoutes } from '@/presentation/auth/routes/auth.controller';
 import { registerHealthRoutes } from '@/presentation/health/routes/health.controller';
 import { registerInternalJobRoutes } from '@/presentation/jobs/routes';
+import { registerManagementRoutes } from '@/presentation/management/routes/management.controller';
+import { registerManagementAnnouncementRoutes } from '@/presentation/management/routes/management-announcement.controller';
 import { registerPresenceRoutes } from '@/presentation/presence/routes/presence.controller';
 import { registerPublicRoutes } from '@/presentation/public/routes/public.controller';
 import { registerSiteRoutes } from '@/presentation/sites/routes/site.controller';
@@ -37,6 +39,8 @@ export function createApp(options: AppBootstrapOptions = {}) {
     registerPresenceRoutes(app);
     registerAuthRoutes(app);
     registerAdminUserRoutes(app);
+    registerManagementAnnouncementRoutes(app);
+    registerManagementRoutes(app);
     registerSiteDirectoryPreferenceRoutes(app);
     registerInternalJobRoutes(app);
     registerPublicRoutes(app);
