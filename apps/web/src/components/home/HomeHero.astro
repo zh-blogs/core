@@ -3,11 +3,10 @@ import { IconArrowRight as ArrowIcon, IconNews as NewsIcon } from '@tabler/icons
 
 interface Props {
   leadAnnouncement: {
-    tag: string;
     title: string;
-    summary: string;
+    content: string | null;
     publishTime?: string | null;
-  };
+  } | null;
   leadAnnouncementDate: string;
   summary: {
     totalSites: number;
@@ -42,28 +41,37 @@ const { leadAnnouncement, leadAnnouncementDate, summary } = Astro.props;
       </p>
     </div>
 
-    <article
-      class="inline-flex max-w-176 items-start gap-3 rounded-md border border-red-700/14 px-4 py-3 dark:border-red-400/30"
-    >
-      <span
-        class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-(--color-line-med) text-red-700 dark:text-red-400"
-      >
-        <NewsIcon size={17} stroke={1.9} class="block" />
-      </span>
-      <span class="min-w-0 space-y-1">
-        <span
-          class="inline-flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-(--color-fg-3)"
+    {
+      leadAnnouncement && (
+        <a
+          class="relative inline-flex max-w-176 items-start gap-3 rounded-md border border-red-700/14 px-4 py-3 pr-12 transition hover:border-red-700/26 dark:border-red-400/30 dark:hover:border-red-400/45"
+          href="/announcements"
         >
-          <span>{leadAnnouncement.tag}</span>
-          {leadAnnouncementDate ? <span>{leadAnnouncementDate}</span> : null}
-        </span>
-        <span class="block text-base font-medium text-(--color-fg)">{leadAnnouncement.title}</span>
-        <span class="block text-sm leading-7 text-(--color-fg-2)">{leadAnnouncement.summary}</span>
-      </span>
-      <span class="mt-1 shrink-0 text-(--color-fg-3)">
-        <NewsIcon size={15} stroke={1.9} class="block" />
-      </span>
-    </article>
+          <span class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-(--color-line-med) text-red-700 dark:text-red-400">
+            <NewsIcon size={17} stroke={1.9} class="block" />
+          </span>
+          <span class="min-w-0 space-y-1">
+            <span class="inline-flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-(--color-fg-3)">
+              {leadAnnouncementDate ? <span>{leadAnnouncementDate}</span> : <span>公告</span>}
+            </span>
+            <span class="block text-base font-medium text-(--color-fg)">
+              {leadAnnouncement.title}
+            </span>
+            {leadAnnouncement.content ? (
+              <span class="block text-sm leading-7 text-(--color-fg-2)">
+                {leadAnnouncement.content}
+              </span>
+            ) : null}
+          </span>
+          <span class="absolute top-3.5 right-4 inline-flex items-center gap-2 text-(--color-fg-3)">
+            <span class="text-[11px] font-medium tracking-[0.08em] text-(--color-fg-3)">
+              历史公告
+            </span>
+            <ArrowIcon size={15} stroke={1.9} class="block" />
+          </span>
+        </a>
+      )
+    }
   </div>
 
   <aside class="flex flex-col gap-5 lg:items-end">

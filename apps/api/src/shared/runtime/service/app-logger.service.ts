@@ -18,7 +18,7 @@ const resolveLogLevel = (): string => {
   return 'debug';
 };
 
-const getLogFilePath = (env: string): string => {
+export const resolveApiLogFilePath = (env: string): string => {
   const logDir = process.env.API_LOG_DIR ?? DEFAULT_LOG_DIR;
   mkdirSync(logDir, { recursive: true });
   return join(logDir, `api-${env}.log`);
@@ -27,11 +27,12 @@ const getLogFilePath = (env: string): string => {
 export function getLoggerOptions(): pino.LoggerOptions {
   const env = process.env.NODE_ENV ?? 'development';
   const level = resolveLogLevel();
-  const logFilePath = getLogFilePath(env);
+  const logFilePath = resolveApiLogFilePath(env);
 
   if (env === 'production') {
     return {
       level,
+      errorKey: 'error',
       transport: {
         targets: [
           {
@@ -53,6 +54,7 @@ export function getLoggerOptions(): pino.LoggerOptions {
 
   return {
     level,
+    errorKey: 'error',
     transport: {
       targets: [
         {
@@ -61,6 +63,7 @@ export function getLoggerOptions(): pino.LoggerOptions {
             translateTime: 'SYS:standard',
             singleLine: true,
             ignore: 'pid,hostname',
+            errorLikeObjectKeys: ['error', 'err'],
           },
         },
         {

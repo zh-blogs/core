@@ -1,0 +1,31 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Forbidden | ZhBlogs" showFooter={false}>
+  <main class="page-shell auth-shell items-center justify-center">
+    <section class="page-stack max-w-md">
+      <div class="surface-card space-y-6">
+        <div class="page-lead">
+          <p class="eyebrow">
+            <span class="status-dot" style="--status-dot: var(--color-fail-dot)"></span>
+            auth / forbidden
+          </p>
+          <h1 class="page-lead-title">无权访问</h1>
+        </div>
+
+        <div class="status-panel status-panel-warning">
+          <p class="status-panel-title">当前账号无法打开这个页面</p>
+          <p class="status-panel-copy">
+            管理面板需要对应的角色和模块授权。如果你的权限刚刚更新，请重新登录后再试。
+          </p>
+        </div>
+
+        <div class="action-row pt-4">
+          <a class="action-button action-button-primary" href="/dashboard">返回工作台</a>
+          <a class="action-button action-button-ghost" href="/">返回首页</a>
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

@@ -1,0 +1,67 @@
+---
+type AnnouncementFormState = {
+  id: string;
+};
+
+interface Props {
+  feedbackTitle: string;
+  feedbackMessage: string;
+  feedbackTone: 'error' | 'success';
+  initialFormState: AnnouncementFormState;
+  initialModalMode: string;
+}
+
+const { feedbackTitle, feedbackMessage, feedbackTone, initialFormState, initialModalMode } =
+  Astro.props;
+---
+
+<dialog
+  class="management-dialog"
+  data-feedback-edit-id={initialFormState.id}
+  data-feedback-mode={initialModalMode}
+  id="announcement-feedback"
+>
+  <div class="management-dialog-panel surface-card">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">
+          <span
+            class="status-dot"
+            style={`--status-dot: ${
+              feedbackTone === 'error' ? 'var(--color-fail-dot)' : 'var(--color-ok-dot)'
+            }`}></span>
+          announcements / feedback
+        </p>
+        <h2 class="section-title">{feedbackTitle}</h2>
+      </div>
+    </div>
+
+    <div
+      class={`status-panel ${feedbackTone === 'error' ? 'status-panel-error' : 'status-panel-success'}`}
+    >
+      <p class="status-panel-title">{feedbackTone === 'error' ? '需要处理' : '操作已完成'}</p>
+      <p class="status-panel-copy">{feedbackMessage}</p>
+    </div>
+
+    <div class="action-row">
+      {
+        feedbackTone === 'error' && initialModalMode && (
+          <button
+            class="action-button action-button-primary"
+            id="announcement-feedback-edit"
+            type="button"
+          >
+            返回编辑
+          </button>
+        )
+      }
+      <button
+        class="action-button action-button-ghost"
+        id="announcement-feedback-close"
+        type="button"
+      >
+        知道了
+      </button>
+    </div>
+  </div>
+</dialog>

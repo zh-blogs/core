@@ -18,6 +18,7 @@ interface Props {
   robots?: string;
   publishedTime?: string | Date;
   modifiedTime?: string | Date;
+  showFooter?: boolean;
 }
 
 const {
@@ -30,6 +31,7 @@ const {
   robots,
   publishedTime,
   modifiedTime,
+  showFooter = true,
 } = Astro.props;
 
 const seo = resolveSeoMetadata({
@@ -115,7 +117,7 @@ const seo = resolveSeoMetadata({
   <body class="min-h-screen">
     <div class="flex min-h-screen flex-col">
       <slot />
-      <BuildFooter />
+      {showFooter ? <BuildFooter /> : null}
     </div>
     <GlobalNoticeCenter />
     <GlobalToastCenter client:load />

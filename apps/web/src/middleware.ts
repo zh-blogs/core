@@ -15,7 +15,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
     context.locals.authUser = user;
 
     if (!user) {
-      return context.redirect('/login', 302);
+      const nextPath = `${context.url.pathname}${context.url.search}`;
+      return context.redirect(`/login?next=${encodeURIComponent(nextPath)}`, 302);
     }
 
     if (!hasAccessToPath(user, context.url.pathname)) {

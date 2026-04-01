@@ -1,6 +1,7 @@
 ---
-import { getLoginHref } from '@/application/auth/auth.server';
+import { getLoginHref, readSessionUser } from '@/application/auth/auth.server';
 import { getAuthErrorMessage, getAuthStatusMessage } from '@/application/auth/auth-page';
+import { resolvePostLoginRedirect } from '@/application/auth/auth-route.server';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 
 export const prerender = false;
@@ -11,6 +12,12 @@ const statusMessage = getAuthStatusMessage(Astro.url.searchParams.get('status'))
 const errorCode = Astro.url.searchParams.get('error');
 const errorMessage = getAuthErrorMessage(errorCode);
 const resendEmail = Astro.url.searchParams.get('email')?.trim() || '';
+
+const sessionUser = await readSessionUser(Astro.request);
+
+if (sessionUser) {
+  return Astro.redirect(resolvePostLoginRedirect(nextPath, sessionUser));
+}
 ---
 
 <BaseLayout title="登录 | 集博栈" showFooter={false}>

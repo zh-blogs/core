@@ -2,12 +2,21 @@
 import {
   IconArrowRight as ArrowIcon,
   IconChevronDown as ChevronIcon,
+  IconLayoutDashboard as DashboardIcon,
   IconMoonStars as MoonIcon,
   IconSunHigh as SunIcon,
 } from '@tabler/icons-svelte-runes';
 ---
 
 <div class="ml-auto hidden items-center gap-2 lg:flex">
+  <a
+    aria-label="进入工作台"
+    class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-(--color-line-med) text-(--color-fg-2) transition hover:border-red-700/30 hover:text-red-700 dark:hover:border-red-400/30 dark:hover:text-red-400"
+    href="/dashboard"
+  >
+    <DashboardIcon size={17} stroke={1.5} class="block" />
+  </a>
+
   <button
     aria-label="切换主题"
     class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-(--color-line-med) text-(--color-fg-2) transition hover:border-red-700/30 hover:text-red-700 dark:hover:border-red-400/30 dark:hover:text-red-400"

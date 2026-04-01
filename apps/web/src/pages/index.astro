@@ -1,8 +1,9 @@
 ---
 import { getCollection } from 'astro:content';
 
+import { readCurrentAnnouncement } from '@/application/announcement/announcement.server';
 import { readCommunityRoles } from '@/application/community/community.server';
-import { readAnnouncements, readHomeSummary } from '@/application/home/home.server';
+import { readHomeSummary } from '@/application/home/home.server';
 import { readPublicSites, shuffleSites } from '@/application/site/site-public.server';
 import HomeCommunityDocs from '@/components/home/HomeCommunityDocs.astro';
 import HomeHero from '@/components/home/HomeHero.astro';
@@ -28,14 +29,6 @@ const formatDate = (value: Date | string | null): string => {
   });
 };
 
-const previewAnnouncement = {
-  tag: '项目公告',
-  title: '春季目录整理进行中',
-  summary:
-    '欢迎补充近期更新的个人博客、RSS 地址与站点地图信息，新提交内容会进入审查并陆续同步到公开列表。',
-  publishTime: '2026-03-19T10:00:00+08:00',
-};
-
 const projectBlogs = (await getCollection('blogs')).sort(
   (left, right) => right.data.create_time.getTime() - left.data.create_time.getTime(),
 );
@@ -55,9 +48,8 @@ const fallbackSummary = {
 };
 
 const summary = await readHomeSummary(fallbackSummary);
-const announcements = await readAnnouncements();
-const leadAnnouncement = announcements[0] ?? previewAnnouncement;
-const leadAnnouncementDate = leadAnnouncement.publishTime
+const leadAnnouncement = await readCurrentAnnouncement();
+const leadAnnouncementDate = leadAnnouncement?.publishTime
   ? formatDate(leadAnnouncement.publishTime)
   : '';
 const randomBlogs = shuffleSites(publicSites).slice(0, 6);

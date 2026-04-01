@@ -10,8 +10,8 @@ export interface AppConfig {
   API_LOG_DIR?: string;
   API_WEB_BASE_URL: string;
   API_CORS_ORIGINS: string;
-  API_GITHUB_CLIENT_ID?: string;
-  API_GITHUB_CLIENT_SECRET?: string;
+  API_GITHUB_CLIENT_ID: string;
+  API_GITHUB_CLIENT_SECRET: string;
   API_GITHUB_CALLBACK_URL: string;
   API_GITHUB_SCOPE: string;
   API_COOKIE_DOMAIN?: string;
@@ -19,12 +19,12 @@ export interface AppConfig {
   API_JWT_REFRESH_SECRET: string;
   API_JWT_ACCESS_TTL_SECONDS: number;
   API_JWT_REFRESH_TTL_SECONDS: number;
-  API_SMTP_HOST?: string;
+  API_SMTP_HOST: string;
   API_SMTP_PORT: number;
   API_SMTP_SECURE: boolean;
-  API_SMTP_USER?: string;
-  API_SMTP_PASS?: string;
-  API_SMTP_FROM?: string;
+  API_SMTP_USER: string;
+  API_SMTP_PASS: string;
+  API_SMTP_FROM: string;
   API_INTERNAL_TOKEN: string;
 }
 
@@ -42,7 +42,21 @@ declare module 'fastify' {
 
 const envSchema = {
   type: 'object',
-  required: ['NODE_ENV', 'DATABASE_URL', 'VALKEY_URL'],
+  required: [
+    'NODE_ENV',
+    'DATABASE_URL',
+    'VALKEY_URL',
+    'API_GITHUB_CLIENT_ID',
+    'API_GITHUB_CLIENT_SECRET',
+    'API_GITHUB_CALLBACK_URL',
+    'API_GITHUB_SCOPE',
+    'API_SMTP_HOST',
+    'API_SMTP_PORT',
+    'API_SMTP_SECURE',
+    'API_SMTP_USER',
+    'API_SMTP_PASS',
+    'API_SMTP_FROM',
+  ],
   properties: {
     NODE_ENV: {
       type: 'string',
@@ -77,17 +91,19 @@ const envSchema = {
     },
     API_GITHUB_CLIENT_ID: {
       type: 'string',
+      minLength: 1,
     },
     API_GITHUB_CLIENT_SECRET: {
       type: 'string',
+      minLength: 1,
     },
     API_GITHUB_CALLBACK_URL: {
       type: 'string',
-      default: 'http://127.0.0.1:9901/auth/github/callback',
+      minLength: 1,
     },
     API_GITHUB_SCOPE: {
       type: 'string',
-      default: 'read:user,user:email',
+      minLength: 1,
     },
     API_COOKIE_DOMAIN: {
       type: 'string',
@@ -104,31 +120,33 @@ const envSchema = {
     },
     API_JWT_ACCESS_TTL_SECONDS: {
       type: 'number',
-      default: 900,
+      default: 21600, // 6 hours
     },
     API_JWT_REFRESH_TTL_SECONDS: {
       type: 'number',
-      default: 604800,
+      default: 604800, // 1 week
     },
     API_SMTP_HOST: {
       type: 'string',
+      minLength: 1,
     },
     API_SMTP_PORT: {
       type: 'number',
-      default: 587,
     },
     API_SMTP_SECURE: {
       type: 'boolean',
-      default: false,
     },
     API_SMTP_USER: {
       type: 'string',
+      minLength: 1,
     },
     API_SMTP_PASS: {
       type: 'string',
+      minLength: 1,
     },
     API_SMTP_FROM: {
       type: 'string',
+      minLength: 1,
     },
     API_INTERNAL_TOKEN: {
       type: 'string',
@@ -137,6 +155,23 @@ const envSchema = {
     },
   },
 } as const;
+
+const cookieDomainPattern =
+  /^(localhost|\d{1,3}(?:\.\d{1,3}){3}|[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*)$/i;
+
+const validateCookieDomain = (value: string | undefined): void => {
+  if (!value) {
+    return;
+  }
+
+  if (value.includes('://') || value.includes('/') || value.includes(':')) {
+    throw new Error('API_COOKIE_DOMAIN must be a bare hostname or left empty');
+  }
+
+  if (!cookieDomainPattern.test(value)) {
+    throw new Error('API_COOKIE_DOMAIN must be a valid hostname');
+  }
+};
 
 export const configPlugin = fp<AppBootstrapOptions>(
   async (app, options) => {
@@ -153,6 +188,8 @@ export const configPlugin = fp<AppBootstrapOptions>(
       data: envData,
       dotenv: false,
     });
+
+    validateCookieDomain(app.config.API_COOKIE_DOMAIN);
   },
   { name: 'config' },
 );

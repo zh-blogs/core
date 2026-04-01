@@ -1,10 +1,12 @@
 import type { APIRoute } from 'astro';
 
+import type { ManagementPermissionKey } from '@/application/auth/auth.guard';
 import {
   buildRedirectUrl,
   createRedirectHeaders,
   proxyAuthJson,
   readApiErrorCode,
+  resolvePostLoginRedirect,
   sanitizeNextPath,
 } from '@/application/auth/auth-route.server';
 
@@ -41,14 +43,12 @@ export const POST: APIRoute = async ({ request }) => {
     ok: boolean;
     user: {
       role: 'USER' | 'ADMIN' | 'SYS_ADMIN';
+      permissions: ManagementPermissionKey[];
     };
   };
   const headers = createRedirectHeaders(response);
 
-  headers.set(
-    'Location',
-    nextPath ?? (payload.user.role === 'USER' ? '/dashboard' : '/management'),
-  );
+  headers.set('Location', resolvePostLoginRedirect(nextPath, payload.user));
 
   return new Response(null, {
     status: 302,

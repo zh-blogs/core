@@ -1,5 +1,6 @@
 ---
 import {
+  IconLayoutDashboard as DashboardIcon,
   IconMenu2 as MenuIcon,
   IconMoonStars as MoonIcon,
   IconSunHigh as SunIcon,
@@ -8,6 +9,14 @@ import {
 ---
 
 <div class="ml-auto flex items-center gap-2 lg:hidden">
+  <a
+    aria-label="进入工作台"
+    class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-(--color-line-med) text-(--color-fg-2) transition hover:border-red-700/30 hover:text-red-700 dark:hover:border-red-400/30 dark:hover:text-red-400"
+    href="/dashboard"
+  >
+    <DashboardIcon size={17} stroke={1.5} class="block" />
+  </a>
+
   <button
     aria-label="切换主题"
     class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-(--color-line-med) text-(--color-fg-2) transition hover:border-red-700/30 hover:text-red-700 dark:hover:border-red-400/30 dark:hover:text-red-400"

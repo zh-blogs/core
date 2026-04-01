@@ -8,10 +8,10 @@ describe('seo helpers', () => {
     expect(buildAbsoluteSiteUrl('blog')).toBe('https://www.zhblogs.net/blog');
   });
 
-  it('marks utility and admin pages as noindex', () => {
+  it('marks utility and management pages as noindex', () => {
     expect(shouldNoIndexPath('/site/go')).toBe(true);
     expect(shouldNoIndexPath('/site/submit/update')).toBe(true);
-    expect(shouldNoIndexPath('/admin/site-submissions')).toBe(true);
+    expect(shouldNoIndexPath('/management/site-submissions')).toBe(true);
     expect(shouldNoIndexPath('/dashboard')).toBe(true);
     expect(shouldNoIndexPath('/site')).toBe(false);
   });

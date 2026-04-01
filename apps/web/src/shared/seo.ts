@@ -64,7 +64,7 @@ export function shouldNoIndexPath(pathname: string): boolean {
     pathname === '/forbidden' ||
     pathname === '/site/go' ||
     pathname.startsWith('/dashboard') ||
-    pathname.startsWith('/admin') ||
+    pathname.startsWith('/management') ||
     pathname.startsWith('/site/submit')
   );
 }

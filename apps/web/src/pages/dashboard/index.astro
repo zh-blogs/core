@@ -1,0 +1,288 @@
+---
+export const prerender = false;
+
+import { isManagementRole, MANAGEMENT_NAV_ITEMS } from '@/application/auth/auth.guard';
+import { getGithubBindHref, getGithubUnbindHref } from '@/application/auth/auth.server';
+import { getAuthErrorMessage, getAuthStatusMessage } from '@/application/auth/auth-page';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+const user = Astro.locals.authUser;
+const canOpenManagement = isManagementRole(user);
+const managementModules =
+  user?.role === 'SYS_ADMIN'
+    ? MANAGEMENT_NAV_ITEMS
+    : MANAGEMENT_NAV_ITEMS.filter((item) => user && user.permissions.includes(item.permission));
+const statusMessage = getAuthStatusMessage(Astro.url.searchParams.get('status'));
+const errorMessage = getAuthErrorMessage(Astro.url.searchParams.get('error'));
+const githubBindHref = getGithubBindHref();
+const githubUnbindHref = getGithubUnbindHref();
+
+const securityNavItems = [
+  {
+    href: '#account-security',
+    label: '账户安全',
+  },
+  {
+    href: '/',
+    label: '返回首页',
+  },
+] as const;
+
+const loginMethods = [user?.hasPassword ? '密码' : null, user?.hasGithub ? 'GitHub' : null].filter(
+  Boolean,
+);
+
+const loginMethodLabel = loginMethods.length > 0 ? loginMethods.join(' + ') : '未设置';
+---
+
+<BaseLayout title="Dashboard | ZhBlogs" showFooter={false}>
+  <main class="page-shell dashboard-shell">
+    <section class="page-stack">
+      <div class="dashboard-frame">
+        <aside class="dashboard-sidebar surface-card">
+          <div class="space-y-3">
+            <p class="eyebrow">
+              <span class="status-dot" style="--status-dot: var(--color-info-dot)"></span>
+              dashboard / identity
+            </p>
+            <div class="space-y-1">
+              <div class="text-lg font-medium text-(--color-fg)">{user?.nickname ?? '用户'}</div>
+              <p class="break-all text-sm text-(--color-fg-3)">{user?.email ?? 'unknown'}</p>
+            </div>
+          </div>
+
+          <nav class="dashboard-menu" aria-label="工作台菜单">
+            {
+              securityNavItems.map((item) => (
+                <a class="dashboard-menu-link" href={item.href}>
+                  <span class="dashboard-menu-title">{item.label}</span>
+                </a>
+              ))
+            }
+          </nav>
+
+          <div class="dashboard-sidebar-actions">
+            {
+              canOpenManagement && (
+                <a class="action-button action-button-secondary w-full" href="/management">
+                  进入管理面板
+                </a>
+              )
+            }
+            <form action="/auth/logout" method="post">
+              <button class="action-button action-button-ghost w-full" type="submit">
+                退出登录
+              </button>
+            </form>
+          </div>
+        </aside>
+
+        <div class="dashboard-content space-y-6">
+          <section class="surface-card space-y-5">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">
+                  <span class="status-dot" style="--status-dot: var(--color-ok-dot)"></span>
+                  dashboard / session summary
+                </p>
+                <h1 class="section-title">工作台</h1>
+              </div>
+            </div>
+
+            <dl class="dashboard-summary-grid">
+              <div class="dashboard-summary-card">
+                <dt>当前角色</dt>
+                <dd>{user?.role ?? 'UNKNOWN'}</dd>
+              </div>
+              <div class="dashboard-summary-card">
+                <dt>登录方式</dt>
+                <dd>{loginMethodLabel}</dd>
+              </div>
+              <div class="dashboard-summary-card">
+                <dt>邮箱验证</dt>
+                <dd>{user?.isVerified ? '已验证' : '未验证'}</dd>
+              </div>
+              <div class="dashboard-summary-card">
+                <dt>会话版本</dt>
+                <dd>{user?.authVersion ?? '—'}</dd>
+              </div>
+            </dl>
+          </section>
+
+          {
+            statusMessage && (
+              <div class="status-panel status-panel-success">
+                <p class="status-panel-title">操作已完成</p>
+                <p class="status-panel-copy">{statusMessage}</p>
+              </div>
+            )
+          }
+          {
+            errorMessage && (
+              <div class="status-panel status-panel-error">
+                <p class="status-panel-title">需要处理</p>
+                <p class="status-panel-copy">{errorMessage}</p>
+              </div>
+            )
+          }
+
+          <section class="surface-card space-y-6" id="account-security">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">
+                  <span class="status-dot" style="--status-dot: var(--color-info-dot)"></span>
+                  dashboard / account security
+                </p>
+                <h2 class="section-title">账户安全</h2>
+              </div>
+            </div>
+
+            <dl class="dashboard-account-facts">
+              <div class="dashboard-account-fact">
+                <dt>邮箱地址</dt>
+                <dd>{user?.email ?? '—'}</dd>
+              </div>
+              <div class="dashboard-account-fact">
+                <dt>邮箱验证</dt>
+                <dd>{user?.isVerified ? '已验证' : '未验证'}</dd>
+              </div>
+              <div class="dashboard-account-fact">
+                <dt>本地密码</dt>
+                <dd>{user?.hasPassword ? '已设置' : '未设置'}</dd>
+              </div>
+              <div class="dashboard-account-fact">
+                <dt>GitHub 绑定</dt>
+                <dd>{user?.hasGithub ? '已绑定' : '未绑定'}</dd>
+              </div>
+            </dl>
+
+            <div class="dashboard-security-grid">
+              <section class="dashboard-security-card">
+                <div class="space-y-2">
+                  <p class="eyebrow">
+                    <span class="status-dot" style="--status-dot: var(--color-info-dot)"></span>
+                    account / providers
+                  </p>
+                  <h3 class="section-title">第三方登录</h3>
+                </div>
+
+                <div class="dashboard-provider-list" role="list" aria-label="第三方登录方式">
+                  <div class="dashboard-provider-row" role="listitem">
+                    <div class="dashboard-provider-meta">
+                      <div class="dashboard-provider-title">GitHub</div>
+                      <div class="dashboard-provider-status">
+                        {user?.hasGithub ? '已绑定' : '未绑定'}
+                      </div>
+                    </div>
+                    {
+                      user?.hasGithub ? (
+                        <form action={githubUnbindHref} method="post">
+                          <button
+                            class="action-button action-button-danger"
+                            disabled={!user?.hasPassword}
+                            type="submit"
+                          >
+                            {user?.hasPassword ? '解绑' : '先设置密码'}
+                          </button>
+                        </form>
+                      ) : (
+                        <a class="action-button action-button-secondary" href={githubBindHref}>
+                          绑定
+                        </a>
+                      )
+                    }
+                  </div>
+                </div>
+              </section>
+
+              <section class="dashboard-security-card">
+                <div class="space-y-2">
+                  <p class="eyebrow">
+                    <span class="status-dot" style="--status-dot: var(--color-info-dot)"></span>
+                    account / password
+                  </p>
+                  <h3 class="section-title">{user?.hasPassword ? '修改密码' : '设置密码'}</h3>
+                </div>
+
+                <form action="/auth/password" class="form-stack" method="post">
+                  {
+                    user?.hasPassword && (
+                      <label class="form-field">
+                        <span class="form-label-row">
+                          <span>当前密码</span>
+                          <span class="form-required">必填</span>
+                        </span>
+                        <input name="currentPassword" required type="password" />
+                      </label>
+                    )
+                  }
+
+                  <label class="form-field">
+                    <span class="form-label-row">
+                      <span>新密码</span>
+                      <span class="form-required">必填</span>
+                    </span>
+                    <input
+                      maxlength="128"
+                      minlength="8"
+                      name="nextPassword"
+                      required
+                      type="password"
+                    />
+                  </label>
+
+                  <label class="form-field">
+                    <span class="form-label-row">
+                      <span>确认新密码</span>
+                      <span class="form-required">必填</span>
+                    </span>
+                    <input
+                      maxlength="128"
+                      minlength="8"
+                      name="confirmPassword"
+                      required
+                      type="password"
+                    />
+                  </label>
+
+                  <div class="action-row pt-4">
+                    <button class="action-button action-button-primary" type="submit">
+                      {user?.hasPassword ? '更新密码' : '设置密码'}
+                    </button>
+                  </div>
+                </form>
+              </section>
+            </div>
+          </section>
+
+          {
+            canOpenManagement && managementModules.length > 0 && (
+              <section class="surface-card space-y-5">
+                <div class="section-head">
+                  <div>
+                    <p class="eyebrow">
+                      <span class="status-dot" style="--status-dot: var(--color-info-dot)" />
+                      dashboard / management summary
+                    </p>
+                    <h2 class="section-title">管理权限摘要</h2>
+                  </div>
+                </div>
+
+                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {managementModules.map((item) => (
+                    <a
+                      class="rounded-sm border border-(--color-line) p-4 transition hover:border-(--color-line-med)"
+                      href={item.href}
+                    >
+                      <div class="text-sm font-medium">{item.label}</div>
+                    </a>
+                  ))}
+                </div>
+              </section>
+            )
+          }
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

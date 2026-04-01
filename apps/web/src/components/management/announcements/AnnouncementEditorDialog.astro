@@ -1,0 +1,204 @@
+---
+type ManagedAnnouncement = {
+  id: string;
+  title: string;
+  content: string | null;
+  status: 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'EXPIRED';
+  publishTime: string | null;
+  expireTime: string | null;
+  expiredTime: string | null;
+  createdBy: string | null;
+  updatedBy: string | null;
+  createdTime: string;
+  updatedTime: string;
+};
+
+type AnnouncementFormState = {
+  id: string;
+  title: string;
+  content: string;
+  status: ManagedAnnouncement['status'];
+  publishTime: string;
+  expireTime: string;
+  scheduleEnabled: boolean;
+  autoExpireEnabled: boolean;
+};
+
+type AnnouncementPagination = {
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+};
+
+interface Props {
+  initialFormState: AnnouncementFormState;
+  initialModalMode: string;
+  pagination: AnnouncementPagination;
+}
+
+const { initialFormState, initialModalMode, pagination } = Astro.props;
+---
+
+<dialog
+  class="management-dialog"
+  data-initial-id={initialFormState.id}
+  data-initial-mode={initialModalMode}
+  id="announcement-editor"
+>
+  <div class="management-dialog-panel surface-card">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">
+          <span class="status-dot" style="--status-dot: var(--color-info-dot)"></span>
+          announcements / editor
+        </p>
+        <h2 class="section-title" id="announcement-editor-title">
+          {initialModalMode === 'edit' ? '编辑公告' : '新建公告'}
+        </h2>
+      </div>
+      <button
+        class="action-button action-button-ghost"
+        id="announcement-editor-close"
+        type="button"
+      >
+        关闭
+      </button>
+    </div>
+
+    <form
+      action="/management/announcements/save"
+      class="form-stack"
+      id="announcement-editor-form"
+      method="post"
+    >
+      <input id="announcement-editor-id" name="id" type="hidden" value={initialFormState.id} />
+      <input name="page" type="hidden" value={pagination.page} />
+      <input name="pageSize" type="hidden" value={pagination.pageSize} />
+
+      <label class="form-field">
+        <span class="form-label-row">
+          <span>公告标题</span>
+          <span class="form-required">必填</span>
+        </span>
+        <input
+          id="announcement-editor-title-input"
+          name="title"
+          placeholder="请输入公告标题"
+          required
+          type="text"
+          value={initialFormState.title}
+        />
+      </label>
+
+      <label class="form-field">
+        <span class="form-label-row">
+          <span>公告正文</span>
+          <span class="form-optional">选填</span>
+        </span>
+        <textarea
+          id="announcement-editor-content"
+          name="content"
+          placeholder="请输入公告正文，可留空">{initialFormState.content}</textarea
+        >
+      </label>
+
+      <div class="grid gap-3">
+        <label class="toggle-check">
+          <input
+            checked={initialFormState.scheduleEnabled}
+            id="announcement-editor-scheduled"
+            name="schedule_enabled"
+            type="checkbox"
+          />
+          <span class="toggle-check-box" aria-hidden="true"></span>
+          <span class="toggle-check-copy">
+            <strong>预发布</strong>
+            <small>勾选后需要填写发布时间，到达指定时间后自动发布。</small>
+          </span>
+        </label>
+
+        <label class="toggle-check">
+          <input
+            checked={initialFormState.autoExpireEnabled}
+            id="announcement-editor-auto-expire"
+            name="auto_expire"
+            type="checkbox"
+          />
+          <span class="toggle-check-box" aria-hidden="true"></span>
+          <span class="toggle-check-copy">
+            <strong>自动过期</strong>
+            <small>勾选后需要填写结束时间，到时自动结束并进入公告归档。</small>
+          </span>
+        </label>
+      </div>
+
+      <div class="grid gap-3 md:grid-cols-2">
+        <label
+          class="form-field"
+          hidden={!initialFormState.scheduleEnabled}
+          id="announcement-editor-publish-field"
+        >
+          <span class="form-label-row">
+            <span>发布时间</span>
+            <span
+              class="form-required"
+              hidden={!initialFormState.scheduleEnabled}
+              id="announcement-editor-publish-required"
+            >
+              必填
+            </span>
+          </span>
+          <input
+            id="announcement-editor-publish-time"
+            name="publish_time"
+            type="datetime-local"
+            value={initialFormState.publishTime}
+          />
+          <span class="form-hint">只有预发布时需要填写，必须晚于当前时间。</span>
+        </label>
+
+        <label
+          class="form-field"
+          hidden={!initialFormState.autoExpireEnabled}
+          id="announcement-editor-expire-field"
+        >
+          <span class="form-label-row">
+            <span>结束时间</span>
+            <span class="form-required" id="announcement-editor-expire-required">必填</span>
+          </span>
+          <input
+            id="announcement-editor-expire-time"
+            name="expire_time"
+            type="datetime-local"
+            value={initialFormState.expireTime}
+          />
+          <span class="form-hint">到达该时间后，公告会自动结束并进入归档。</span>
+        </label>
+      </div>
+
+      <div class="action-row pt-4">
+        <button
+          class="action-button action-button-primary"
+          id="announcement-editor-submit-publish"
+          name="submit_intent"
+          type="submit"
+          value="publish"
+        >
+          发布
+        </button>
+        <button
+          class="action-button action-button-secondary"
+          id="announcement-editor-submit-draft"
+          name="submit_intent"
+          type="submit"
+          value="draft"
+          hidden={initialModalMode === 'edit' && initialFormState.status !== 'DRAFT'}
+          disabled={initialModalMode === 'edit' && initialFormState.status !== 'DRAFT'}
+        >
+          保存草稿
+        </button>
+      </div>
+    </form>
+  </div>
+</dialog>
