@@ -153,61 +153,50 @@ export const multiFeedSchema = z.object({
   name: z.string(),
   url: z.string(),
   type: feedTypeSchema.optional(),
+  isDefault: z.boolean(),
 });
 
 const multiFeedInputSchema = z.object({
   name: z.string(),
   url: publicSiteUrlSchema,
   type: feedTypeSchema.optional(),
+  isDefault: z.boolean(),
 });
 
-const normalizeFeedUrlValue = (value: string | null | undefined): string | null => {
-  const normalized = value?.trim();
-  return normalized ? normalized : null;
+type FeedValidationPayload = {
+  feed?: Array<{ url: string; isDefault: boolean }> | null;
 };
 
-type DefaultFeedValidationPayload = {
-  feed?: Array<{ url: string }> | null;
-  default_feed_url?: string | null;
-};
-
-const addDefaultFeedValidation = <TSchema extends z.ZodType<DefaultFeedValidationPayload>>(
+const addFeedValidation = <TSchema extends z.ZodType<FeedValidationPayload>>(
   schema: TSchema,
 ): TSchema =>
   schema.superRefine((value, ctx) => {
     const feed = value.feed ?? undefined;
-    const defaultFeedUrl = normalizeFeedUrlValue(value.default_feed_url);
 
     if (feed === undefined) {
       return;
     }
 
     if (feed.length === 0) {
-      if (defaultFeedUrl !== null) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'default_feed_url must be null when feed is empty',
-          path: ['default_feed_url'],
-        });
-      }
-
       return;
     }
 
-    if (defaultFeedUrl === null) {
+    const defaultCount = feed.filter((item) => item.isDefault).length;
+
+    if (defaultCount === 0) {
       ctx.addIssue({
         code: 'custom',
-        message: 'default_feed_url is required when feed is not empty',
-        path: ['default_feed_url'],
+        message: 'feed must include one default item when feed is not empty',
+        path: ['feed'],
       });
       return;
     }
 
-    if (!feed.some((item) => item.url === defaultFeedUrl)) {
+    if (defaultCount > 1) {
       ctx.addIssue({
         code: 'custom',
-        message: 'default_feed_url must match one feed url',
-        path: ['default_feed_url'],
+        message: 'feed can only include one default item',
+        path: ['feed'],
       });
     }
   });
@@ -265,7 +254,6 @@ export const siteAuditSnapshotSchema = z.object({
   sign: z.string().nullable().optional(),
   icon_base64: z.string().nullable().optional(),
   feed: z.array(multiFeedSchema).nullable().optional(),
-  default_feed_url: z.string().nullable().optional(),
   from: z.array(fromSourceSchema).nullable().optional(),
   classification_status: siteClassificationStatusSchema.nullable().optional(),
   sitemap: z.string().nullable().optional(),
@@ -282,7 +270,7 @@ export const siteAuditSnapshotSchema = z.object({
   architecture: siteAuditArchitectureSchema.nullable().optional(),
 });
 
-const siteAuditSnapshotInputSchema = addDefaultFeedValidation(
+const siteAuditSnapshotInputSchema = addFeedValidation(
   z.object({
     bid: z.string().nullable().optional(),
     name: z.string().nullable().optional(),
@@ -290,7 +278,6 @@ const siteAuditSnapshotInputSchema = addDefaultFeedValidation(
     sign: z.string().nullable().optional(),
     icon_base64: z.string().nullable().optional(),
     feed: z.array(multiFeedInputSchema).nullable().optional(),
-    default_feed_url: nullableOptionalPublicSiteUrlSchema,
     from: z.array(fromSourceSchema).nullable().optional(),
     classification_status: siteClassificationStatusSchema.nullable().optional(),
     sitemap: nullableOptionalPublicSiteUrlSchema,
@@ -366,22 +353,20 @@ export const siteSelectSchema = createSelectSchema(Sites, {
 const siteInsertSchemaBase = (createInsertSchema(Sites) as z.ZodObject).extend({
   url: publicSiteUrlSchema,
   feed: z.array(multiFeedInputSchema).optional(),
-  default_feed_url: nullableOptionalPublicSiteUrlSchema,
   from: z.array(fromSourceSchema).optional(),
   sitemap: nullableOptionalPublicSiteUrlSchema,
   link_page: nullableOptionalPublicSiteUrlSchema,
 });
-export const siteInsertSchema = addDefaultFeedValidation(siteInsertSchemaBase);
+export const siteInsertSchema = addFeedValidation(siteInsertSchemaBase);
 
 const siteUpdateSchemaBase = (createUpdateSchema(Sites) as z.ZodObject).extend({
   url: publicSiteUrlSchema.optional(),
   feed: z.array(multiFeedInputSchema).optional(),
-  default_feed_url: nullableOptionalPublicSiteUrlSchema,
   from: z.array(fromSourceSchema).optional(),
   sitemap: nullableOptionalPublicSiteUrlSchema,
   link_page: nullableOptionalPublicSiteUrlSchema,
 });
-export const siteUpdateSchema = addDefaultFeedValidation(siteUpdateSchemaBase);
+export const siteUpdateSchema = addFeedValidation(siteUpdateSchemaBase);
 
 export const announcementSelectSchema = createSelectSchema(Announcements);
 export const announcementInsertSchema = createInsertSchema(Announcements);

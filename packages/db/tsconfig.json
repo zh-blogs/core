@@ -1,7 +1,6 @@
 {
   "extends": "@zhblogs/configs/tsconfig.base.json",
   "compilerOptions": {
-    "baseUrl": ".",
     "lib": ["ESNext"],
     "paths": {
       "@/*": ["./src/*"]

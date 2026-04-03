@@ -53,7 +53,6 @@ export interface SiteAuditSnapshot {
   sign?: string | null;
   icon_base64?: string | null;
   feed?: MultiFeed[] | null;
-  default_feed_url?: string | null;
   from?: FromSourceKey[] | null;
   classification_status?: SiteClassificationStatusKey | null;
   sitemap?: string | null;

@@ -30,6 +30,7 @@ export interface MultiFeed {
   name: string;
   url: string;
   type?: FeedTypeKey;
+  isDefault: boolean;
 }
 
 export const Sites = pgTable(
@@ -51,8 +52,6 @@ export const Sites = pgTable(
     icon_base64: text(),
     /** 站点订阅源列表 */
     feed: jsonb().$type<MultiFeed[]>().notNull().default([]),
-    /** 默认订阅源地址，指向 feed 数组中的某一项 */
-    default_feed_url: varchar({ length: 256 }),
     /** 站点来源渠道 */
     from: fromSources().array().notNull().default([]),
     /** 站点分类信息是否已确认完整 */
