@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   siteAuditInsertSchema,
+  siteAuditSnapshotSchema,
   siteClaimStatusSchema,
   siteFeedbackAuditInsertSchema,
   siteFeedbackReasonSchema,
@@ -163,6 +164,85 @@ describe('db zod site url validation', () => {
     });
 
     expectFailurePath(result, 'feed');
+  });
+
+  it('accepts structured sub_tags with selected, custom, and mixed values', () => {
+    expect(
+      siteAuditSnapshotSchema.safeParse({
+        main_tag: {
+          tag_id: crypto.randomUUID(),
+        },
+        sub_tags: [
+          {
+            tag_id: crypto.randomUUID(),
+          },
+        ],
+      }).success,
+    ).toBe(true);
+
+    expect(
+      siteAuditSnapshotSchema.safeParse({
+        sub_tags: [
+          {
+            tag_id: null,
+            name: '前端',
+            name_normalized: '前端',
+          },
+        ],
+      }).success,
+    ).toBe(true);
+
+    expect(
+      siteAuditSnapshotSchema.safeParse({
+        sub_tags: [
+          {
+            tag_id: crypto.randomUUID(),
+            name: '开发',
+            name_normalized: '开发',
+          },
+          {
+            tag_id: null,
+            name: '前端',
+            name_normalized: '前端',
+          },
+        ],
+      }).success,
+    ).toBe(true);
+  });
+
+  it('rejects invalid structured sub_tags entries', () => {
+    expectFailurePath(
+      siteAuditSnapshotSchema.safeParse({
+        sub_tags: [
+          {
+            tag_id: null,
+            name: null,
+            name_normalized: null,
+          },
+        ],
+      }),
+      'sub_tags.0',
+    );
+
+    expectFailurePath(
+      siteAuditSnapshotSchema.safeParse({
+        sub_tags: [
+          { tag_id: '11111111-1111-4111-8111-111111111111' },
+          { tag_id: '11111111-1111-4111-8111-111111111111' },
+        ],
+      }),
+      'sub_tags',
+    );
+
+    expectFailurePath(
+      siteAuditSnapshotSchema.safeParse({
+        sub_tags: [
+          { tag_id: null, name: 'Node.js', name_normalized: 'nodejs' },
+          { tag_id: null, name: 'Node JS', name_normalized: 'nodejs' },
+        ],
+      }),
+      'sub_tags',
+    );
   });
 
   it('accepts new claim statuses and rejects legacy status', () => {

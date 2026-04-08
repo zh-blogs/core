@@ -45,6 +45,12 @@ export interface SiteAuditArchitectureSnapshot {
   repo_url?: string | null;
 }
 
+export interface SiteAuditTagSnapshot {
+  tag_id?: string | null;
+  name?: string | null;
+  name_normalized?: string | null;
+}
+
 /** 站点审核快照，用于新增/修改/删除审核时展示前后差异 */
 export interface SiteAuditSnapshot {
   bid?: string | null;
@@ -62,10 +68,8 @@ export interface SiteAuditSnapshot {
   is_show?: boolean | null;
   recommend?: boolean | null;
   reason?: string | null;
-  tag_ids?: string[] | null;
-  main_tag_id?: string | null;
-  sub_tag_ids?: string[] | null;
-  custom_sub_tags?: string[] | null;
+  main_tag?: SiteAuditTagSnapshot | null;
+  sub_tags?: SiteAuditTagSnapshot[] | null;
   architecture?: SiteAuditArchitectureSnapshot | null;
 }
 

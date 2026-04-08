@@ -238,6 +238,95 @@ const siteArchitectureItemSchema = z.object({
   name_normalized: z.string().trim().min(1).max(128).nullable().optional(),
 });
 
+const normalizeSubTagToken = (value: string | null | undefined): string | null => {
+  const normalized = value?.trim() ?? '';
+
+  if (!normalized) {
+    return null;
+  }
+
+  const compact = normalized.toLocaleLowerCase('zh-CN').replace(/[^\p{L}\p{N}]+/gu, '');
+  return compact || normalized.toLocaleLowerCase('zh-CN');
+};
+
+export const siteAuditTagSchema = z.object({
+  tag_id: z.uuid().nullable().optional(),
+  name: z.string().trim().min(1).max(64).nullable().optional(),
+  name_normalized: z.string().trim().min(1).max(64).nullable().optional(),
+});
+
+type SubTagValidationPayload = {
+  sub_tags?: Array<{
+    tag_id?: string | null;
+    name?: string | null;
+    name_normalized?: string | null;
+  }> | null;
+};
+
+const addSubTagValidation = <TSchema extends z.ZodType<SubTagValidationPayload>>(
+  schema: TSchema,
+): TSchema =>
+  schema.superRefine((value, ctx) => {
+    const subTags = value.sub_tags ?? undefined;
+
+    if (subTags === undefined || subTags.length === 0) {
+      return;
+    }
+
+    const seenIds = new Set<string>();
+    const seenCustomNames = new Set<string>();
+
+    subTags.forEach((item, index) => {
+      const tagId = item.tag_id?.trim() ?? null;
+      const name = item.name?.trim() ?? null;
+      const normalizedName =
+        item.name_normalized?.trim() ?? (name ? normalizeSubTagToken(name) : null);
+
+      if (!tagId && !name) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'sub_tags items must include tag_id or name',
+          path: ['sub_tags', index],
+        });
+        return;
+      }
+
+      if (tagId) {
+        if (seenIds.has(tagId)) {
+          ctx.addIssue({
+            code: 'custom',
+            message: 'sub_tags can only include one entry per tag_id',
+            path: ['sub_tags'],
+          });
+          return;
+        }
+
+        seenIds.add(tagId);
+        return;
+      }
+
+      if (!normalizedName) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'sub_tags custom entries must include a valid normalized name',
+          path: ['sub_tags', index],
+        });
+        return;
+      }
+
+      if (seenCustomNames.has(normalizedName)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'sub_tags can only include one entry per custom name',
+          path: ['sub_tags'],
+        });
+        return;
+      }
+
+      seenCustomNames.add(normalizedName);
+    });
+  });
+
 export const siteAuditArchitectureSchema = z.object({
   program_id: z.uuid().nullable().optional(),
   program_name: z.string().trim().min(1).max(128).nullable().optional(),
@@ -247,52 +336,52 @@ export const siteAuditArchitectureSchema = z.object({
   repo_url: nullableOptionalPublicSiteUrlSchema,
 });
 
-export const siteAuditSnapshotSchema = z.object({
-  bid: z.string().nullable().optional(),
-  name: z.string().nullable().optional(),
-  url: z.string().nullable().optional(),
-  sign: z.string().nullable().optional(),
-  icon_base64: z.string().nullable().optional(),
-  feed: z.array(multiFeedSchema).nullable().optional(),
-  from: z.array(fromSourceSchema).nullable().optional(),
-  classification_status: siteClassificationStatusSchema.nullable().optional(),
-  sitemap: z.string().nullable().optional(),
-  link_page: z.string().nullable().optional(),
-  access_scope: siteAccessScopeSchema.nullable().optional(),
-  status: siteStatusTypeSchema.nullable().optional(),
-  is_show: z.boolean().nullable().optional(),
-  recommend: z.boolean().nullable().optional(),
-  reason: z.string().nullable().optional(),
-  tag_ids: z.array(z.uuid()).nullable().optional(),
-  main_tag_id: z.uuid().nullable().optional(),
-  sub_tag_ids: z.array(z.uuid()).nullable().optional(),
-  custom_sub_tags: z.array(z.string()).nullable().optional(),
-  architecture: siteAuditArchitectureSchema.nullable().optional(),
-});
-
-const siteAuditSnapshotInputSchema = addFeedValidation(
+export const siteAuditSnapshotSchema = addSubTagValidation(
   z.object({
     bid: z.string().nullable().optional(),
     name: z.string().nullable().optional(),
-    url: nullableOptionalPublicSiteUrlSchema,
+    url: z.string().nullable().optional(),
     sign: z.string().nullable().optional(),
     icon_base64: z.string().nullable().optional(),
-    feed: z.array(multiFeedInputSchema).nullable().optional(),
+    feed: z.array(multiFeedSchema).nullable().optional(),
     from: z.array(fromSourceSchema).nullable().optional(),
     classification_status: siteClassificationStatusSchema.nullable().optional(),
-    sitemap: nullableOptionalPublicSiteUrlSchema,
-    link_page: nullableOptionalPublicSiteUrlSchema,
+    sitemap: z.string().nullable().optional(),
+    link_page: z.string().nullable().optional(),
     access_scope: siteAccessScopeSchema.nullable().optional(),
     status: siteStatusTypeSchema.nullable().optional(),
     is_show: z.boolean().nullable().optional(),
     recommend: z.boolean().nullable().optional(),
     reason: z.string().nullable().optional(),
-    tag_ids: z.array(z.uuid()).nullable().optional(),
-    main_tag_id: z.uuid().nullable().optional(),
-    sub_tag_ids: z.array(z.uuid()).nullable().optional(),
-    custom_sub_tags: z.array(z.string().trim().min(1).max(64)).nullable().optional(),
+    main_tag: siteAuditTagSchema.nullable().optional(),
+    sub_tags: z.array(siteAuditTagSchema).nullable().optional(),
     architecture: siteAuditArchitectureSchema.nullable().optional(),
   }),
+);
+
+const siteAuditSnapshotInputSchema = addSubTagValidation(
+  addFeedValidation(
+    z.object({
+      bid: z.string().nullable().optional(),
+      name: z.string().nullable().optional(),
+      url: nullableOptionalPublicSiteUrlSchema,
+      sign: z.string().nullable().optional(),
+      icon_base64: z.string().nullable().optional(),
+      feed: z.array(multiFeedInputSchema).nullable().optional(),
+      from: z.array(fromSourceSchema).nullable().optional(),
+      classification_status: siteClassificationStatusSchema.nullable().optional(),
+      sitemap: nullableOptionalPublicSiteUrlSchema,
+      link_page: nullableOptionalPublicSiteUrlSchema,
+      access_scope: siteAccessScopeSchema.nullable().optional(),
+      status: siteStatusTypeSchema.nullable().optional(),
+      is_show: z.boolean().nullable().optional(),
+      recommend: z.boolean().nullable().optional(),
+      reason: z.string().nullable().optional(),
+      main_tag: siteAuditTagSchema.nullable().optional(),
+      sub_tags: z.array(siteAuditTagSchema).nullable().optional(),
+      architecture: siteAuditArchitectureSchema.nullable().optional(),
+    }),
+  ),
 );
 
 export const siteAuditDiffItemSchema = z.object({
