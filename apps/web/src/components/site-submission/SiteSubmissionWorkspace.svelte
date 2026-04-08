@@ -2,6 +2,10 @@
   import { onMount } from 'svelte';
 
   import {
+    buildSubmissionQueryHref,
+    copySubmissionAuditId,
+  } from '@/application/site-submission/site-submission.browser-feedback';
+  import {
     type AutoFillMissingState,
     createEmptyAutoFillMissingState,
   } from '@/application/site-submission/site-submission.browser-workspace';
@@ -19,6 +23,7 @@
     type SubmissionStatusResult,
   } from '@/application/site-submission/site-submission.service';
   import { statusToneClass } from '@/application/site-submission/site-submission.status-tone';
+  import ModalSurface from '@/shared/ui/ModalSurface.svelte';
 
   import {
     WORKSPACE_INPUT_CLASS,
@@ -81,6 +86,7 @@
   let selectedSite: SiteResolveResult | null = null;
   let createProgramPickerValue = '';
   let updateProgramPickerValue = '';
+  let copiedAuditId = '';
 
   const state = <T,>(get: () => T, set: (value: T) => void): ValueState<T> => ({
     get,
@@ -295,6 +301,20 @@
   const selectClass = WORKSPACE_SELECT_CLASS;
   const selectChevronStyle = WORKSPACE_SELECT_CHEVRON_STYLE;
   const textAreaClass = WORKSPACE_TEXTAREA_CLASS;
+  const successTitleMap = {
+    CREATE: '新增申请已进入审核',
+    UPDATE: '修订申请已进入审核',
+    DELETE: '删除申请已进入审核',
+  } as const;
+  let activeSubmissionResult: SubmissionResult | null = null;
+  let activeSubmissionTitle: string;
+
+  $: activeSubmissionResult = createSuccess ?? updateSuccess ?? deleteSuccess ?? null;
+  $: activeSubmissionTitle = activeSubmissionResult
+    ? (successTitleMap[activeSubmissionResult.action as keyof typeof successTitleMap] ??
+      '提交申请已进入审核')
+    : '';
+
   const {
     withInputStateClass,
     isAutoFillMissing,
@@ -323,6 +343,18 @@
   onMount(async () => {
     await controller.initialize({ initialIdentifier, initialAuditId });
   });
+
+  async function handleCopyAuditId(auditId: string) {
+    await copySubmissionAuditId(auditId);
+    copiedAuditId = auditId;
+  }
+
+  function closeSubmissionResultDialog() {
+    createSuccess = null;
+    updateSuccess = null;
+    deleteSuccess = null;
+    copiedAuditId = '';
+  }
 </script>
 
 <div
@@ -338,11 +370,9 @@
     {createErrors}
     {createPending}
     createProgramSelectedId={getProgramPickerSelected('create')}
-    {createSuccess}
     {deleteForm}
     {deleteErrors}
     {deletePending}
-    {deleteSuccess}
     {fieldNeedsRefinement}
     {inputClass}
     {isAutoFillMissing}
@@ -352,7 +382,6 @@
       id: item.id,
       name: item.name,
     }))}
-    {queryError}
     {queryErrors}
     {queryForm}
     {queryPending}
@@ -371,7 +400,6 @@
     {updateForm}
     {updatePending}
     updateProgramSelectedId={getProgramPickerSelected('update')}
-    {updateSuccess}
     {withInputStateClass}
     {addFeed}
     {applyAddressInference}
@@ -397,3 +425,44 @@
     <WorkspaceAside {activePage} />
   {/if}
 </div>
+
+<ModalSurface
+  open={Boolean(activeSubmissionResult)}
+  title={activeSubmissionTitle}
+  description="请保存查询编号，后续可在查询页查看处理进度。"
+  tone="info"
+  confirmLabel="关闭"
+  cancelLabel=""
+  showCancel={false}
+  showHeaderClose={true}
+  headerCloseAriaLabel="关闭结果提示"
+  onConfirm={closeSubmissionResultDialog}
+  onCancel={closeSubmissionResultDialog}
+>
+  {#if activeSubmissionResult}
+    <div class="space-y-4">
+      <div class="rounded-md border border-(--color-line-med) bg-(--color-bg) px-4 py-4">
+        <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-(--color-info)">
+          查询编号
+        </p>
+        <p class="mt-3 font-mono text-sm text-(--color-fg)">{activeSubmissionResult.audit_id}</p>
+      </div>
+
+      <div class="flex flex-wrap gap-3">
+        <button
+          class="rounded-md border border-(--color-line-med) px-4 py-2 text-sm text-(--color-fg) transition hover:border-(--color-line-strong)"
+          type="button"
+          on:click={() => handleCopyAuditId(activeSubmissionResult.audit_id)}
+        >
+          {copiedAuditId === activeSubmissionResult.audit_id ? '已复制查询 ID' : '复制查询 ID'}
+        </button>
+        <a
+          class="inline-flex items-center rounded-md border border-(--color-line-med) px-4 py-2 text-sm text-(--color-fg) transition hover:border-(--color-line-strong)"
+          href={buildSubmissionQueryHref(activeSubmissionResult.audit_id)}
+        >
+          前往查询页
+        </a>
+      </div>
+    </div>
+  {/if}
+</ModalSurface>

@@ -13,13 +13,13 @@
     hasExplicitDirectoryPreference,
     type SiteDirectoryQueryState,
   } from '@/application/site/site-directory.shared';
+  import { submitPublicSiteFeedback } from '@/application/site/site-feedback.browser';
   import {
     persistSiteDirectoryPreference,
     readSiteDirectoryPreference,
     requestSiteDirectory,
     resolveSiteDirectoryAccessSummary,
     resolveSiteDirectorySortSummary,
-    submitSiteDirectoryFeedback,
     syncSiteDirectoryUrl,
   } from '@/components/site/site-directory-page.api';
   import {
@@ -77,16 +77,12 @@
   let pending = $state(false);
   let feedbackTarget = $state<SiteDirectoryItem | null>(null);
   let feedbackSubmitting = $state(false);
-  let feedbackError = $state('');
   let preference = $state<SiteDirectoryPreference | null>(createInitialPreferenceValue());
   let syntaxHelpOpen = $state(false);
 
   const draftStructured = $derived(parseSiteDirectoryStructuredSearch(draftSearch));
   const sortSummary = $derived(resolveSiteDirectorySortSummary(query.sort));
   const accessSummary = $derived(resolveSiteDirectoryAccessSummary(draftStructured.access[0]));
-  const rssSummary = $derived(
-    draftStructured.rss === null ? '' : draftStructured.rss ? '有 RSS' : '无 RSS',
-  );
   const featuredSummary = $derived(
     draftStructured.featured === null ? '' : draftStructured.featured ? '已推荐' : '未推荐',
   );
@@ -152,19 +148,13 @@
     }
 
     feedbackSubmitting = true;
-    feedbackError = '';
 
     try {
-      const ok = await submitSiteDirectoryFeedback(feedbackTarget.slug, payload);
+      const ok = await submitPublicSiteFeedback(feedbackTarget.slug, payload);
 
-      if (!ok) {
-        feedbackError = '提交失败，请稍后重试。';
-        return;
+      if (ok) {
+        feedbackTarget = null;
       }
-
-      feedbackTarget = null;
-    } catch {
-      feedbackError = '提交失败，请稍后重试。';
     } finally {
       feedbackSubmitting = false;
     }
@@ -216,7 +206,6 @@
     structured={draftStructured}
     {syntaxHelpOpen}
     {accessSummary}
-    {rssSummary}
     {featuredSummary}
     onSearchChange={(value) => {
       draftSearch = value;
@@ -251,7 +240,6 @@
     onOrderToggle={() => handleSiteDirectoryOrderToggle(searchContext)}
     onChangePage={(nextPage) => changeSiteDirectoryPage(result, searchContext, nextPage)}
     onFeedback={(item) => {
-      feedbackError = '';
       feedbackTarget = item;
     }}
   />
@@ -261,9 +249,7 @@
   open={Boolean(feedbackTarget)}
   siteName={feedbackTarget?.name ?? '站点'}
   submitting={feedbackSubmitting}
-  errorMessage={feedbackError}
   onCancel={() => {
-    feedbackError = '';
     feedbackTarget = null;
   }}
   onSubmit={submitFeedback}

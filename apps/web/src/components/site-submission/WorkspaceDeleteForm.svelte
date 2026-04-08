@@ -2,14 +2,12 @@
   import type {
     DeleteSubmissionFormState,
     FieldErrors,
-    SubmissionResult,
   } from '@/application/site-submission/site-submission.service';
 
   export let submitDelete: () => Promise<void>;
 
   export let deleteForm: DeleteSubmissionFormState;
   export let deleteErrors: FieldErrors = {};
-  export let deleteSuccess: SubmissionResult | null = null;
   export let deletePending = false;
 
   export let inputClass = '';
@@ -82,24 +80,6 @@
         {deleteErrors.agree_terms}
       </p>{/if}
   </div>
-
-  {#if deleteSuccess}
-    <div class="rounded-md border border-(--color-line-med) px-4 py-4">
-      <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-(--color-info)">
-        已生成查询编号
-      </p>
-      <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
-        <p class="text-sm leading-7">
-          查询编号：<span class="font-mono">{deleteSuccess.audit_id}</span>
-        </p>
-        <a
-          class="inline-flex rounded-md border border-(--color-line-med) px-3 py-2 text-sm"
-          href={`/site/submit/query?audit_id=${deleteSuccess.audit_id}`}>前往查询页</a
-        >
-      </div>
-    </div>
-  {/if}
-
   <button
     class="inline-flex min-h-11 items-center justify-center rounded-md border border-red-700/20 px-4 text-sm font-medium text-red-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-400/20 dark:text-red-400"
     disabled={deletePending}

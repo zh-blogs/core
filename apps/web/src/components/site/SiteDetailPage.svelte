@@ -8,6 +8,7 @@
     SiteCheckItem,
     SiteDetail,
   } from '@/application/site/site-directory.models';
+  import { submitPublicSiteFeedback } from '@/application/site/site-feedback.browser';
   import {
     buildHeartbeatChecks,
     buildSiteResourceLinks,
@@ -45,7 +46,6 @@
   let copiedKey = $state('');
   let feedbackOpen = $state(false);
   let feedbackSubmitting = $state(false);
-  let feedbackError = $state('');
   let viewportWidth = $state(1440);
 
   const tagTone = $derived(resolveTone(detail.primaryTag ?? '未分类', detail.featured));
@@ -129,26 +129,13 @@
     notifyByEmail?: boolean;
   }) {
     feedbackSubmitting = true;
-    feedbackError = '';
 
     try {
-      const response = await fetch(`/api/site-directory/${detail.slug}/feedback`, {
-        method: 'POST',
-        headers: {
-          accept: 'application/json',
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
+      const ok = await submitPublicSiteFeedback(detail.slug, payload);
 
-      if (!response.ok) {
-        feedbackError = '提交失败，请稍后重试。';
-        return;
+      if (ok) {
+        feedbackOpen = false;
       }
-
-      feedbackOpen = false;
-    } catch {
-      feedbackError = '提交失败，请稍后重试。';
     } finally {
       feedbackSubmitting = false;
     }
@@ -165,7 +152,6 @@
           {statusToneClass}
           {heartbeatChecks}
           onOpenFeedback={() => {
-            feedbackError = '';
             feedbackOpen = true;
           }}
         />
@@ -190,9 +176,7 @@
   open={feedbackOpen}
   siteName={detail.name}
   submitting={feedbackSubmitting}
-  errorMessage={feedbackError}
   onCancel={() => {
-    feedbackError = '';
     feedbackOpen = false;
   }}
   onSubmit={submitFeedback}

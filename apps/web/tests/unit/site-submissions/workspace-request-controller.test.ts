@@ -1,0 +1,383 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const {
+  requestResolvedSiteMock,
+  requestSearchSitesMock,
+  requestSiteAutoFillMock,
+  requestSubmissionMutationMock,
+  requestSubmissionOptionsMock,
+  requestSubmissionQueryMock,
+} = vi.hoisted(() => ({
+  requestResolvedSiteMock: vi.fn(),
+  requestSearchSitesMock: vi.fn(),
+  requestSiteAutoFillMock: vi.fn(),
+  requestSubmissionMutationMock: vi.fn(),
+  requestSubmissionOptionsMock: vi.fn(),
+  requestSubmissionQueryMock: vi.fn(),
+}));
+
+const { clearSubmissionIdentifierSearchParamsMock } = vi.hoisted(() => ({
+  clearSubmissionIdentifierSearchParamsMock: vi.fn(),
+}));
+
+vi.mock('@/application/site-submission/site-submission.browser-actions', () => ({
+  requestResolvedSite: requestResolvedSiteMock,
+  requestSearchSites: requestSearchSitesMock,
+  requestSiteAutoFill: requestSiteAutoFillMock,
+  requestSubmissionMutation: requestSubmissionMutationMock,
+  requestSubmissionOptions: requestSubmissionOptionsMock,
+  requestSubmissionQuery: requestSubmissionQueryMock,
+}));
+
+vi.mock('@/application/site-submission/site-submission.browser-feedback', () => ({
+  clearSubmissionIdentifierSearchParams: clearSubmissionIdentifierSearchParamsMock,
+}));
+
+import { createEmptyAutoFillMissingState } from '@/application/site-submission/site-submission.browser-workspace';
+import {
+  createInitialCreateForm,
+  createInitialDeleteForm,
+  createInitialQueryForm,
+  createInitialUpdateForm,
+  createUpdateFormFromResolvedSite,
+  type SiteResolveResult,
+  type SiteSearchItem,
+  type SiteSubmissionOptionsResult,
+  type SubmissionResult,
+  type SubmissionStatusResult,
+} from '@/application/site-submission/site-submission.service';
+import type {
+  SiteSubmissionWorkspaceControllerContext,
+  ValueState,
+} from '@/components/site-submission/site-submission-workspace.types';
+import { createSiteSubmissionWorkspaceFormController } from '@/components/site-submission/site-submission-workspace-form-controller';
+import { createSiteSubmissionWorkspaceRequestController } from '@/components/site-submission/site-submission-workspace-request-controller';
+
+function createState<T>(initial: T): ValueState<T> {
+  let current = initial;
+
+  return {
+    get: () => current,
+    set: (value) => {
+      current = value;
+    },
+  };
+}
+
+function createResolvedSiteFixture(): SiteResolveResult {
+  return {
+    site_id: '11111111-1111-7111-8111-111111111111',
+    bid: 'example-blog',
+    name: 'Example Blog',
+    url: 'https://example.com',
+    sign: 'Original sign',
+    feed: [
+      {
+        name: '默认订阅',
+        url: 'https://example.com/feed',
+        isDefault: true,
+      },
+    ],
+    sitemap: 'https://example.com/sitemap.xml',
+    link_page: 'https://example.com/friends',
+    main_tag_id: 'main-tag-id',
+    sub_tags: [],
+    architecture: null,
+  };
+}
+
+function createController() {
+  const context: SiteSubmissionWorkspaceControllerContext = {
+    activePage: 'create',
+    options: createState<SiteSubmissionOptionsResult>({
+      main_tags: [],
+      sub_tags: [],
+      programs: [],
+      tech_stacks: [],
+    }),
+    optionsPending: createState(false),
+    forms: {
+      create: createState(createInitialCreateForm()),
+      update: createState(createInitialUpdateForm()),
+      delete: createState(createInitialDeleteForm()),
+      query: createState(createInitialQueryForm()),
+    },
+    errors: {
+      create: createState({}),
+      update: createState({}),
+      delete: createState({}),
+      query: createState({}),
+      queryError: createState<string | null>(null),
+    },
+    success: {
+      create: createState<SubmissionResult | null>(null),
+      update: createState<SubmissionResult | null>(null),
+      delete: createState<SubmissionResult | null>(null),
+      query: createState<SubmissionStatusResult | null>(null),
+    },
+    pending: {
+      create: createState(false),
+      update: createState(false),
+      delete: createState(false),
+      query: createState(false),
+      search: createState(false),
+      resolve: createState(false),
+      autoFill: createState(false),
+      autoFillTarget: createState<'create' | 'update' | null>(null),
+    },
+    search: {
+      query: createState(''),
+      results: createState<SiteSearchItem[]>([]),
+      error: createState<string | null>(null),
+      selectedSite: createState<SiteResolveResult | null>(null),
+    },
+    autoFillMissing: {
+      create: createState(createEmptyAutoFillMissingState()),
+      update: createState(createEmptyAutoFillMissingState()),
+    },
+    programPicker: {
+      create: createState(''),
+      update: createState(''),
+    },
+  };
+
+  const formController = createSiteSubmissionWorkspaceFormController(context);
+  const requestController = createSiteSubmissionWorkspaceRequestController(context, formController);
+
+  return {
+    context,
+    requestController,
+  };
+}
+
+describe('site submission workspace request controller', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('resets the create form and emits shared success feedback after a successful create', async () => {
+    const { context, requestController } = createController();
+    const createForm = createInitialCreateForm();
+
+    createForm.name = 'Example Blog';
+    createForm.url = 'https://example.com';
+    createForm.sign = 'A blog about software';
+    createForm.main_tag_id = 'main-tag-id';
+    createForm.feeds[0] = {
+      ...createForm.feeds[0],
+      name: '默认订阅',
+      url: 'https://example.com/feed',
+      isDefault: true,
+    };
+    createForm.agree_terms = true;
+
+    context.forms.create.set(createForm);
+    context.autoFillMissing.create.set({
+      ...createEmptyAutoFillMissingState(),
+      architecture: true,
+    });
+    context.programPicker.create.set('program-wordpress');
+
+    requestSubmissionMutationMock.mockResolvedValue({
+      ok: true,
+      data: {
+        audit_id: '22222222-2222-7222-8222-222222222222',
+        action: 'CREATE',
+        status: 'PENDING',
+        site_id: null,
+      },
+    });
+
+    await requestController.submitCreate();
+
+    expect(context.forms.create.get()).toMatchObject({
+      name: '',
+      url: 'https://',
+      sign: '',
+      main_tag_id: '',
+      submit_reason: '',
+      submitter_name: '',
+      submitter_email: '',
+      notify_by_email: false,
+      agree_terms: false,
+    });
+    expect(context.forms.create.get().feeds).toHaveLength(1);
+    expect(context.forms.create.get().feeds[0]?.isDefault).toBe(true);
+    expect(context.errors.create.get()).toEqual({});
+    expect(context.autoFillMissing.create.get()).toEqual(createEmptyAutoFillMissingState());
+    expect(context.programPicker.create.get()).toBe('');
+    expect(context.success.create.get()).toEqual({
+      audit_id: '22222222-2222-7222-8222-222222222222',
+      action: 'CREATE',
+      status: 'PENDING',
+      site_id: null,
+    });
+    expect(clearSubmissionIdentifierSearchParamsMock).not.toHaveBeenCalled();
+  });
+
+  it('clears resolved-site state after a successful update', async () => {
+    const { context, requestController } = createController();
+    const resolvedSite = createResolvedSiteFixture();
+    const updateForm = createUpdateFormFromResolvedSite(resolvedSite);
+
+    updateForm.sign = 'Updated sign';
+    updateForm.submit_reason = 'Refresh the profile';
+    updateForm.agree_terms = true;
+
+    context.search.query.set('https://example.com');
+    context.search.results.set([
+      {
+        site_id: resolvedSite.site_id,
+        bid: resolvedSite.bid,
+        name: resolvedSite.name,
+        url: resolvedSite.url,
+      },
+    ]);
+    context.search.error.set('old error');
+    context.search.selectedSite.set(resolvedSite);
+    context.forms.update.set(updateForm);
+    context.autoFillMissing.update.set({
+      ...createEmptyAutoFillMissingState(),
+      name: true,
+    });
+    context.programPicker.update.set('program-astro');
+
+    requestSubmissionMutationMock.mockResolvedValue({
+      ok: true,
+      data: {
+        audit_id: '33333333-3333-7333-8333-333333333333',
+        action: 'UPDATE',
+        status: 'PENDING',
+        site_id: resolvedSite.site_id,
+      },
+    });
+
+    await requestController.submitUpdate();
+
+    expect(context.search.query.get()).toBe('');
+    expect(context.search.results.get()).toEqual([]);
+    expect(context.search.error.get()).toBeNull();
+    expect(context.search.selectedSite.get()).toBeNull();
+    expect(context.forms.update.get()).toMatchObject({
+      site_identifier: '',
+      name: '',
+      url: 'https://',
+      sign: '',
+      submit_reason: '',
+      agree_terms: false,
+    });
+    expect(context.forms.delete.get()).toMatchObject({
+      site_identifier: '',
+      submit_reason: '',
+      agree_terms: false,
+    });
+    expect(context.autoFillMissing.update.get()).toEqual(createEmptyAutoFillMissingState());
+    expect(context.programPicker.update.get()).toBe('');
+    expect(context.success.update.get()).toEqual({
+      audit_id: '33333333-3333-7333-8333-333333333333',
+      action: 'UPDATE',
+      status: 'PENDING',
+      site_id: resolvedSite.site_id,
+    });
+    expect(clearSubmissionIdentifierSearchParamsMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears resolved-site state after a successful delete', async () => {
+    const { context, requestController } = createController();
+    const resolvedSite = createResolvedSiteFixture();
+
+    context.search.query.set('example-blog');
+    context.search.results.set([
+      {
+        site_id: resolvedSite.site_id,
+        bid: resolvedSite.bid,
+        name: resolvedSite.name,
+        url: resolvedSite.url,
+      },
+    ]);
+    context.search.error.set('old error');
+    context.search.selectedSite.set(resolvedSite);
+    context.forms.delete.set({
+      ...createInitialDeleteForm(),
+      site_identifier: resolvedSite.site_id,
+      submit_reason: 'Site closed',
+      agree_terms: true,
+    });
+    context.autoFillMissing.update.set({
+      ...createEmptyAutoFillMissingState(),
+      sign: true,
+    });
+    context.programPicker.update.set('program-astro');
+
+    requestSubmissionMutationMock.mockResolvedValue({
+      ok: true,
+      data: {
+        audit_id: '44444444-4444-7444-8444-444444444444',
+        action: 'DELETE',
+        status: 'PENDING',
+        site_id: resolvedSite.site_id,
+      },
+    });
+
+    await requestController.submitDelete();
+
+    expect(context.search.query.get()).toBe('');
+    expect(context.search.results.get()).toEqual([]);
+    expect(context.search.error.get()).toBeNull();
+    expect(context.search.selectedSite.get()).toBeNull();
+    expect(context.forms.delete.get()).toMatchObject({
+      site_identifier: '',
+      submit_reason: '',
+      agree_terms: false,
+    });
+    expect(context.autoFillMissing.update.get()).toEqual(createEmptyAutoFillMissingState());
+    expect(context.programPicker.update.get()).toBe('');
+    expect(context.success.delete.get()).toEqual({
+      audit_id: '44444444-4444-7444-8444-444444444444',
+      action: 'DELETE',
+      status: 'PENDING',
+      site_id: resolvedSite.site_id,
+    });
+    expect(clearSubmissionIdentifierSearchParamsMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps user input and stores field errors when a mutation request fails', async () => {
+    const { context, requestController } = createController();
+    const createForm = createInitialCreateForm();
+
+    createForm.name = 'Example Blog';
+    createForm.url = 'https://example.com';
+    createForm.sign = 'A blog about software';
+    createForm.main_tag_id = 'main-tag-id';
+    createForm.feeds[0] = {
+      ...createForm.feeds[0],
+      name: '默认订阅',
+      url: 'https://example.com/feed',
+      isDefault: true,
+    };
+    createForm.agree_terms = true;
+
+    context.forms.create.set(createForm);
+
+    requestSubmissionMutationMock.mockResolvedValue({
+      ok: false,
+      fieldErrors: {
+        submitter_email: '提交者邮箱格式不正确。',
+      },
+    });
+
+    await requestController.submitCreate();
+
+    expect(context.forms.create.get()).toMatchObject({
+      name: 'Example Blog',
+      url: 'https://example.com',
+      sign: 'A blog about software',
+      main_tag_id: 'main-tag-id',
+      agree_terms: true,
+    });
+    expect(context.errors.create.get()).toEqual({
+      submitter_email: '提交者邮箱格式不正确。',
+    });
+    expect(clearSubmissionIdentifierSearchParamsMock).not.toHaveBeenCalled();
+  });
+});

@@ -6,14 +6,12 @@
     open = false,
     siteName,
     submitting = false,
-    errorMessage = '',
     onSubmit,
     onCancel,
   }: {
     open?: boolean;
     siteName: string;
     submitting?: boolean;
-    errorMessage?: string;
     onSubmit?: (payload: SiteFeedbackPayload) => void;
     onCancel?: () => void;
   } = $props();
@@ -128,13 +126,5 @@
       />
       <span>愿意通过邮箱接收处理通知</span>
     </label>
-
-    {#if errorMessage}
-      <p
-        class="rounded-md border border-[color-mix(in_srgb,var(--color-fail)_18%,var(--color-line))] bg-[color-mix(in_srgb,var(--color-fail)_4%,transparent)] px-3 py-2 text-sm text-(--color-fail)"
-      >
-        {errorMessage}
-      </p>
-    {/if}
   </div>
 </ModalSurface>

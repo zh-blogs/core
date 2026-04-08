@@ -1,4 +1,4 @@
-import { openToast } from './toast.service';
+import { openAlertDialog } from './dialog.service';
 
 export type SubmissionToastTone = 'success' | 'warning' | 'error' | 'info';
 
@@ -10,10 +10,12 @@ export interface SubmissionToastInput {
 }
 
 export function openSubmissionToast(input: SubmissionToastInput): void {
-  openToast({
+  const tone = input.tone ?? 'info';
+
+  void openAlertDialog({
     title: input.title,
-    message: input.message,
-    tone: input.tone ?? 'info',
-    durationMs: input.durationMs,
+    description: input.message,
+    tone: tone === 'error' ? 'danger' : tone === 'warning' ? 'warning' : 'info',
+    confirmLabel: '关闭',
   });
 }

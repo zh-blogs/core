@@ -11,7 +11,6 @@
     type SiteSearchItem,
     type SiteSubmissionOptionsResult,
     type SubmissionPage,
-    type SubmissionResult,
     type SubmissionStatusResult,
     trimText,
     type UpdateSubmissionFormState,
@@ -31,18 +30,15 @@
   export let createErrors: FieldErrors = {};
   export let createPending = false;
   export let createProgramSelectedId = '';
-  export let createSuccess: SubmissionResult | null = null;
   export let deleteForm: DeleteSubmissionFormState;
   export let deleteErrors: FieldErrors = {};
   export let deletePending = false;
-  export let deleteSuccess: SubmissionResult | null = null;
   export let fieldNeedsRefinement: (kind: 'create' | 'update', value: string) => boolean;
   export let inputClass = '';
   export let isAutoFillMissing: (kind: 'create' | 'update', field: AutoFillFieldKey) => boolean;
   export let options: SiteSubmissionOptionsResult;
   export let optionsPending = false;
   export let programOptions: Array<{ id: string; name: string }> = [];
-  export let queryError: string | null = null;
   export let queryErrors: FieldErrors = {};
   export let queryForm: QuerySubmissionFormState;
   export let queryPending = false;
@@ -61,7 +57,6 @@
   export let updateForm: UpdateSubmissionFormState;
   export let updatePending = false;
   export let updateProgramSelectedId = '';
-  export let updateSuccess: SubmissionResult | null = null;
   export let withInputStateClass: (base: string, warned: boolean, missing: boolean) => string;
 
   export let addFeed: (kind: 'create' | 'update') => void;
@@ -75,7 +70,7 @@
   export let resolveSite: (identifier: string | SiteResolveRequest) => Promise<void>;
   export let runAutoFill: (kind: 'create' | 'update') => Promise<void>;
   export let runSearch: () => Promise<void>;
-  export let selectDefaultFeed: (kind: 'create' | 'update', url: string) => void;
+  export let selectDefaultFeed: (kind: 'create' | 'update', id: string) => void;
   export let selectProgramOption: (kind: 'create' | 'update', id: string) => void;
   export let submitCreate: () => Promise<void>;
   export let submitDelete: () => Promise<void>;
@@ -99,7 +94,6 @@
       {submitCreate}
       {createForm}
       {createErrors}
-      {createSuccess}
       {createPending}
       {inputClass}
       {textAreaClass}
@@ -146,7 +140,6 @@
           {submitUpdate}
           {updateForm}
           {updateErrors}
-          {updateSuccess}
           {updatePending}
           {inputClass}
           {textAreaClass}
@@ -179,7 +172,6 @@
           {submitDelete}
           {deleteForm}
           {deleteErrors}
-          {deleteSuccess}
           {deletePending}
           {inputClass}
           {textAreaClass}
@@ -191,7 +183,6 @@
       {inputClass}
       {queryForm}
       {queryErrors}
-      {queryError}
       {queryPending}
       {querySuccess}
       {submitQuery}

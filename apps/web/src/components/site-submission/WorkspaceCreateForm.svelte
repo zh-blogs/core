@@ -18,7 +18,6 @@
 
   export let createForm: CreateSubmissionFormState;
   export let createErrors: FieldErrors = {};
-  export let createSuccess: { audit_id: string } | null = null;
   export let createPending = false;
 
   export let inputClass = '';
@@ -38,7 +37,7 @@
   export let removeFeed: (kind: 'create' | 'update', id: string) => void;
   export let updateFeedName: (kind: 'create' | 'update', id: string, value: string) => void;
   export let updateFeedUrl: (kind: 'create' | 'update', id: string, value: string) => void;
-  export let selectDefaultFeed: (kind: 'create' | 'update', url: string) => void;
+  export let selectDefaultFeed: (kind: 'create' | 'update', id: string) => void;
 
   export let optionsPending = false;
   export let options: SiteSubmissionOptionsResult;
@@ -62,8 +61,7 @@
   };
 
   const shouldPromptDefaultFeedSelection = (
-    feeds: Array<{ url: string }>,
-    defaultFeedUrl: string,
+    feeds: Array<{ url: string; isDefault?: boolean }>,
   ): boolean => {
     const uniqueFeedUrls = new Set(
       feeds
@@ -75,9 +73,9 @@
       return false;
     }
 
-    const comparableDefaultFeedUrl = createComparableHttpUrlKey(defaultFeedUrl);
-
-    return !comparableDefaultFeedUrl || !uniqueFeedUrls.has(comparableDefaultFeedUrl);
+    return (
+      feeds.filter((feed) => feed.isDefault && createComparableHttpUrlKey(feed.url)).length !== 1
+    );
   };
 
   const getTechStackOptions = () =>
@@ -243,8 +241,7 @@
         <TagMultiCombobox
           inputId="create-sub-tags-combobox"
           options={options.sub_tags}
-          bind:selectedIds={createForm.sub_tag_ids}
-          bind:customValues={createForm.custom_sub_tags}
+          bind:items={createForm.sub_tags}
           disabled={optionsPending}
         />
       </div>
@@ -273,8 +270,8 @@
               >
                 <input
                   type="radio"
-                  checked={trimText(createForm.default_feed_url) === trimText(feed.url)}
-                  on:change={() => selectDefaultFeed('create', feed.url)}
+                  checked={feed.isDefault}
+                  on:change={() => selectDefaultFeed('create', feed.id)}
                   disabled={!trimText(feed.url)}
                   aria-label={`默认订阅 ${index + 1}`}
                 />
@@ -314,7 +311,7 @@
                   ? '单个订阅时可留空名称，提交时会自动记为默认订阅。'
                   : '多个订阅时请明确填写每个订阅名称。'}</span
               >
-              {#if trimText(createForm.default_feed_url) === trimText(feed.url) && trimText(feed.url)}
+              {#if feed.isDefault && trimText(feed.url)}
                 <span class="font-mono uppercase tracking-[0.18em] text-(--color-info)">默认</span>
               {/if}
             </div>
@@ -332,14 +329,11 @@
           当前没有订阅地址。你可以保持为空，或手动新增一个订阅地址。
         </div>
       {/if}
-      {#if shouldPromptDefaultFeedSelection(createForm.feeds, createForm.default_feed_url) && !createErrors.default_feed_url}
+      {#if shouldPromptDefaultFeedSelection(createForm.feeds) && !createErrors.feeds}
         <p class="text-xs text-(--color-fail)">请选择一个默认订阅地址用于本站订阅抓取</p>
       {/if}
       {#if createErrors.feeds}<p class="text-xs text-(--color-fail)">
           {createErrors.feeds}
-        </p>{/if}
-      {#if createErrors.default_feed_url}<p class="text-xs text-(--color-fail)">
-          {createErrors.default_feed_url}
         </p>{/if}
     </div>
 
@@ -493,24 +487,6 @@
         {createErrors.agree_terms}
       </p>{/if}
   </div>
-
-  {#if createSuccess}
-    <div class="rounded-md border border-(--color-line-med) px-4 py-4">
-      <p class="font-mono text-[11px] uppercase tracking-[0.18em] text-(--color-info)">
-        已生成查询编号
-      </p>
-      <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
-        <p class="text-sm leading-7">
-          查询编号：<span class="font-mono">{createSuccess.audit_id}</span>
-        </p>
-        <a
-          class="inline-flex rounded-md border border-(--color-line-med) px-3 py-2 text-sm"
-          href={`/site/submit/query?audit_id=${createSuccess.audit_id}`}>前往查询页</a
-        >
-      </div>
-    </div>
-  {/if}
-
   <button
     class="inline-flex min-h-11 items-center justify-center rounded-md border border-red-700/20 px-4 text-sm font-medium text-red-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-400/20 dark:text-red-400"
     disabled={createPending}

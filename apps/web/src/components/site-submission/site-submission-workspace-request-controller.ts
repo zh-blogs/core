@@ -7,6 +7,7 @@ import {
   requestSubmissionQuery,
   type SubmissionMutationEndpoint,
 } from '@/application/site-submission/site-submission.browser-actions';
+import { clearSubmissionIdentifierSearchParams } from '@/application/site-submission/site-submission.browser-feedback';
 import {
   applyAutoFillToForm,
   createEmptyAutoFillMissingState,
@@ -16,7 +17,9 @@ import {
   buildDeleteSubmissionPayload,
   buildSubmissionQueryPayload,
   buildUpdateSubmissionPayload,
-  createInitialQueryForm,
+  createInitialCreateForm,
+  createInitialDeleteForm,
+  createInitialUpdateForm,
   createUpdateFormFromResolvedSite,
   type FieldErrors,
   isHttpUrl,
@@ -36,11 +39,52 @@ export function createSiteSubmissionWorkspaceRequestController(
   context: SiteSubmissionWorkspaceControllerContext,
   formController: FormController,
 ) {
+  const resetCreateSubmissionState = (): void => {
+    context.forms.create.set(createInitialCreateForm());
+    context.errors.create.set({});
+    context.success.create.set(null);
+    context.autoFillMissing.create.set(createEmptyAutoFillMissingState());
+    context.programPicker.create.set('');
+  };
+
+  const resetResolvedSubmissionState = (): void => {
+    context.search.query.set('');
+    context.search.results.set([]);
+    context.search.error.set(null);
+    context.search.selectedSite.set(null);
+    context.forms.update.set(createInitialUpdateForm());
+    context.forms.delete.set(createInitialDeleteForm());
+    context.errors.update.set({});
+    context.errors.delete.set({});
+    context.success.update.set(null);
+    context.success.delete.set(null);
+    context.autoFillMissing.update.set(createEmptyAutoFillMissingState());
+    context.programPicker.update.set('');
+  };
+
+  const handleMutationSuccess = (
+    kind: 'create' | 'update' | 'delete',
+    result: SubmissionResult,
+  ): void => {
+    if (kind === 'create') {
+      resetCreateSubmissionState();
+      context.success.create.set(result);
+    } else {
+      resetResolvedSubmissionState();
+      clearSubmissionIdentifierSearchParams();
+      if (kind === 'update') {
+        context.success.update.set(result);
+      } else {
+        context.success.delete.set(result);
+      }
+    }
+  };
+
   const submitMutationRequest = async (params: {
+    kind: 'create' | 'update' | 'delete';
     endpoint: SubmissionMutationEndpoint;
     payload: unknown;
     setFieldErrors: (errors: FieldErrors) => void;
-    setSuccess: (result: SubmissionResult) => void;
     setPending: (pending: boolean) => void;
     successTitle: string;
     errorTitle: string;
@@ -54,8 +98,7 @@ export function createSiteSubmissionWorkspaceRequestController(
         errorTitle: params.errorTitle,
       });
       if (result.ok) {
-        params.setSuccess(result.data);
-        context.forms.query.set(createInitialQueryForm({ audit_id: result.data.audit_id }));
+        handleMutationSuccess(params.kind, result.data);
         return;
       }
       params.setFieldErrors(result.fieldErrors);
@@ -68,10 +111,10 @@ export function createSiteSubmissionWorkspaceRequestController(
     build: () => { ok: true; data: unknown } | { ok: false; fieldErrors: FieldErrors };
     setErrors: (errors: FieldErrors) => void;
     clearSuccess: () => void;
+    kind: 'create' | 'update' | 'delete';
     endpoint: SubmissionMutationEndpoint;
     successTitle: string;
     errorTitle: string;
-    setSuccess: (result: SubmissionResult) => void;
     setPending: (pending: boolean) => void;
   }): Promise<void> => {
     params.setErrors({});
@@ -82,10 +125,10 @@ export function createSiteSubmissionWorkspaceRequestController(
       return;
     }
     await submitMutationRequest({
+      kind: params.kind,
       endpoint: params.endpoint,
       payload: parsed.data,
       setFieldErrors: params.setErrors,
-      setSuccess: params.setSuccess,
       setPending: params.setPending,
       successTitle: params.successTitle,
       errorTitle: params.errorTitle,
@@ -208,10 +251,10 @@ export function createSiteSubmissionWorkspaceRequestController(
       build: () => buildCreateSubmissionPayload(context.forms.create.get()),
       setErrors: context.errors.create.set,
       clearSuccess: () => context.success.create.set(null),
+      kind: 'create',
       endpoint: '/api/site-submissions/create',
       successTitle: '新增申请已进入审核',
       errorTitle: '提交未完成',
-      setSuccess: context.success.create.set,
       setPending: context.pending.create.set,
     });
 
@@ -224,10 +267,10 @@ export function createSiteSubmissionWorkspaceRequestController(
       build: () => buildUpdateSubmissionPayload(context.forms.update.get(), selectedSite),
       setErrors: context.errors.update.set,
       clearSuccess: () => context.success.update.set(null),
+      kind: 'update',
       endpoint: '/api/site-submissions/update',
       successTitle: '修订申请已进入审核',
       errorTitle: '修订未提交',
-      setSuccess: context.success.update.set,
       setPending: context.pending.update.set,
     });
   };
@@ -237,10 +280,10 @@ export function createSiteSubmissionWorkspaceRequestController(
       build: () => buildDeleteSubmissionPayload(context.forms.delete.get()),
       setErrors: context.errors.delete.set,
       clearSuccess: () => context.success.delete.set(null),
+      kind: 'delete',
       endpoint: '/api/site-submissions/delete',
       successTitle: '删除申请已进入审核',
       errorTitle: '删除申请未提交',
-      setSuccess: context.success.delete.set,
       setPending: context.pending.delete.set,
     });
 
@@ -251,7 +294,11 @@ export function createSiteSubmissionWorkspaceRequestController(
     const parsed = buildSubmissionQueryPayload(context.forms.query.get());
     if (!parsed.ok) {
       context.errors.query.set(parsed.fieldErrors);
-      context.errors.queryError.set(parsed.formError ?? '请先修正查询字段。');
+      openSubmissionToast({
+        tone: 'warning',
+        title: '查询未完成',
+        message: parsed.formError ?? '请先修正查询字段。',
+      });
       return;
     }
 
@@ -263,7 +310,6 @@ export function createSiteSubmissionWorkspaceRequestController(
         return;
       }
       context.errors.query.set(result.fieldErrors);
-      context.errors.queryError.set(result.error);
     } finally {
       context.pending.query.set(false);
     }

@@ -11,7 +11,6 @@
   export let inputClass = '';
   export let queryForm: QuerySubmissionFormState;
   export let queryErrors: FieldErrors = {};
-  export let queryError: string | null = null;
   export let queryPending = false;
   export let querySuccess: SubmissionStatusResult | null = null;
   export let submitQuery: () => Promise<void>;
@@ -31,7 +30,6 @@
         {queryErrors.audit_id}
       </p>{/if}
   </div>
-  {#if queryError}<p class="text-sm text-[color:var(--color-fail)]">{queryError}</p>{/if}
   <button
     class="inline-flex min-h-11 items-center justify-center rounded-[5px] border border-red-700/20 px-4 text-sm font-medium text-red-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-400/20 dark:text-red-400"
     disabled={queryPending}

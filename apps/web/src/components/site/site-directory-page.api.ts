@@ -1,7 +1,6 @@
 import type {
   SiteDirectoryPreference,
   SiteDirectoryResult,
-  SiteFeedbackPayload,
 } from '@/application/site/site-directory.models';
 import type { SiteDirectoryQueryState } from '@/application/site/site-directory.shared';
 import { buildSiteDirectorySearchParams } from '@/application/site/site-directory.shared';
@@ -110,25 +109,5 @@ export async function requestSiteDirectory(
     return payload.data;
   } catch {
     return null;
-  }
-}
-
-export async function submitSiteDirectoryFeedback(
-  slug: string,
-  payload: SiteFeedbackPayload,
-): Promise<boolean> {
-  try {
-    const response = await fetch(`/api/site-directory/${slug}/feedback`, {
-      method: 'POST',
-      headers: {
-        accept: 'application/json',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    return response.ok;
-  } catch {
-    return false;
   }
 }

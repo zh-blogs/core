@@ -2,6 +2,7 @@
   import { IconArrowRight, IconDice } from '@tabler/icons-svelte-runes';
 
   import type { SiteFeedbackPayload } from '@/application/site/site-directory.models';
+  import { submitPublicSiteFeedback } from '@/application/site/site-feedback.browser';
   import type { PublicSiteEntry } from '@/application/site/site-public.server';
   import BlogCard from '@/components/site/BlogCard.svelte';
   import SiteFeedbackDialog from '@/components/site/SiteFeedbackDialog.svelte';
@@ -10,7 +11,6 @@
 
   let feedbackTarget = $state<PublicSiteEntry | null>(null);
   let feedbackSubmitting = $state(false);
-  let feedbackError = $state('');
 
   async function submitFeedback(payload: SiteFeedbackPayload) {
     if (!feedbackTarget) {
@@ -18,26 +18,13 @@
     }
 
     feedbackSubmitting = true;
-    feedbackError = '';
 
     try {
-      const response = await fetch(`/api/site-directory/${feedbackTarget.slug}/feedback`, {
-        method: 'POST',
-        headers: {
-          accept: 'application/json',
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
+      const ok = await submitPublicSiteFeedback(feedbackTarget.slug, payload);
 
-      if (!response.ok) {
-        feedbackError = '提交失败，请稍后重试。';
-        return;
+      if (ok) {
+        feedbackTarget = null;
       }
-
-      feedbackTarget = null;
-    } catch {
-      feedbackError = '提交失败，请稍后重试。';
     } finally {
       feedbackSubmitting = false;
     }
@@ -69,7 +56,6 @@
       <BlogCard
         {entry}
         onFeedback={() => {
-          feedbackError = '';
           feedbackTarget = entry;
         }}
       />
@@ -80,9 +66,7 @@
     open={Boolean(feedbackTarget)}
     siteName={feedbackTarget?.name ?? ''}
     submitting={feedbackSubmitting}
-    errorMessage={feedbackError}
     onCancel={() => {
-      feedbackError = '';
       feedbackTarget = null;
     }}
     onSubmit={submitFeedback}

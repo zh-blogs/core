@@ -5,13 +5,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 
 export const prerender = false;
 
-const initialIdentifier =
-  Astro.url.searchParams.get('site_id') ??
-  Astro.url.searchParams.get('id') ??
-  Astro.url.searchParams.get('url') ??
-  Astro.url.searchParams.get('bid') ??
-  Astro.url.searchParams.get('identifier') ??
-  '';
+const initialIdentifier = Astro.url.searchParams.get('site_id') ?? '';
 ---
 
 <BaseLayout title="删除站点 | 集博栈">
