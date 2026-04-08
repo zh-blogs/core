@@ -10,6 +10,7 @@ import {
   isCreateSubmissionRequest,
   isDeleteSubmissionRequest,
   isLookupRequest,
+  isRestoreSubmissionRequest,
   isSubmissionQueryRequest,
   isUpdateSubmissionRequest,
 } from './site-submission.server-validators';
@@ -100,6 +101,25 @@ export async function handleDeleteSubmissionRequest(request: Request): Promise<R
     },
     request,
   );
+}
+
+export async function handleRestoreSubmissionRequest(request: Request): Promise<Response> {
+  const payload = await readJsonBody(request);
+
+  if (!isRestoreSubmissionRequest(payload)) {
+    return jsonResponse(
+      {
+        ok: false,
+        error: {
+          code: 'INVALID_BODY',
+          message: 'Request body is invalid for a site restore submission.',
+        },
+      },
+      400,
+    );
+  }
+
+  return forwardPost(`/api/sites/${payload.site_id}/restorations`, payload, request);
 }
 
 export async function handleSubmissionQueryRequest(request: Request): Promise<Response> {

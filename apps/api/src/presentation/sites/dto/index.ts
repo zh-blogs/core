@@ -7,6 +7,7 @@ export {
   autoFillResultSchema,
   errorResponseSchema,
   optionsResultSchema,
+  restoreTargetResultSchema,
   siteIdParamJsonSchema,
   siteLookupResultSchema,
   siteSearchResultSchema,

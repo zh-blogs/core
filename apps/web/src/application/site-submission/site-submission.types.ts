@@ -5,12 +5,14 @@ export interface FeedInput {
   name: string;
   url: string;
   type?: FeedType;
+  isDefault: boolean;
 }
 
 export interface FeedDraft {
   id: string;
   name: string;
   url: string;
+  isDefault: boolean;
 }
 
 export interface FeedCandidateInput {
@@ -30,6 +32,12 @@ export interface ArchitectureInput {
   }> | null;
   website_url?: string | null;
   repo_url?: string | null;
+}
+
+export interface SubTagInput {
+  tag_id?: string | null;
+  name?: string | null;
+  name_normalized?: string | null;
 }
 
 export interface SiteSubmissionOptionItem {
@@ -58,12 +66,10 @@ export interface SiteResolveResult {
   url: string;
   sign: string;
   feed: FeedInput[];
-  default_feed_url: string | null;
   sitemap: string | null;
   link_page: string | null;
   main_tag_id: string | null;
-  sub_tag_ids: string[];
-  custom_sub_tags: string[];
+  sub_tags: SubTagInput[];
   architecture: ArchitectureInput | null;
 }
 
@@ -85,24 +91,25 @@ export interface SiteAutoFillResult {
 }
 
 interface SubmissionContact {
-  submitter_name: string;
-  submitter_email: string;
+  submitter_name: string | null;
+  submitter_email: string | null;
   submit_reason: string;
   notify_by_email: boolean;
 }
 
 export interface SiteSubmissionCreateRequest extends SubmissionContact {
+  duplicate_review?: {
+    confirmed_site_ids: string[];
+  };
   site: {
     name: string;
     url: string;
     sign: string;
     feed?: FeedInput[];
-    default_feed_url?: string | null;
     sitemap?: string | null;
     link_page?: string | null;
     main_tag_id: string;
-    sub_tag_ids?: string[];
-    custom_sub_tags?: string[];
+    sub_tags?: SubTagInput[];
     architecture?: ArchitectureInput | null;
   };
 }
@@ -114,18 +121,24 @@ export interface SiteSubmissionUpdateRequest extends SubmissionContact {
     url?: string;
     sign?: string | null;
     feed?: FeedInput[];
-    default_feed_url?: string | null;
     sitemap?: string | null;
     link_page?: string | null;
     main_tag_id?: string | null;
-    sub_tag_ids?: string[] | null;
-    custom_sub_tags?: string[] | null;
+    sub_tags?: SubTagInput[] | null;
     architecture?: ArchitectureInput | null;
   };
 }
 
 export interface SiteSubmissionDeleteRequest extends SubmissionContact {
   site_identifier: string;
+}
+
+export interface SiteSubmissionRestoreRequest {
+  site_id: string;
+  submitter_name: string | null;
+  submitter_email: string | null;
+  restore_reason: string;
+  notify_by_email: boolean;
 }
 
 export interface SiteSubmissionQueryRequest {
@@ -146,12 +159,35 @@ export interface SubmissionStatusResult extends SubmissionResult {
   reviewed_time: string | null;
 }
 
+export interface SubmissionDuplicateCandidate {
+  site_id: string;
+  bid: string | null;
+  name: string;
+  url: string;
+  visibility: 'VISIBLE' | 'HIDDEN';
+  reason: string;
+}
+
+export interface SubmissionDuplicateReviewPayload {
+  strong: SubmissionDuplicateCandidate[];
+  weak: SubmissionDuplicateCandidate[];
+}
+
+export interface RestoreTargetResult {
+  site_id: string;
+  bid: string | null;
+  name: string;
+  url: string;
+  reason: string | null;
+}
+
 export interface ApiErrorPayload {
   ok: false;
   error: {
     code: string;
     message: string;
     fields?: string[];
+    duplicate_review?: SubmissionDuplicateReviewPayload;
   };
 }
 
@@ -175,10 +211,8 @@ interface SiteFormState {
   url: string;
   sign: string;
   main_tag_id: string;
-  sub_tag_ids: string[];
-  custom_sub_tags: string[];
+  sub_tags: SubTagInput[];
   feeds: FeedDraft[];
-  default_feed_url: string;
   sitemap: string;
   link_page: string;
   architecture_program_id: string;
@@ -206,6 +240,14 @@ export interface QuerySubmissionFormState {
   audit_id: string;
 }
 
+export interface RestoreSubmissionFormState {
+  submitter_name: string;
+  submitter_email: string;
+  restore_reason: string;
+  notify_by_email: boolean;
+  agree_terms: boolean;
+}
+
 export type FieldErrors = Record<string, string>;
 
 export const AUDIT_STATUS_META: Record<
@@ -222,4 +264,5 @@ export const ACTION_LABELS: Record<string, string> = {
   CREATE: '新增站点',
   UPDATE: '修订资料',
   DELETE: '删除站点',
+  RESTORE: '恢复站点',
 };

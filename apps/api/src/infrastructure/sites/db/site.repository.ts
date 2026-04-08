@@ -11,8 +11,14 @@ import {
   TechnologyCatalogs,
 } from '@zhblogs/db';
 
-import { and, eq, inArray, ne, or } from 'drizzle-orm';
+import { and, eq, inArray, ne } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
+
+import {
+  mapStrongDuplicateFields,
+  reviewSiteDuplicates,
+  type SiteDuplicateReviewResult,
+} from '@/domain/sites/service/site-duplicate-review.service';
 
 type ArchitectureInput =
   | { program_id?: string | null }
@@ -20,9 +26,26 @@ type ArchitectureInput =
   | null
   | undefined;
 
+function hasArchitectureStacks(
+  architecture: ArchitectureInput,
+): architecture is SiteAuditArchitectureSnapshot {
+  return Boolean(architecture && 'stacks' in architecture);
+}
+
 const normalizeFeedUrl = (value: string | null | undefined): string | null => {
   const normalized = value?.trim() ?? '';
   return normalized.length > 0 ? normalized : null;
+};
+
+const normalizeSubTagToken = (value: string | null | undefined): string | null => {
+  const normalized = value?.trim() ?? '';
+
+  if (!normalized) {
+    return null;
+  }
+
+  const compact = normalized.toLocaleLowerCase('zh-CN').replace(/[^\p{L}\p{N}]+/gu, '');
+  return compact || normalized.toLocaleLowerCase('zh-CN');
 };
 
 const normalizeSubmittedFeeds = (feed: MultiFeed[] | null | undefined): MultiFeed[] => {
@@ -41,7 +64,15 @@ const normalizeSubmittedFeeds = (feed: MultiFeed[] | null | undefined): MultiFee
       name: entry.name?.trim() || `订阅 ${normalized.length + 1}`,
       url,
       ...(entry.type ? { type: entry.type } : {}),
+      isDefault: entry.isDefault === true,
     });
+  }
+
+  if (normalized.length === 1) {
+    return normalized.map((item) => ({
+      ...item,
+      isDefault: true,
+    }));
   }
 
   return normalized;
@@ -81,58 +112,100 @@ export async function ensureTechnologyIdsExist(
     if (!program) {
       return false;
     }
+
+    return true;
   }
 
-  return true;
+  const stackItems = hasArchitectureStacks(architecture)
+    ? Array.isArray(architecture.stacks)
+      ? architecture.stacks
+      : []
+    : [];
+  const catalogIds = [
+    ...new Set(stackItems.map((item) => item.catalog_id).filter(Boolean)),
+  ] as string[];
+
+  if (catalogIds.length === 0) {
+    return true;
+  }
+
+  const rows = await app.db.read
+    .select({
+      id: TechnologyCatalogs.id,
+      technology_type: TechnologyCatalogs.technology_type,
+    })
+    .from(TechnologyCatalogs)
+    .where(
+      and(inArray(TechnologyCatalogs.id, catalogIds), eq(TechnologyCatalogs.is_enabled, true)),
+    );
+
+  const catalogTypeById = new Map(rows.map((row) => [row.id, row.technology_type]));
+
+  return stackItems.every((item) => {
+    if (!item.catalog_id) {
+      return true;
+    }
+
+    const catalogType = catalogTypeById.get(item.catalog_id);
+    return catalogType === 'FRAMEWORK' || catalogType === 'LANGUAGE'
+      ? catalogType === item.category
+      : false;
+  });
 }
 
 export async function ensureNoSiteIdentifierConflict(
   app: FastifyInstance,
   snapshot: Pick<SiteAuditSnapshot, 'bid' | 'name' | 'url'>,
   currentSiteId?: string,
-): Promise<Array<'bid' | 'name' | 'url'> | null> {
-  const conditions = [eq(Sites.name, snapshot.name ?? ''), eq(Sites.url, snapshot.url ?? '')];
+): Promise<Array<'bid' | 'url'> | null> {
+  const review = await reviewSubmittedSiteDuplicates(app, snapshot, currentSiteId);
+  return mapStrongDuplicateFields(review.strong);
+}
 
-  if (snapshot.bid) {
-    conditions.push(eq(Sites.bid, snapshot.bid));
-  }
-
-  const whereClause = currentSiteId
-    ? and(ne(Sites.id, currentSiteId), conditions.length === 1 ? conditions[0] : or(...conditions))
-    : conditions.length === 1
-      ? conditions[0]
-      : or(...conditions);
-
-  const [conflict] = await app.db.read
+export async function reviewSubmittedSiteDuplicates(
+  app: FastifyInstance,
+  snapshot: Pick<SiteAuditSnapshot, 'bid' | 'name' | 'url'>,
+  currentSiteId?: string,
+): Promise<SiteDuplicateReviewResult> {
+  const rows = await app.db.read
     .select({
       id: Sites.id,
       bid: Sites.bid,
       name: Sites.name,
       url: Sites.url,
+      is_show: Sites.is_show,
     })
     .from(Sites)
-    .where(whereClause)
+    .where(currentSiteId ? ne(Sites.id, currentSiteId) : undefined);
+
+  return reviewSiteDuplicates(rows, snapshot);
+}
+
+export async function loadHiddenSiteRestoreTarget(app: FastifyInstance, siteId: string) {
+  const [site] = await app.db.read
+    .select({
+      site_id: Sites.id,
+      bid: Sites.bid,
+      name: Sites.name,
+      url: Sites.url,
+      reason: Sites.reason,
+      is_show: Sites.is_show,
+    })
+    .from(Sites)
+    .where(eq(Sites.id, siteId))
     .limit(1);
 
-  if (!conflict) {
+  if (!site || site.is_show) {
     return null;
   }
 
-  const fields: Array<'bid' | 'name' | 'url'> = [];
-
-  if (snapshot.bid && conflict.bid === snapshot.bid) {
-    fields.push('bid');
-  }
-
-  if (conflict.name === snapshot.name) {
-    fields.push('name');
-  }
-
-  if (conflict.url === snapshot.url) {
-    fields.push('url');
-  }
-
-  return fields.length > 0 ? fields : ['name', 'url'];
+  return {
+    site_id: site.site_id,
+    bid: site.bid,
+    name: site.name,
+    url: site.url,
+    reason: site.reason,
+  };
 }
 
 export async function loadCurrentSiteSnapshot(
@@ -155,6 +228,7 @@ export async function loadCurrentSiteSnapshot(
       ? await app.db.read
           .select({
             id: TagDefinitions.id,
+            name: TagDefinitions.name,
             tag_type: TagDefinitions.tag_type,
           })
           .from(TagDefinitions)
@@ -214,10 +288,14 @@ export async function loadCurrentSiteSnapshot(
       : [];
 
   const mainTagId = tagDefinitionRows.find((row) => row.tag_type === 'MAIN')?.id ?? null;
-  const subTagIds = tagDefinitionRows
+  const subTags = tagDefinitionRows
     .filter((row) => row.tag_type === 'SUB')
-    .map((row) => row.id)
-    .sort();
+    .map((row) => ({
+      tag_id: row.id,
+      name: row.name,
+      name_normalized: normalizeSubTagToken(row.name),
+    }))
+    .sort((left, right) => left.tag_id.localeCompare(right.tag_id, 'zh-CN'));
   const stackNameByCatalogId = new Map(stackCatalogRows.map((row) => [row.id, row.name]));
 
   return {
@@ -227,7 +305,6 @@ export async function loadCurrentSiteSnapshot(
     sign: site.sign ?? null,
     icon_base64: site.icon_base64 ?? null,
     feed: normalizeSubmittedFeeds(site.feed ?? []),
-    default_feed_url: site.default_feed_url ?? null,
     from: (site.from ?? null) as SiteAuditSnapshot['from'],
     classification_status: site.classification_status as SiteAuditSnapshot['classification_status'],
     sitemap: site.sitemap ?? null,
@@ -237,10 +314,8 @@ export async function loadCurrentSiteSnapshot(
     is_show: site.is_show,
     recommend: site.recommend ?? false,
     reason: site.reason ?? null,
-    tag_ids: tagRows.map((row) => row.tag_id).sort(),
     main_tag_id: mainTagId,
-    sub_tag_ids: subTagIds.length > 0 ? subTagIds : null,
-    custom_sub_tags: null,
+    sub_tags: subTags.length > 0 ? subTags : null,
     architecture: architecture
       ? {
           program_id: architecture.program_id ?? null,

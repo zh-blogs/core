@@ -3,8 +3,8 @@ import type { MultiFeed, SiteAuditSnapshot } from '@zhblogs/db';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type SubmitterFields = {
-  submitter_name: string;
-  submitter_email: string;
+  submitter_name: string | null;
+  submitter_email: string | null;
   submit_reason: string;
 };
 
@@ -24,7 +24,6 @@ type CreateSiteSubmissionLike = SubmitterFields & {
     sign?: string | null;
     main_tag_id?: string | null;
     feed?: MultiFeed[] | null;
-    default_feed_url?: string | null;
   };
 };
 
@@ -32,14 +31,19 @@ type UpdateSiteSubmissionLike = SubmitterFields & {
   changes: Record<string, unknown>;
 };
 
+type RestoreSiteSubmissionLike = {
+  submitter_name: string | null;
+  submitter_email: string | null;
+  restore_reason: string;
+};
+
 export function validateSubmitterFields(payload: SubmitterFields) {
   const fields: string[] = [];
 
-  if (payload.submitter_name.trim().length === 0) {
-    fields.push('submitter_name');
-  }
-
-  if (payload.submitter_email.trim().length === 0 || !EMAIL_PATTERN.test(payload.submitter_email)) {
+  if (
+    payload.submitter_email !== null &&
+    (!payload.submitter_email.trim().length || !EMAIL_PATTERN.test(payload.submitter_email))
+  ) {
     fields.push('submitter_email');
   }
 
@@ -73,8 +77,14 @@ export function validateSiteLookupFields(payload: SiteLookupInputLike) {
   return fields;
 }
 
-export function normalizeSubmitterEmail(value: string) {
-  return value.trim().toLowerCase();
+export function normalizeSubmitterName(value: string | null | undefined) {
+  const normalized = value?.trim();
+  return normalized ? normalized : null;
+}
+
+export function normalizeSubmitterEmail(value: string | null | undefined) {
+  const normalized = value?.trim().toLowerCase();
+  return normalized ? normalized : null;
 }
 
 export function normalizeFeedUrl(value: string | null | undefined) {
@@ -117,13 +127,23 @@ function createComparableFeedUrlKey(value: string | null | undefined) {
 }
 
 export function normalizeSubmittedFeeds(feed: MultiFeed[] | null | undefined): MultiFeed[] {
-  return (feed ?? [])
+  const normalized = (feed ?? [])
     .map((item) => ({
       name: item.name.trim(),
       url: item.url.trim(),
       ...(item.type ? { type: item.type } : {}),
+      isDefault: item.isDefault === true,
     }))
     .filter((item) => item.url.length > 0);
+
+  if (normalized.length === 1) {
+    return normalized.map((item) => ({
+      ...item,
+      isDefault: true,
+    }));
+  }
+
+  return normalized;
 }
 
 export function mergeSubmittedFeeds(
@@ -146,20 +166,11 @@ export function mergeSubmittedFeeds(
   }));
 }
 
-export function validateFeedSelection(
-  feed: MultiFeed[] | null | undefined,
-  defaultFeedUrl: string | null | undefined,
-  fieldPrefix: string,
-) {
+export function validateFeedSelection(feed: MultiFeed[] | null | undefined, fieldPrefix: string) {
   const fields: string[] = [];
   const normalizedFeed = normalizeSubmittedFeeds(feed);
-  const normalizedDefaultFeedUrl = normalizeFeedUrl(defaultFeedUrl);
 
   if (normalizedFeed.length === 0) {
-    if (normalizedDefaultFeedUrl) {
-      fields.push(`${fieldPrefix}default_feed_url`);
-    }
-
     return fields;
   }
 
@@ -184,20 +195,10 @@ export function validateFeedSelection(
     }
   }
 
-  if (!normalizedDefaultFeedUrl) {
-    fields.push(`${fieldPrefix}default_feed_url`);
-    return [...new Set(fields)];
-  }
+  const defaultCount = normalizedFeed.filter((item) => item.isDefault).length;
 
-  const comparableDefaultFeedUrl = createComparableFeedUrlKey(normalizedDefaultFeedUrl);
-
-  if (
-    !comparableDefaultFeedUrl ||
-    !normalizedFeed.some(
-      (item) => (createComparableFeedUrlKey(item.url) ?? item.url) === comparableDefaultFeedUrl,
-    )
-  ) {
-    fields.push(`${fieldPrefix}default_feed_url`);
+  if (defaultCount !== 1) {
+    fields.push(`${fieldPrefix}feed`);
   }
 
   return [...new Set(fields)];
@@ -225,7 +226,7 @@ export function validateCreateSiteFields(payload: CreateSiteSubmissionLike) {
     fields.push('site.main_tag_id');
   }
 
-  fields.push(...validateFeedSelection(payload.site.feed, payload.site.default_feed_url, 'site.'));
+  fields.push(...validateFeedSelection(payload.site.feed, 'site.'));
 
   return [...new Set(fields)];
 }
@@ -246,6 +247,14 @@ export function validateUpdateSiteFields(payload: UpdateSiteSubmissionLike) {
   }
 
   return [...new Set(fields)];
+}
+
+export function validateRestoreSiteFields(payload: RestoreSiteSubmissionLike) {
+  return validateSubmitterFields({
+    submitter_name: payload.submitter_name,
+    submitter_email: payload.submitter_email,
+    submit_reason: payload.restore_reason,
+  });
 }
 
 export function validateDeleteSiteFields(payload: SubmitterFields) {

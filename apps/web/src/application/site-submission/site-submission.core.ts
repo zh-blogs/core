@@ -4,7 +4,9 @@ import type {
   FeedDraft,
   FieldErrors,
   QuerySubmissionFormState,
+  RestoreSubmissionFormState,
   SiteResolveResult,
+  SubTagInput,
   UpdateSubmissionFormState,
 } from './site-submission.types';
 
@@ -15,10 +17,11 @@ const createDraftId = (): string =>
   globalThis.crypto?.randomUUID?.() ??
   `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
-const createFeedDraft = (name = '', url = ''): FeedDraft => ({
+const createFeedDraft = (name = '', url = '', isDefault = false): FeedDraft => ({
   id: createDraftId(),
   name,
   url,
+  isDefault,
 });
 
 const createBaseContactState = () => ({
@@ -30,16 +33,14 @@ const createBaseContactState = () => ({
 });
 
 const createBaseSiteState = () => {
-  const feed = createFeedDraft();
+  const feed = createFeedDraft('', '', true);
   return {
     name: '',
     url: 'https://',
     sign: '',
     main_tag_id: '',
-    sub_tag_ids: [],
-    custom_sub_tags: [],
+    sub_tags: [] as SubTagInput[],
     feeds: [feed],
-    default_feed_url: '',
     sitemap: '',
     link_page: '',
     architecture_program_id: '',
@@ -84,8 +85,18 @@ export function createInitialQueryForm(
   };
 }
 
+export function createInitialRestoreForm(): RestoreSubmissionFormState {
+  return {
+    submitter_name: '',
+    submitter_email: '',
+    restore_reason: '',
+    notify_by_email: false,
+    agree_terms: false,
+  };
+}
+
 export function createEmptyFeedDraft(): FeedDraft {
-  return createFeedDraft('', '');
+  return createFeedDraft('', '', false);
 }
 
 export function trimText(value: string): string {
@@ -147,6 +158,31 @@ export function createComparableHttpUrlKey(value: string | null | undefined): st
   }
 }
 
+export function ensureSingleDefaultFeedDrafts<T extends { id: string; isDefault: boolean }>(
+  feeds: T[],
+  selectedId?: string | null,
+): T[] {
+  if (feeds.length === 0) {
+    return [];
+  }
+
+  if (feeds.length === 1) {
+    return feeds.map((feed) => ({
+      ...feed,
+      isDefault: true,
+    }));
+  }
+
+  const fallbackId = feeds.find((feed) => feed.isDefault)?.id ?? feeds[0]?.id ?? null;
+  const targetId =
+    selectedId && feeds.some((feed) => feed.id === selectedId) ? selectedId : fallbackId;
+
+  return feeds.map((feed) => ({
+    ...feed,
+    isDefault: feed.id === targetId,
+  }));
+}
+
 export function mapApiFieldErrors(fields: string[] | undefined): FieldErrors {
   if (!fields || fields.length === 0) {
     return {};
@@ -157,18 +193,13 @@ export function mapApiFieldErrors(fields: string[] | undefined): FieldErrors {
   for (const field of fields) {
     const normalized = field.replace(/^site\./, '').replace(/^changes\./, '');
 
-    if (normalized === 'main_tag_id' || normalized === 'sub_tag_ids') {
+    if (normalized === 'main_tag_id' || normalized === 'sub_tags') {
       mapped.main_tag_id = '分类信息无效，请重新选择。';
       continue;
     }
 
     if (normalized === 'architecture') {
       mapped.architecture_program_name = '架构信息无效，请检查后重试。';
-      continue;
-    }
-
-    if (normalized === 'default_feed_url') {
-      mapped.default_feed_url = '请选择一个有效的默认订阅地址。';
       continue;
     }
 
@@ -236,16 +267,16 @@ export function guessDefaultLinkPageUrl(siteUrl: string): string {
 export function createUpdateFormFromResolvedSite(
   site: SiteResolveResult,
 ): UpdateSubmissionFormState {
-  const feeds =
+  const feeds = ensureSingleDefaultFeedDrafts(
     site.feed.length > 0
       ? site.feed.map((item, index) => ({
           id: createDraftId(),
           name: trimText(item.name) || (site.feed.length === 1 && index === 0 ? '默认订阅' : ''),
           url: trimText(item.url),
+          isDefault: item.isDefault === true,
         }))
-      : [createFeedDraft('', trimText(site.url))];
-
-  const defaultFeedUrl = trimText(site.default_feed_url ?? '') || trimText(feeds[0]?.url ?? '');
+      : [createFeedDraft('', trimText(site.url), true)],
+  );
 
   return {
     ...createBaseContactState(),
@@ -254,10 +285,8 @@ export function createUpdateFormFromResolvedSite(
     url: site.url,
     sign: site.sign,
     main_tag_id: site.main_tag_id ?? '',
-    sub_tag_ids: site.sub_tag_ids ?? [],
-    custom_sub_tags: site.custom_sub_tags ?? [],
+    sub_tags: (site.sub_tags ?? []).map((item) => ({ ...item })),
     feeds,
-    default_feed_url: defaultFeedUrl,
     sitemap: site.sitemap ?? '',
     link_page: site.link_page ?? '',
     architecture_program_id: site.architecture?.program_id ?? '',

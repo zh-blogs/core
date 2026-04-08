@@ -7,6 +7,7 @@ import type {
   SiteResolveResult,
   SiteSearchItem,
   SiteSubmissionOptionsResult,
+  SubmissionDuplicateReviewPayload,
   SubmissionPage,
   SubmissionResult,
   SubmissionStatusResult,
@@ -19,6 +20,15 @@ export type ValueState<T> = {
   get: () => T;
   set: (value: T) => void;
 };
+
+export interface CreateSubmissionDuplicateDialogState {
+  code:
+    | 'SITE_DUPLICATE_WEAK_CONFIRMATION_REQUIRED'
+    | 'SITE_DUPLICATE_STRONG_CONTACT_REQUIRED'
+    | 'SITE_RESTORE_REQUIRED';
+  message: string;
+  review: SubmissionDuplicateReviewPayload;
+}
 
 export interface SiteSubmissionWorkspaceControllerContext {
   activePage: SubmissionPage;
@@ -42,6 +52,9 @@ export interface SiteSubmissionWorkspaceControllerContext {
     update: ValueState<SubmissionResult | null>;
     delete: ValueState<SubmissionResult | null>;
     query: ValueState<SubmissionStatusResult | null>;
+  };
+  duplicate: {
+    create: ValueState<CreateSubmissionDuplicateDialogState | null>;
   };
   pending: {
     create: ValueState<boolean>;

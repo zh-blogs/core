@@ -1,4 +1,4 @@
-import { Sites, TagDefinitions } from '@zhblogs/db';
+import { Sites, TagDefinitions, TechnologyCatalogs } from '@zhblogs/db';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -12,6 +12,7 @@ import {
 describe('site submission routes', () => {
   let app: ReturnType<typeof createTestApp> | undefined;
   const mainTagId = '11111111-1111-4111-8111-111111111111';
+  const subTagId = '22222222-2222-4222-8222-222222222222';
   const frameworkId = '44444444-4444-4444-8444-444444444444';
 
   afterEach(async () => {
@@ -30,7 +31,11 @@ describe('site submission routes', () => {
     mockReadSelect(app, [
       {
         table: TagDefinitions,
-        rows: [{ id: mainTagId }],
+        rows: [{ id: mainTagId }, { id: subTagId }],
+      },
+      {
+        table: TechnologyCatalogs,
+        rows: [{ id: frameworkId, technology_type: 'FRAMEWORK' }],
       },
       {
         table: Sites,
@@ -58,6 +63,18 @@ describe('site submission routes', () => {
           url: 'https://example.com',
           sign: 'A blog about software',
           main_tag_id: mainTagId,
+          sub_tags: [
+            {
+              tag_id: subTagId,
+              name: '开发',
+              name_normalized: '开发',
+            },
+            {
+              tag_id: null,
+              name: '前端',
+              name_normalized: '前端',
+            },
+          ],
         },
       },
     });
@@ -86,7 +103,18 @@ describe('site submission routes', () => {
         from: ['WEB_SUBMIT'],
         classification_status: 'COMPLETE',
         main_tag_id: mainTagId,
-        tag_ids: [mainTagId],
+        sub_tags: [
+          {
+            tag_id: subTagId,
+            name: '开发',
+            name_normalized: '开发',
+          },
+          {
+            tag_id: null,
+            name: '前端',
+            name_normalized: '前端',
+          },
+        ],
       },
     });
 
@@ -96,6 +124,59 @@ describe('site submission routes', () => {
         expect.objectContaining({ field: 'url', after: 'https://example.com' }),
         expect.objectContaining({ field: 'main_tag_id', after: mainTagId }),
       ]),
+    });
+  });
+
+  it('stores nullable submitter info when the create requester leaves contact fields empty', async () => {
+    app = createTestApp({
+      disableExternalServices: true,
+    });
+
+    await app.ready();
+
+    mockReadSelect(app, [
+      {
+        table: TagDefinitions,
+        rows: [{ id: mainTagId }],
+      },
+      {
+        table: TechnologyCatalogs,
+        rows: [],
+      },
+      {
+        table: Sites,
+        rows: [],
+      },
+    ]);
+
+    const writeMock = mockWriteInsertSuccess(app, [
+      {
+        id: 'audit-create-null-contact-id',
+        status: 'PENDING',
+      },
+    ]);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/sites',
+      payload: {
+        submitter_name: null,
+        submitter_email: null,
+        submit_reason: 'Request inclusion for my site.',
+        notify_by_email: false,
+        site: {
+          name: 'Example Blog',
+          url: 'https://example.com',
+          sign: 'A blog about software',
+          main_tag_id: mainTagId,
+        },
+      },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(writeMock.getInsertedValues()).toMatchObject({
+      submitter_name: null,
+      submitter_email: null,
     });
   });
 
@@ -110,6 +191,10 @@ describe('site submission routes', () => {
       {
         table: TagDefinitions,
         rows: [{ id: mainTagId }],
+      },
+      {
+        table: TechnologyCatalogs,
+        rows: [{ id: frameworkId, technology_type: 'FRAMEWORK' }],
       },
       {
         table: Sites,
@@ -233,13 +318,14 @@ describe('site submission routes', () => {
             {
               name: '主订阅',
               url: 'https://Example.com/feed.xml',
+              isDefault: true,
             },
             {
               name: '备用订阅',
               url: 'https://example.com/feed.xml/',
+              isDefault: false,
             },
           ],
-          default_feed_url: 'https://example.com/feed.xml/',
         },
       },
     });
@@ -252,6 +338,253 @@ describe('site submission routes', () => {
         message: 'Request body contains empty or malformed fields.',
         fields: ['site.feed'],
       },
+    });
+  });
+
+  it('returns a strong-duplicate contact response when a visible site shares the hostname', async () => {
+    app = createTestApp({
+      disableExternalServices: true,
+    });
+
+    await app.ready();
+
+    mockReadSelect(app, [
+      {
+        table: TagDefinitions,
+        rows: [{ id: mainTagId }],
+      },
+      {
+        table: Sites,
+        rows: [
+          {
+            id: 'site-visible-id',
+            bid: 'existing-example',
+            name: 'Existing Example',
+            url: 'https://example.com/archive',
+            is_show: true,
+          },
+        ],
+      },
+    ]);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/sites',
+      payload: {
+        submitter_name: 'Alice',
+        submitter_email: 'alice@example.com',
+        submit_reason: 'Request inclusion for my site.',
+        notify_by_email: false,
+        site: {
+          name: 'Example Blog',
+          url: 'https://example.com',
+          sign: 'A blog about software',
+          main_tag_id: mainTagId,
+        },
+      },
+    });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json()).toEqual({
+      ok: false,
+      error: {
+        code: 'SITE_DUPLICATE_STRONG_CONTACT_REQUIRED',
+        message: '检测到已存在的公开站点，请不要重复新增；如需确认，请通过邮箱反馈。',
+        duplicate_review: {
+          strong: [
+            {
+              site_id: 'site-visible-id',
+              bid: 'existing-example',
+              name: 'Existing Example',
+              url: 'https://example.com/archive',
+              visibility: 'VISIBLE',
+              reason: '站点域名一致',
+            },
+          ],
+          weak: [],
+        },
+      },
+    });
+  });
+
+  it('returns a restore-required response when a hidden site shares the hostname', async () => {
+    app = createTestApp({
+      disableExternalServices: true,
+    });
+
+    await app.ready();
+
+    mockReadSelect(app, [
+      {
+        table: TagDefinitions,
+        rows: [{ id: mainTagId }],
+      },
+      {
+        table: Sites,
+        rows: [
+          {
+            id: 'site-hidden-id',
+            bid: 'archived-example',
+            name: 'Archived Example',
+            url: 'https://example.com/old',
+            is_show: false,
+          },
+        ],
+      },
+    ]);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/sites',
+      payload: {
+        submitter_name: 'Alice',
+        submitter_email: 'alice@example.com',
+        submit_reason: 'Request inclusion for my site.',
+        notify_by_email: false,
+        site: {
+          name: 'Example Blog',
+          url: 'https://example.com',
+          sign: 'A blog about software',
+          main_tag_id: mainTagId,
+        },
+      },
+    });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json()).toEqual({
+      ok: false,
+      error: {
+        code: 'SITE_RESTORE_REQUIRED',
+        message: '检测到已下线的同站点记录，请改走恢复流程。',
+        duplicate_review: {
+          strong: [
+            {
+              site_id: 'site-hidden-id',
+              bid: 'archived-example',
+              name: 'Archived Example',
+              url: 'https://example.com/old',
+              visibility: 'HIDDEN',
+              reason: '站点域名一致',
+            },
+          ],
+          weak: [],
+        },
+      },
+    });
+  });
+
+  it('allows create submission after weak duplicates are explicitly confirmed', async () => {
+    app = createTestApp({
+      disableExternalServices: true,
+    });
+
+    await app.ready();
+
+    mockReadSelect(app, [
+      {
+        table: TagDefinitions,
+        rows: [{ id: mainTagId }],
+      },
+      {
+        table: Sites,
+        rows: [
+          {
+            id: '77777777-7777-4777-8777-777777777777',
+            bid: 'example-net',
+            name: 'Example Blog',
+            url: 'https://example.net',
+            is_show: true,
+          },
+        ],
+      },
+      {
+        table: TagDefinitions,
+        rows: [{ id: mainTagId }],
+      },
+      {
+        table: Sites,
+        rows: [
+          {
+            id: '77777777-7777-4777-8777-777777777777',
+            bid: 'example-net',
+            name: 'Example Blog',
+            url: 'https://example.net',
+            is_show: true,
+          },
+        ],
+      },
+    ]);
+
+    const writeMock = mockWriteInsertSuccess(app, [
+      {
+        id: 'audit-create-confirmed-id',
+        status: 'PENDING',
+      },
+    ]);
+
+    const firstResponse = await app.inject({
+      method: 'POST',
+      url: '/api/sites',
+      payload: {
+        submitter_name: 'Alice',
+        submitter_email: 'alice@example.com',
+        submit_reason: 'Request inclusion for my site.',
+        notify_by_email: false,
+        site: {
+          name: 'Example Blog',
+          url: 'https://example.com',
+          sign: 'A blog about software',
+          main_tag_id: mainTagId,
+        },
+      },
+    });
+
+    expect(firstResponse.statusCode).toBe(409);
+    expect(firstResponse.json()).toEqual({
+      ok: false,
+      error: {
+        code: 'SITE_DUPLICATE_WEAK_CONFIRMATION_REQUIRED',
+        message: '检测到疑似重复站点，请确认后再继续提交。',
+        duplicate_review: {
+          strong: [],
+          weak: [
+            {
+              site_id: '77777777-7777-4777-8777-777777777777',
+              bid: 'example-net',
+              name: 'Example Blog',
+              url: 'https://example.net',
+              visibility: 'VISIBLE',
+              reason: '站点名称一致',
+            },
+          ],
+        },
+      },
+    });
+
+    const secondResponse = await app.inject({
+      method: 'POST',
+      url: '/api/sites',
+      payload: {
+        submitter_name: 'Alice',
+        submitter_email: 'alice@example.com',
+        submit_reason: 'Request inclusion for my site.',
+        notify_by_email: false,
+        duplicate_review: {
+          confirmed_site_ids: ['77777777-7777-4777-8777-777777777777'],
+        },
+        site: {
+          name: 'Example Blog',
+          url: 'https://example.com',
+          sign: 'A blog about software',
+          main_tag_id: mainTagId,
+        },
+      },
+    });
+
+    expect(secondResponse.statusCode).toBe(201);
+    expect(writeMock.getInsertedValues()).toMatchObject({
+      action: 'CREATE',
+      submit_reason: 'Request inclusion for my site.',
     });
   });
 

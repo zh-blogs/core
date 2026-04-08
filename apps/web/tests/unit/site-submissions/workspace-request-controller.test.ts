@@ -47,6 +47,7 @@ import {
   type SubmissionStatusResult,
 } from '@/application/site-submission/site-submission.service';
 import type {
+  CreateSubmissionDuplicateDialogState,
   SiteSubmissionWorkspaceControllerContext,
   ValueState,
 } from '@/components/site-submission/site-submission-workspace.types';
@@ -86,6 +87,24 @@ function createResolvedSiteFixture(): SiteResolveResult {
   };
 }
 
+function createValidCreateForm() {
+  const createForm = createInitialCreateForm();
+
+  createForm.name = 'Example Blog';
+  createForm.url = 'https://example.com';
+  createForm.sign = 'A blog about software';
+  createForm.main_tag_id = 'main-tag-id';
+  createForm.feeds[0] = {
+    ...createForm.feeds[0],
+    name: '默认订阅',
+    url: 'https://example.com/feed',
+    isDefault: true,
+  };
+  createForm.agree_terms = true;
+
+  return createForm;
+}
+
 function createController() {
   const context: SiteSubmissionWorkspaceControllerContext = {
     activePage: 'create',
@@ -114,6 +133,9 @@ function createController() {
       update: createState<SubmissionResult | null>(null),
       delete: createState<SubmissionResult | null>(null),
       query: createState<SubmissionStatusResult | null>(null),
+    },
+    duplicate: {
+      create: createState<CreateSubmissionDuplicateDialogState | null>(null),
     },
     pending: {
       create: createState(false),
@@ -157,21 +179,7 @@ describe('site submission workspace request controller', () => {
 
   it('resets the create form and emits shared success feedback after a successful create', async () => {
     const { context, requestController } = createController();
-    const createForm = createInitialCreateForm();
-
-    createForm.name = 'Example Blog';
-    createForm.url = 'https://example.com';
-    createForm.sign = 'A blog about software';
-    createForm.main_tag_id = 'main-tag-id';
-    createForm.feeds[0] = {
-      ...createForm.feeds[0],
-      name: '默认订阅',
-      url: 'https://example.com/feed',
-      isDefault: true,
-    };
-    createForm.agree_terms = true;
-
-    context.forms.create.set(createForm);
+    context.forms.create.set(createValidCreateForm());
     context.autoFillMissing.create.set({
       ...createEmptyAutoFillMissingState(),
       architecture: true,
@@ -213,6 +221,108 @@ describe('site submission workspace request controller', () => {
       site_id: null,
     });
     expect(clearSubmissionIdentifierSearchParamsMock).not.toHaveBeenCalled();
+  });
+
+  it('opens a weak-duplicate confirmation dialog and keeps the create form intact', async () => {
+    const { context, requestController } = createController();
+
+    context.forms.create.set(createValidCreateForm());
+
+    requestSubmissionMutationMock.mockResolvedValue({
+      ok: false,
+      error: {
+        code: 'SITE_DUPLICATE_WEAK_CONFIRMATION_REQUIRED',
+        message: '检测到疑似重复站点，请确认后再继续提交。',
+        fieldErrors: {},
+        duplicateReview: {
+          strong: [],
+          weak: [
+            {
+              site_id: '55555555-5555-7555-8555-555555555555',
+              bid: 'example-blog-net',
+              name: 'Example Blog',
+              url: 'https://example.net',
+              visibility: 'VISIBLE',
+              reason: '站点名称一致',
+            },
+          ],
+        },
+      },
+    });
+
+    await requestController.submitCreate();
+
+    expect(context.duplicate.create.get()).toEqual({
+      code: 'SITE_DUPLICATE_WEAK_CONFIRMATION_REQUIRED',
+      message: '检测到疑似重复站点，请确认后再继续提交。',
+      review: {
+        strong: [],
+        weak: [
+          {
+            site_id: '55555555-5555-7555-8555-555555555555',
+            bid: 'example-blog-net',
+            name: 'Example Blog',
+            url: 'https://example.net',
+            visibility: 'VISIBLE',
+            reason: '站点名称一致',
+          },
+        ],
+      },
+    });
+    expect(context.forms.create.get().name).toBe('Example Blog');
+    expect(context.success.create.get()).toBeNull();
+  });
+
+  it('resubmits create payload with confirmed weak-duplicate site ids', async () => {
+    const { context, requestController } = createController();
+
+    context.forms.create.set(createValidCreateForm());
+    context.duplicate.create.set({
+      code: 'SITE_DUPLICATE_WEAK_CONFIRMATION_REQUIRED',
+      message: '检测到疑似重复站点，请确认后再继续提交。',
+      review: {
+        strong: [],
+        weak: [
+          {
+            site_id: '55555555-5555-7555-8555-555555555555',
+            bid: 'example-blog-net',
+            name: 'Example Blog',
+            url: 'https://example.net',
+            visibility: 'VISIBLE',
+            reason: '站点名称一致',
+          },
+        ],
+      },
+    });
+
+    requestSubmissionMutationMock.mockResolvedValue({
+      ok: true,
+      data: {
+        audit_id: '66666666-6666-7666-8666-666666666666',
+        action: 'CREATE',
+        status: 'PENDING',
+        site_id: null,
+      },
+    });
+
+    await requestController.confirmCreateDuplicateReview();
+
+    expect(requestSubmissionMutationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        endpoint: '/api/site-submissions/create',
+        payload: expect.objectContaining({
+          duplicate_review: {
+            confirmed_site_ids: ['55555555-5555-7555-8555-555555555555'],
+          },
+        }),
+      }),
+    );
+    expect(context.success.create.get()).toEqual({
+      audit_id: '66666666-6666-7666-8666-666666666666',
+      action: 'CREATE',
+      status: 'PENDING',
+      site_id: null,
+    });
   });
 
   it('clears resolved-site state after a successful update', async () => {
@@ -361,8 +471,12 @@ describe('site submission workspace request controller', () => {
 
     requestSubmissionMutationMock.mockResolvedValue({
       ok: false,
-      fieldErrors: {
-        submitter_email: '提交者邮箱格式不正确。',
+      error: {
+        code: 'INVALID_BODY',
+        message: 'Request body contains empty or malformed fields.',
+        fieldErrors: {
+          submitter_email: '提交者邮箱格式不正确。',
+        },
       },
     });
 

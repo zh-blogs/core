@@ -10,14 +10,23 @@ import {
   type SiteResolveResult,
   type SiteSearchItem,
   type SiteSubmissionOptionsResult,
+  type SubmissionDuplicateReviewPayload,
   type SubmissionResult,
   type SubmissionStatusResult,
 } from './site-submission.service';
 
 export type SubmissionMutationEndpoint =
   | '/api/site-submissions/create'
+  | '/api/site-submissions/restore'
   | '/api/site-submissions/update'
   | '/api/site-submissions/delete';
+
+export interface SubmissionMutationError {
+  code: string;
+  message: string;
+  fieldErrors: FieldErrors;
+  duplicateReview?: SubmissionDuplicateReviewPayload;
+}
 
 export async function requestSubmissionOptions(
   activePage: string,
@@ -170,29 +179,31 @@ export async function requestSubmissionMutation(params: {
   payload: unknown;
   successTitle: string;
   errorTitle: string;
-}): Promise<{ ok: true; data: SubmissionResult } | { ok: false; fieldErrors: FieldErrors }> {
+  suppressToastCodes?: string[];
+}): Promise<{ ok: true; data: SubmissionResult } | { ok: false; error: SubmissionMutationError }> {
   try {
     const response = await postJson<SubmissionResult>(params.endpoint, params.payload);
 
     if (response.ok) {
-      openSubmissionToast({
-        tone: 'success',
-        title: params.successTitle,
-        message: '查询编号已生成，请保存后前往查询页查看进度。',
-      });
-
       return { ok: true, data: response.data };
     }
 
-    openSubmissionToast({
-      tone: 'error',
-      title: params.errorTitle,
-      message: response.error.message,
-    });
+    if (!params.suppressToastCodes?.includes(response.error.code)) {
+      openSubmissionToast({
+        tone: 'error',
+        title: params.errorTitle,
+        message: response.error.message,
+      });
+    }
 
     return {
       ok: false,
-      fieldErrors: mapApiFieldErrors(response.error.fields),
+      error: {
+        code: response.error.code,
+        message: response.error.message,
+        fieldErrors: mapApiFieldErrors(response.error.fields),
+        duplicateReview: response.error.duplicate_review,
+      },
     };
   } catch {
     openSubmissionToast({
@@ -203,7 +214,11 @@ export async function requestSubmissionMutation(params: {
 
     return {
       ok: false,
-      fieldErrors: {},
+      error: {
+        code: 'NETWORK_ERROR',
+        message: '提交服务暂时不可用，请稍后重试。',
+        fieldErrors: {},
+      },
     };
   }
 }

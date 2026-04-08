@@ -2,6 +2,10 @@
   import { onMount } from 'svelte';
 
   import {
+    getPublicContactEmail,
+    getPublicContactMailtoHref,
+  } from '@/application/shared/public-contact';
+  import {
     buildSubmissionQueryHref,
     copySubmissionAuditId,
   } from '@/application/site-submission/site-submission.browser-feedback';
@@ -31,6 +35,7 @@
     WORKSPACE_SELECT_CLASS,
     WORKSPACE_TEXTAREA_CLASS,
   } from './site-submission-workspace.constants';
+  import type { CreateSubmissionDuplicateDialogState } from './site-submission-workspace.types';
   import {
     createSiteSubmissionWorkspaceController,
     type ValueState,
@@ -68,6 +73,7 @@
   let updateSuccess: SubmissionResult | null = null;
   let deleteSuccess: SubmissionResult | null = null;
   let querySuccess: SubmissionStatusResult | null = null;
+  let createDuplicateDialog: CreateSubmissionDuplicateDialogState | null = null;
 
   let createPending = false;
   let updatePending = false;
@@ -87,6 +93,8 @@
   let createProgramPickerValue = '';
   let updateProgramPickerValue = '';
   let copiedAuditId = '';
+  const publicContactEmail = getPublicContactEmail();
+  const publicContactMailtoHref = getPublicContactMailtoHref();
 
   const state = <T,>(get: () => T, set: (value: T) => void): ValueState<T> => ({
     get,
@@ -188,6 +196,14 @@
         () => querySuccess,
         (value) => {
           querySuccess = value;
+        },
+      ),
+    },
+    duplicate: {
+      create: state(
+        () => createDuplicateDialog,
+        (value) => {
+          createDuplicateDialog = value;
         },
       ),
     },
@@ -305,15 +321,34 @@
     CREATE: '新增申请已进入审核',
     UPDATE: '修订申请已进入审核',
     DELETE: '删除申请已进入审核',
+    RESTORE: '恢复申请已进入审核',
   } as const;
   let activeSubmissionResult: SubmissionResult | null = null;
   let activeSubmissionTitle: string;
+  let duplicateDialogTitle: string;
+  let primaryStrongDuplicate: {
+    site_id: string;
+    bid: string | null;
+    name: string;
+    url: string;
+    visibility: 'VISIBLE' | 'HIDDEN';
+    reason: string;
+  } | null;
 
   $: activeSubmissionResult = createSuccess ?? updateSuccess ?? deleteSuccess ?? null;
   $: activeSubmissionTitle = activeSubmissionResult
     ? (successTitleMap[activeSubmissionResult.action as keyof typeof successTitleMap] ??
       '提交申请已进入审核')
     : '';
+  $: duplicateDialogTitle =
+    createDuplicateDialog?.code === 'SITE_DUPLICATE_WEAK_CONFIRMATION_REQUIRED'
+      ? '检测到疑似重复站点'
+      : createDuplicateDialog?.code === 'SITE_RESTORE_REQUIRED'
+        ? '检测到已下线站点'
+        : createDuplicateDialog?.code === 'SITE_DUPLICATE_STRONG_CONTACT_REQUIRED'
+          ? '检测到重复站点'
+          : '';
+  $: primaryStrongDuplicate = createDuplicateDialog?.review.strong[0] ?? null;
 
   const {
     withInputStateClass,
@@ -335,6 +370,8 @@
     runSearch,
     runAutoFill,
     submitCreate,
+    confirmCreateDuplicateReview,
+    dismissCreateDuplicateReview,
     submitUpdate,
     submitDelete,
     submitQuery,
@@ -354,6 +391,10 @@
     updateSuccess = null;
     deleteSuccess = null;
     copiedAuditId = '';
+  }
+
+  function closeCreateDuplicateDialog() {
+    dismissCreateDuplicateReview();
   }
 </script>
 
@@ -425,6 +466,124 @@
     <WorkspaceAside {activePage} />
   {/if}
 </div>
+
+<ModalSurface
+  open={Boolean(createDuplicateDialog)}
+  title={duplicateDialogTitle}
+  description={createDuplicateDialog?.message ?? ''}
+  tone={createDuplicateDialog?.code === 'SITE_DUPLICATE_WEAK_CONFIRMATION_REQUIRED'
+    ? 'warning'
+    : 'danger'}
+  confirmLabel={createDuplicateDialog?.code === 'SITE_DUPLICATE_WEAK_CONFIRMATION_REQUIRED'
+    ? '继续新增'
+    : '关闭'}
+  cancelLabel="返回表单"
+  showCancel={createDuplicateDialog?.code === 'SITE_DUPLICATE_WEAK_CONFIRMATION_REQUIRED'}
+  showHeaderClose={true}
+  headerCloseAriaLabel="关闭重复提示"
+  onConfirm={() => {
+    if (createDuplicateDialog?.code === 'SITE_DUPLICATE_WEAK_CONFIRMATION_REQUIRED') {
+      void confirmCreateDuplicateReview();
+      return;
+    }
+
+    closeCreateDuplicateDialog();
+  }}
+  onCancel={closeCreateDuplicateDialog}
+>
+  {#if createDuplicateDialog}
+    <div class="space-y-4">
+      {#if createDuplicateDialog.review.strong.length > 0}
+        <div class="space-y-3">
+          <p class="text-xs uppercase tracking-[0.18em] text-(--color-fg-3)">已命中站点</p>
+          {#each createDuplicateDialog.review.strong as candidate (candidate.site_id)}
+            <article class="rounded-md border border-(--color-line-med) bg-(--color-bg) px-4 py-4">
+              <div class="flex flex-wrap items-center gap-2 text-sm text-(--color-fg)">
+                <span class="font-medium">{candidate.name}</span>
+                {#if candidate.bid}
+                  <span
+                    class="rounded-sm border border-(--color-line-med) px-2 py-0.5 text-xs text-(--color-fg-2)"
+                  >
+                    {candidate.bid}
+                  </span>
+                {/if}
+              </div>
+              <p class="mt-2 break-all text-sm text-(--color-fg-2)">{candidate.url}</p>
+              <p class="mt-2 text-xs text-(--color-fg-3)">{candidate.reason}</p>
+              <a
+                class="mt-3 inline-flex items-center rounded-md border border-(--color-line-med) px-3 py-1.5 text-xs text-(--color-fg) transition hover:border-(--color-line-strong)"
+                href={candidate.url}
+                rel="noreferrer"
+                target="_blank"
+              >
+                查看站点
+              </a>
+            </article>
+          {/each}
+        </div>
+      {/if}
+
+      {#if createDuplicateDialog.review.weak.length > 0}
+        <div class="space-y-3">
+          <p class="text-xs uppercase tracking-[0.18em] text-(--color-fg-3)">疑似重复候选</p>
+          {#each createDuplicateDialog.review.weak as candidate (candidate.site_id)}
+            <article class="rounded-md border border-(--color-line-med) bg-(--color-bg) px-4 py-4">
+              <div class="flex flex-wrap items-center gap-2 text-sm text-(--color-fg)">
+                <span class="font-medium">{candidate.name}</span>
+                {#if candidate.bid}
+                  <span
+                    class="rounded-sm border border-(--color-line-med) px-2 py-0.5 text-xs text-(--color-fg-2)"
+                  >
+                    {candidate.bid}
+                  </span>
+                {/if}
+              </div>
+              <p class="mt-2 break-all text-sm text-(--color-fg-2)">{candidate.url}</p>
+              <p class="mt-2 text-xs text-(--color-fg-3)">{candidate.reason}</p>
+              <a
+                class="mt-3 inline-flex items-center rounded-md border border-(--color-line-med) px-3 py-1.5 text-xs text-(--color-fg) transition hover:border-(--color-line-strong)"
+                href={candidate.url}
+                rel="noreferrer"
+                target="_blank"
+              >
+                查看站点
+              </a>
+            </article>
+          {/each}
+        </div>
+      {/if}
+
+      {#if createDuplicateDialog.code === 'SITE_DUPLICATE_STRONG_CONTACT_REQUIRED'}
+        <div class="flex flex-wrap gap-3">
+          {#if publicContactMailtoHref}
+            <a
+              class="inline-flex items-center rounded-md border border-(--color-line-med) px-4 py-2 text-sm text-(--color-fg) transition hover:border-(--color-line-strong)"
+              href={publicContactMailtoHref}
+            >
+              通过邮箱反馈
+            </a>
+          {/if}
+          {#if publicContactEmail}
+            <p class="text-sm text-(--color-fg-2)">联系邮箱：{publicContactEmail}</p>
+          {:else}
+            <p class="text-sm text-(--color-fg-2)">请联系站点维护方邮箱确认是否需要恢复或修订。</p>
+          {/if}
+        </div>
+      {/if}
+
+      {#if createDuplicateDialog.code === 'SITE_RESTORE_REQUIRED' && primaryStrongDuplicate}
+        <div class="flex flex-wrap gap-3">
+          <a
+            class="inline-flex items-center rounded-md border border-(--color-line-med) px-4 py-2 text-sm text-(--color-fg) transition hover:border-(--color-line-strong)"
+            href={`/site/submit/restore?site_id=${encodeURIComponent(primaryStrongDuplicate.site_id)}`}
+          >
+            前往恢复申请
+          </a>
+        </div>
+      {/if}
+    </div>
+  {/if}
+</ModalSurface>
 
 <ModalSurface
   open={Boolean(activeSubmissionResult)}

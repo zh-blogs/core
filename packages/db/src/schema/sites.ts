@@ -43,7 +43,7 @@ export const Sites = pgTable(
     /** 面向外部展示与管理的站点唯一业务标识 */
     bid: varchar({ length: 64 }).unique(),
     /** 站点名称 */
-    name: varchar({ length: 64 }).unique().notNull(),
+    name: varchar({ length: 64 }).notNull(),
     /** 站点主页地址 */
     url: varchar({ length: 256 }).unique().notNull(),
     /** 站点签名或简短描述 */
@@ -81,6 +81,8 @@ export const Sites = pgTable(
   },
   (table) => [
     index('sites_from_gin_index').using('gin', table.from),
+    index('sites_name_index').on(table.name),
+    index('sites_name_lower_index').on(sql`lower(${table.name})`),
     index('sites_access_scope_index').on(table.access_scope),
     index('sites_status_index').on(table.status),
     index('sites_is_show_index').on(table.is_show),

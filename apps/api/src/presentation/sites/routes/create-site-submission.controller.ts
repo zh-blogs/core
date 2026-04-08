@@ -18,22 +18,23 @@ type ErrorResponder = (
 ) => unknown;
 
 type CreateSubmissionInput = {
-  submitter_name: string;
-  submitter_email: string;
+  submitter_name: string | null;
+  submitter_email: string | null;
   submit_reason: string;
   notify_by_email: boolean;
+  duplicate_review?: {
+    confirmed_site_ids: string[];
+  };
   site: {
     name: string;
     url: string;
     sign?: string | null;
     icon_base64?: string | null;
     feed?: SiteAuditSnapshot['feed'];
-    default_feed_url?: string | null;
     sitemap?: string | null;
     link_page?: string | null;
     main_tag_id?: string | null;
-    sub_tag_ids?: string[] | null;
-    custom_sub_tags?: string[] | null;
+    sub_tags?: SiteAuditSnapshot['sub_tags'];
     architecture?: SiteAuditSnapshot['architecture'];
   };
 };
@@ -43,26 +44,53 @@ type CreateRouteDeps = {
   errorResponseSchema: unknown;
   enforceSubmissionRateLimit: preHandlerHookHandler;
   createSiteSubmissionSchema: SafeParser;
-  normalizeSubmitterEmail: (email: string) => string;
+  normalizeSubmitterName: (name: string | null | undefined) => string | null;
+  normalizeSubmitterEmail: (email: string | null | undefined) => string | null;
   validateCreateSiteFields: (payload: CreateSubmissionInput) => string[];
   sendApiError: ErrorResponder;
   buildCreateSnapshot: (site: CreateSubmissionInput['site']) => SiteAuditSnapshot;
-  validateFeedSelection: (
-    feed: SiteAuditSnapshot['feed'],
-    defaultFeedUrl: string | null | undefined,
-    fieldPrefix: string,
-  ) => string[];
+  validateFeedSelection: (feed: SiteAuditSnapshot['feed'], fieldPrefix: string) => string[];
   ensureTagIdsExist: (app: FastifyInstance, tagIds: string[]) => Promise<boolean>;
-  buildCombinedTagIds: (mainTagId?: string | null, subTagIds?: string[] | null) => string[] | null;
+  buildSelectedTagIds: (
+    mainTagId?: string | null,
+    subTags?: SiteAuditSnapshot['sub_tags'],
+  ) => string[] | null;
   ensureTechnologyIdsExist: (
     app: FastifyInstance,
     architecture: SiteAuditSnapshot['architecture'],
   ) => Promise<boolean>;
-  ensureNoSiteIdentifierConflict: (
+  reviewSubmittedSiteDuplicates: (
     app: FastifyInstance,
     snapshot: SiteAuditSnapshot,
-    ignoreSiteId?: string,
-  ) => Promise<Array<'url' | 'bid' | 'name'> | null>;
+  ) => Promise<{
+    strong: Array<{
+      site_id: string;
+      bid: string | null;
+      name: string;
+      url: string;
+      visibility: 'VISIBLE' | 'HIDDEN';
+      reason: string;
+    }>;
+    weak: Array<{
+      site_id: string;
+      bid: string | null;
+      name: string;
+      url: string;
+      visibility: 'VISIBLE' | 'HIDDEN';
+      reason: string;
+    }>;
+  }>;
+  hasConfirmedWeakDuplicateReview: (
+    weakCandidates: Array<{
+      site_id: string;
+      bid: string | null;
+      name: string;
+      url: string;
+      visibility: 'VISIBLE' | 'HIDDEN';
+      reason: string;
+    }>,
+    confirmedSiteIds: string[] | null | undefined,
+  ) => boolean;
   buildSnapshotDiff: (
     before: SiteAuditSnapshot | null,
     after: SiteAuditSnapshot,
@@ -100,7 +128,8 @@ export function registerCreateSubmissionRoute(app: FastifyInstance, deps: Create
 
       const payload = {
         ...(parsed.data as CreateSubmissionInput),
-        submitter_email: deps.normalizeSubmitterEmail(String(parsed.data.submitter_email ?? '')),
+        submitter_name: deps.normalizeSubmitterName(parsed.data.submitter_name),
+        submitter_email: deps.normalizeSubmitterEmail(parsed.data.submitter_email),
       };
       const invalidFields = deps.validateCreateSiteFields(payload);
 
@@ -116,11 +145,7 @@ export function registerCreateSubmissionRoute(app: FastifyInstance, deps: Create
 
       try {
         const proposedSnapshot = deps.buildCreateSnapshot(payload.site);
-        const feedFields = deps.validateFeedSelection(
-          proposedSnapshot.feed,
-          proposedSnapshot.default_feed_url,
-          'site.',
-        );
+        const feedFields = deps.validateFeedSelection(proposedSnapshot.feed, 'site.');
 
         if (feedFields.length > 0) {
           return deps.sendApiError(
@@ -132,13 +157,13 @@ export function registerCreateSubmissionRoute(app: FastifyInstance, deps: Create
           );
         }
 
-        const [tagsValid, architectureValid, conflictFields] = await Promise.all([
+        const [tagsValid, architectureValid, duplicateReview] = await Promise.all([
           deps.ensureTagIdsExist(
             app,
-            deps.buildCombinedTagIds(payload.site.main_tag_id, payload.site.sub_tag_ids) ?? [],
+            deps.buildSelectedTagIds(payload.site.main_tag_id, payload.site.sub_tags) ?? [],
           ),
           deps.ensureTechnologyIdsExist(app, proposedSnapshot.architecture),
-          deps.ensureNoSiteIdentifierConflict(app, proposedSnapshot),
+          deps.reviewSubmittedSiteDuplicates(app, proposedSnapshot),
         ]);
 
         if (!tagsValid) {
@@ -147,7 +172,7 @@ export function registerCreateSubmissionRoute(app: FastifyInstance, deps: Create
             400,
             'INVALID_TAG_IDS',
             'One or more submitted tag IDs do not exist or are disabled.',
-            ['site.main_tag_id', 'site.sub_tag_ids'],
+            ['site.main_tag_id', 'site.sub_tags'],
           );
         }
 
@@ -161,14 +186,59 @@ export function registerCreateSubmissionRoute(app: FastifyInstance, deps: Create
           );
         }
 
-        if (conflictFields) {
-          return deps.sendApiError(
-            reply,
-            409,
-            'SITE_CONFLICT',
-            'A site with the same unique identifier already exists.',
-            conflictFields.map((field) => `site.${field}`),
-          );
+        const strongVisible = duplicateReview.strong.filter(
+          (candidate) => candidate.visibility === 'VISIBLE',
+        );
+        const strongHidden = duplicateReview.strong.filter(
+          (candidate) => candidate.visibility === 'HIDDEN',
+        );
+
+        if (strongVisible.length > 0) {
+          return reply.code(409).send({
+            ok: false,
+            error: {
+              code: 'SITE_DUPLICATE_STRONG_CONTACT_REQUIRED',
+              message: '检测到已存在的公开站点，请不要重复新增；如需确认，请通过邮箱反馈。',
+              duplicate_review: {
+                strong: strongVisible,
+                weak: duplicateReview.weak,
+              },
+            },
+          });
+        }
+
+        if (strongHidden.length > 0) {
+          return reply.code(409).send({
+            ok: false,
+            error: {
+              code: 'SITE_RESTORE_REQUIRED',
+              message: '检测到已下线的同站点记录，请改走恢复流程。',
+              duplicate_review: {
+                strong: strongHidden,
+                weak: duplicateReview.weak,
+              },
+            },
+          });
+        }
+
+        if (
+          duplicateReview.weak.length > 0 &&
+          !deps.hasConfirmedWeakDuplicateReview(
+            duplicateReview.weak,
+            payload.duplicate_review?.confirmed_site_ids,
+          )
+        ) {
+          return reply.code(409).send({
+            ok: false,
+            error: {
+              code: 'SITE_DUPLICATE_WEAK_CONFIRMATION_REQUIRED',
+              message: '检测到疑似重复站点，请确认后再继续提交。',
+              duplicate_review: {
+                strong: [],
+                weak: duplicateReview.weak,
+              },
+            },
+          });
         }
 
         const diff = deps.buildSnapshotDiff(null, proposedSnapshot);

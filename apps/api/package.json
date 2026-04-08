@@ -28,6 +28,7 @@
     "@valkey/valkey-glide": "^2.2.7",
     "@zhblogs/configs": "workspace:*",
     "@zhblogs/db": "workspace:*",
+    "@zhblogs/utils": "workspace:*",
     "fastify": "^5.7.4",
     "fastify-plugin": "^5.1.0",
     "pino": "^9.9.5"

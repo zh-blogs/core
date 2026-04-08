@@ -15,6 +15,7 @@ import {
   createInitialUpdateForm,
 } from '@/application/site-submission/site-submission.service';
 import type {
+  CreateSubmissionDuplicateDialogState,
   SiteSubmissionWorkspaceControllerContext,
   ValueState,
 } from '@/components/site-submission/site-submission-workspace.types';
@@ -59,6 +60,9 @@ function createController() {
       update: createState<SubmissionResult | null>(null),
       delete: createState<SubmissionResult | null>(null),
       query: createState<SubmissionStatusResult | null>(null),
+    },
+    duplicate: {
+      create: createState<CreateSubmissionDuplicateDialogState | null>(null),
     },
     pending: {
       create: createState(false),

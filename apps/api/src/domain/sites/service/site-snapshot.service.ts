@@ -1,14 +1,25 @@
-import type { MultiFeed, SiteAuditArchitectureSnapshot, SiteAuditSnapshot } from '@zhblogs/db';
+import type {
+  MultiFeed,
+  SiteAuditArchitectureSnapshot,
+  SiteAuditSnapshot,
+  SiteAuditSubTagSnapshot,
+} from '@zhblogs/db';
 
-import { normalizeArchitectureSnapshot } from './site-snapshot-diff.service';
+import {
+  normalizeArchitectureSnapshot,
+  normalizeSubTagSnapshots,
+} from './site-snapshot-diff.service';
 import {
   hasOwn,
   mergeSubmittedFeeds,
-  normalizeFeedUrl,
   normalizeSubmittedFeeds,
 } from './site-submission-validation.service';
 
-export { buildSnapshotDiff } from './site-snapshot-diff.service';
+export {
+  buildSnapshotDiff,
+  normalizeSubTagSnapshots,
+  normalizeSubTagToken,
+} from './site-snapshot-diff.service';
 
 type EditableArchitectureInput = {
   program_id?: string | null;
@@ -24,18 +35,18 @@ type EditableArchitectureInput = {
   repo_url?: string | null;
 };
 
+type EditableSubTagInput = SiteAuditSubTagSnapshot;
+
 type CreateSiteInput = {
   name: string;
   url: string;
   sign?: string | null;
   icon_base64?: string | null;
   feed?: MultiFeed[] | null;
-  default_feed_url?: string | null;
   sitemap?: string | null;
   link_page?: string | null;
   main_tag_id?: string | null;
-  sub_tag_ids?: string[] | null;
-  custom_sub_tags?: string[] | null;
+  sub_tags?: EditableSubTagInput[] | null;
   architecture?: EditableArchitectureInput | null;
 };
 
@@ -45,31 +56,22 @@ type UpdateSiteChanges = {
   sign?: string | null;
   icon_base64?: string | null;
   feed?: MultiFeed[] | null;
-  default_feed_url?: string | null;
   sitemap?: string | null;
   link_page?: string | null;
   main_tag_id?: string | null;
-  sub_tag_ids?: string[] | null;
-  custom_sub_tags?: string[] | null;
+  sub_tags?: EditableSubTagInput[] | null;
   architecture?: EditableArchitectureInput | null;
 };
 
-function normalizeCustomNames(values: string[] | null | undefined): string[] | null {
-  if (!values) {
-    return null;
-  }
-
-  const normalized = [...new Set(values.map((value) => value.trim()).filter(Boolean))];
-  return normalized.length > 0 ? normalized.sort() : null;
-}
-
-export function buildCombinedTagIds(
+export function buildSelectedTagIds(
   mainTagId: string | null | undefined,
-  subTagIds: string[] | null | undefined,
+  subTags: EditableSubTagInput[] | null | undefined,
 ): string[] | null {
   const values = [
     mainTagId?.trim() ?? '',
-    ...(subTagIds ?? []).map((value) => value.trim()),
+    ...(normalizeSubTagSnapshots(subTags) ?? [])
+      .map((item) => item.tag_id?.trim() ?? '')
+      .filter(Boolean),
   ].filter(Boolean);
 
   return values.length > 0 ? [...new Set(values)].sort() : null;
@@ -86,16 +88,13 @@ export function buildCreateSnapshot(site: CreateSiteInput): SiteAuditSnapshot {
     sign: site.sign ?? null,
     icon_base64: site.icon_base64 ?? null,
     feed: normalizedFeed,
-    default_feed_url: normalizeFeedUrl(site.default_feed_url),
     from: ['WEB_SUBMIT'],
     classification_status: site.main_tag_id ? 'COMPLETE' : 'NEEDS_REVIEW',
     sitemap: site.sitemap ?? null,
     link_page: site.link_page ?? null,
     access_scope: 'BOTH',
-    tag_ids: buildCombinedTagIds(site.main_tag_id, site.sub_tag_ids),
     main_tag_id: site.main_tag_id ?? null,
-    sub_tag_ids: site.sub_tag_ids?.sort() ?? null,
-    custom_sub_tags: normalizeCustomNames(site.custom_sub_tags),
+    sub_tags: normalizeSubTagSnapshots(site.sub_tags),
     architecture,
   };
 }
@@ -168,10 +167,6 @@ export function buildUpdatedSnapshot(
     proposedSnapshot.feed = mergeSubmittedFeeds(currentSnapshot.feed, changes.feed);
   }
 
-  if (hasOwn(changes, 'default_feed_url')) {
-    proposedSnapshot.default_feed_url = normalizeFeedUrl(changes.default_feed_url);
-  }
-
   if (hasOwn(changes, 'sitemap')) {
     proposedSnapshot.sitemap = changes.sitemap ?? null;
   }
@@ -184,19 +179,11 @@ export function buildUpdatedSnapshot(
     proposedSnapshot.main_tag_id = changes.main_tag_id ?? null;
   }
 
-  if (hasOwn(changes, 'sub_tag_ids')) {
-    proposedSnapshot.sub_tag_ids = changes.sub_tag_ids?.sort() ?? null;
+  if (hasOwn(changes, 'sub_tags')) {
+    proposedSnapshot.sub_tags = normalizeSubTagSnapshots(changes.sub_tags);
   }
 
-  if (hasOwn(changes, 'custom_sub_tags')) {
-    proposedSnapshot.custom_sub_tags = normalizeCustomNames(changes.custom_sub_tags);
-  }
-
-  if (hasOwn(changes, 'main_tag_id') || hasOwn(changes, 'sub_tag_ids')) {
-    proposedSnapshot.tag_ids = buildCombinedTagIds(
-      proposedSnapshot.main_tag_id,
-      proposedSnapshot.sub_tag_ids,
-    );
+  if (hasOwn(changes, 'main_tag_id')) {
     proposedSnapshot.classification_status = proposedSnapshot.main_tag_id
       ? 'COMPLETE'
       : 'NEEDS_REVIEW';
@@ -220,5 +207,13 @@ export function buildDeleteSnapshot(
     ...currentSnapshot,
     is_show: false,
     reason: submitReason.trim(),
+  };
+}
+
+export function buildRestoreSnapshot(currentSnapshot: SiteAuditSnapshot): SiteAuditSnapshot {
+  return {
+    ...currentSnapshot,
+    is_show: true,
+    reason: null,
   };
 }

@@ -6,6 +6,7 @@ import {
   requestSubmissionOptions,
   requestSubmissionQuery,
   type SubmissionMutationEndpoint,
+  type SubmissionMutationError,
 } from '@/application/site-submission/site-submission.browser-actions';
 import { clearSubmissionIdentifierSearchParams } from '@/application/site-submission/site-submission.browser-feedback';
 import {
@@ -43,6 +44,7 @@ export function createSiteSubmissionWorkspaceRequestController(
     context.forms.create.set(createInitialCreateForm());
     context.errors.create.set({});
     context.success.create.set(null);
+    context.duplicate.create.set(null);
     context.autoFillMissing.create.set(createEmptyAutoFillMissingState());
     context.programPicker.create.set('');
   };
@@ -88,7 +90,8 @@ export function createSiteSubmissionWorkspaceRequestController(
     setPending: (pending: boolean) => void;
     successTitle: string;
     errorTitle: string;
-  }): Promise<void> => {
+    suppressToastCodes?: string[];
+  }): Promise<SubmissionMutationError | null> => {
     params.setPending(true);
     try {
       const result = await requestSubmissionMutation({
@@ -96,12 +99,14 @@ export function createSiteSubmissionWorkspaceRequestController(
         payload: params.payload,
         successTitle: params.successTitle,
         errorTitle: params.errorTitle,
+        suppressToastCodes: params.suppressToastCodes,
       });
       if (result.ok) {
         handleMutationSuccess(params.kind, result.data);
-        return;
+        return null;
       }
-      params.setFieldErrors(result.fieldErrors);
+      params.setFieldErrors(result.error.fieldErrors);
+      return result.error;
     } finally {
       params.setPending(false);
     }
@@ -116,15 +121,16 @@ export function createSiteSubmissionWorkspaceRequestController(
     successTitle: string;
     errorTitle: string;
     setPending: (pending: boolean) => void;
-  }): Promise<void> => {
+    suppressToastCodes?: string[];
+  }): Promise<SubmissionMutationError | null> => {
     params.setErrors({});
     params.clearSuccess();
     const parsed = params.build();
     if (!parsed.ok) {
       params.setErrors(parsed.fieldErrors);
-      return;
+      return null;
     }
-    await submitMutationRequest({
+    return submitMutationRequest({
       kind: params.kind,
       endpoint: params.endpoint,
       payload: parsed.data,
@@ -132,6 +138,7 @@ export function createSiteSubmissionWorkspaceRequestController(
       setPending: params.setPending,
       successTitle: params.successTitle,
       errorTitle: params.errorTitle,
+      suppressToastCodes: params.suppressToastCodes,
     });
   };
 
@@ -246,17 +253,79 @@ export function createSiteSubmissionWorkspaceRequestController(
     }
   };
 
-  const submitCreate = async (): Promise<void> =>
-    submitWithPayload({
-      build: () => buildCreateSubmissionPayload(context.forms.create.get()),
+  const submitCreateRequest = async (confirmedSiteIds?: string[]): Promise<void> => {
+    context.duplicate.create.set(null);
+
+    const result = await submitWithPayload({
+      build: () => {
+        const built = buildCreateSubmissionPayload(context.forms.create.get());
+
+        if (!built.ok) {
+          return built;
+        }
+
+        if (!confirmedSiteIds || confirmedSiteIds.length === 0) {
+          return built;
+        }
+
+        return {
+          ok: true as const,
+          data: {
+            ...built.data,
+            duplicate_review: {
+              confirmed_site_ids: confirmedSiteIds,
+            },
+          },
+        };
+      },
       setErrors: context.errors.create.set,
-      clearSuccess: () => context.success.create.set(null),
+      clearSuccess: () => {
+        context.success.create.set(null);
+        context.duplicate.create.set(null);
+      },
       kind: 'create',
       endpoint: '/api/site-submissions/create',
       successTitle: '新增申请已进入审核',
       errorTitle: '提交未完成',
       setPending: context.pending.create.set,
+      suppressToastCodes: [
+        'SITE_DUPLICATE_WEAK_CONFIRMATION_REQUIRED',
+        'SITE_DUPLICATE_STRONG_CONTACT_REQUIRED',
+        'SITE_RESTORE_REQUIRED',
+      ],
     });
+
+    if (
+      result?.duplicateReview &&
+      (result.code === 'SITE_DUPLICATE_WEAK_CONFIRMATION_REQUIRED' ||
+        result.code === 'SITE_DUPLICATE_STRONG_CONTACT_REQUIRED' ||
+        result.code === 'SITE_RESTORE_REQUIRED')
+    ) {
+      context.duplicate.create.set({
+        code: result.code,
+        message: result.message,
+        review: result.duplicateReview,
+      });
+    }
+  };
+
+  const submitCreate = async (): Promise<void> => {
+    await submitCreateRequest();
+  };
+
+  const confirmCreateDuplicateReview = async (): Promise<void> => {
+    const current = context.duplicate.create.get();
+
+    if (!current || current.code !== 'SITE_DUPLICATE_WEAK_CONFIRMATION_REQUIRED') {
+      return;
+    }
+
+    await submitCreateRequest(current.review.weak.map((candidate) => candidate.site_id));
+  };
+
+  const dismissCreateDuplicateReview = (): void => {
+    context.duplicate.create.set(null);
+  };
 
   const submitUpdate = async (): Promise<void> => {
     const selectedSite = context.search.selectedSite.get();
@@ -275,8 +344,8 @@ export function createSiteSubmissionWorkspaceRequestController(
     });
   };
 
-  const submitDelete = async (): Promise<void> =>
-    submitWithPayload({
+  const submitDelete = async (): Promise<void> => {
+    await submitWithPayload({
       build: () => buildDeleteSubmissionPayload(context.forms.delete.get()),
       setErrors: context.errors.delete.set,
       clearSuccess: () => context.success.delete.set(null),
@@ -286,6 +355,7 @@ export function createSiteSubmissionWorkspaceRequestController(
       errorTitle: '删除申请未提交',
       setPending: context.pending.delete.set,
     });
+  };
 
   const submitQuery = async (): Promise<void> => {
     context.errors.queryError.set(null);
@@ -337,6 +407,8 @@ export function createSiteSubmissionWorkspaceRequestController(
     runSearch,
     runAutoFill,
     submitCreate,
+    confirmCreateDuplicateReview,
+    dismissCreateDuplicateReview,
     submitUpdate,
     submitDelete,
     submitQuery,

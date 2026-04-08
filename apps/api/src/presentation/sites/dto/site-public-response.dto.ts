@@ -1,7 +1,9 @@
 import {
   architectureResultSchema,
-  feedItemResultSchema,
+  feedCandidateResultSchema,
   optionItemResultSchema,
+  selectedFeedItemResultSchema,
+  subTagSnapshotItemResultSchema,
   techStackOptionItemResultSchema,
 } from './site-shared-response.dto';
 
@@ -68,14 +70,12 @@ const siteLookupResultSchema = {
         sign: { type: 'string' },
         feed: {
           type: 'array',
-          items: feedItemResultSchema,
+          items: selectedFeedItemResultSchema,
         },
-        default_feed_url: { type: ['string', 'null'] },
         sitemap: { type: ['string', 'null'] },
         link_page: { type: ['string', 'null'] },
         main_tag_id: { type: ['string', 'null'] },
-        sub_tag_ids: { type: 'array', items: { type: 'string' } },
-        custom_sub_tags: { type: 'array', items: { type: 'string' } },
+        sub_tags: { type: 'array', items: subTagSnapshotItemResultSchema },
         architecture: architectureResultSchema,
       },
       required: [
@@ -85,12 +85,10 @@ const siteLookupResultSchema = {
         'url',
         'sign',
         'feed',
-        'default_feed_url',
         'sitemap',
         'link_page',
         'main_tag_id',
-        'sub_tag_ids',
-        'custom_sub_tags',
+        'sub_tags',
         'architecture',
       ],
     },
@@ -146,7 +144,7 @@ const autoFillResultSchema = {
       properties: {
         name: { type: 'string' },
         sign: { type: 'string' },
-        feed_candidates: { type: 'array', items: feedItemResultSchema },
+        feed_candidates: { type: 'array', items: feedCandidateResultSchema },
         sitemap: { type: 'string' },
         link_page: { type: 'string' },
         architecture: architectureResultSchema,
@@ -156,6 +154,53 @@ const autoFillResultSchema = {
         },
       },
       required: ['name', 'sign', 'feed_candidates', 'sitemap', 'link_page', 'architecture'],
+    },
+  },
+  required: ['ok', 'data'],
+} as const;
+
+const duplicateReviewCandidateSchema = {
+  type: 'object',
+  properties: {
+    site_id: { type: 'string' },
+    bid: { type: ['string', 'null'] },
+    name: { type: 'string' },
+    url: { type: 'string' },
+    visibility: { type: 'string' },
+    reason: { type: 'string' },
+  },
+  required: ['site_id', 'bid', 'name', 'url', 'visibility', 'reason'],
+} as const;
+
+const duplicateReviewSchema = {
+  type: 'object',
+  properties: {
+    strong: {
+      type: 'array',
+      items: duplicateReviewCandidateSchema,
+    },
+    weak: {
+      type: 'array',
+      items: duplicateReviewCandidateSchema,
+    },
+  },
+  required: ['strong', 'weak'],
+} as const;
+
+const restoreTargetResultSchema = {
+  type: 'object',
+  properties: {
+    ok: { type: 'boolean' },
+    data: {
+      type: 'object',
+      properties: {
+        site_id: { type: 'string' },
+        bid: { type: ['string', 'null'] },
+        name: { type: 'string' },
+        url: { type: 'string' },
+        reason: { type: ['string', 'null'] },
+      },
+      required: ['site_id', 'bid', 'name', 'url', 'reason'],
     },
   },
   required: ['ok', 'data'],
@@ -174,6 +219,7 @@ const errorResponseSchema = {
           type: 'array',
           items: { type: 'string' },
         },
+        duplicate_review: duplicateReviewSchema,
       },
       required: ['code', 'message'],
     },
@@ -193,6 +239,7 @@ export {
   autoFillResultSchema,
   errorResponseSchema,
   optionsResultSchema,
+  restoreTargetResultSchema,
   siteIdParamJsonSchema,
   siteLookupResultSchema,
   siteSearchResultSchema,

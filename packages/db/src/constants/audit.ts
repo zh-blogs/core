@@ -11,6 +11,10 @@ export const SITE_AUDIT_ACTIONS = {
     label: '删除审核',
     description: '站点删除申请的审核流程',
   },
+  RESTORE: {
+    label: '恢复审核',
+    description: '已下线站点恢复展示的审核流程',
+  },
 } as const;
 
 export const SITE_AUDIT_ACTION_KEYS = Object.keys(SITE_AUDIT_ACTIONS) as Array<

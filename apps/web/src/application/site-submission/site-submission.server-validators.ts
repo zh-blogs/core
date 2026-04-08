@@ -4,6 +4,7 @@ import type {
   SiteSubmissionCreateRequest,
   SiteSubmissionDeleteRequest,
   SiteSubmissionQueryRequest,
+  SiteSubmissionRestoreRequest,
   SiteSubmissionUpdateRequest,
 } from './site-submission.types';
 
@@ -11,8 +12,8 @@ export function isCreateSubmissionRequest(value: unknown): value is SiteSubmissi
   return (
     isRecord(value) &&
     isRecord(value.site) &&
-    typeof value.submitter_name === 'string' &&
-    typeof value.submitter_email === 'string' &&
+    (typeof value.submitter_name === 'string' || value.submitter_name === null) &&
+    (typeof value.submitter_email === 'string' || value.submitter_email === null) &&
     typeof value.submit_reason === 'string' &&
     typeof value.notify_by_email === 'boolean' &&
     typeof value.site.name === 'string' &&
@@ -26,8 +27,8 @@ export function isUpdateSubmissionRequest(value: unknown): value is SiteSubmissi
   return (
     isRecord(value) &&
     isRecord(value.changes) &&
-    typeof value.submitter_name === 'string' &&
-    typeof value.submitter_email === 'string' &&
+    (typeof value.submitter_name === 'string' || value.submitter_name === null) &&
+    (typeof value.submitter_email === 'string' || value.submitter_email === null) &&
     typeof value.submit_reason === 'string' &&
     typeof value.notify_by_email === 'boolean' &&
     typeof value.site_identifier === 'string'
@@ -37,11 +38,22 @@ export function isUpdateSubmissionRequest(value: unknown): value is SiteSubmissi
 export function isDeleteSubmissionRequest(value: unknown): value is SiteSubmissionDeleteRequest {
   return (
     isRecord(value) &&
-    typeof value.submitter_name === 'string' &&
-    typeof value.submitter_email === 'string' &&
+    (typeof value.submitter_name === 'string' || value.submitter_name === null) &&
+    (typeof value.submitter_email === 'string' || value.submitter_email === null) &&
     typeof value.submit_reason === 'string' &&
     typeof value.notify_by_email === 'boolean' &&
     typeof value.site_identifier === 'string'
+  );
+}
+
+export function isRestoreSubmissionRequest(value: unknown): value is SiteSubmissionRestoreRequest {
+  return (
+    isRecord(value) &&
+    typeof value.site_id === 'string' &&
+    (typeof value.submitter_name === 'string' || value.submitter_name === null) &&
+    (typeof value.submitter_email === 'string' || value.submitter_email === null) &&
+    typeof value.restore_reason === 'string' &&
+    typeof value.notify_by_email === 'boolean'
   );
 }
 
